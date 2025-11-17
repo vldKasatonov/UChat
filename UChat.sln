@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "uchat", "uchat\uchat.csproj", "{69ECBE68-D3F9-4925-92BF-31BF787B5413}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "uchat_server", "uchat_server\uchat_server.csproj", "{8A8C3C5E-4E2B-49D2-A37D-A898888858D6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{69ECBE68-D3F9-4925-92BF-31BF787B5413}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69ECBE68-D3F9-4925-92BF-31BF787B5413}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69ECBE68-D3F9-4925-92BF-31BF787B5413}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69ECBE68-D3F9-4925-92BF-31BF787B5413}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A8C3C5E-4E2B-49D2-A37D-A898888858D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A8C3C5E-4E2B-49D2-A37D-A898888858D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A8C3C5E-4E2B-49D2-A37D-A898888858D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A8C3C5E-4E2B-49D2-A37D-A898888858D6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
