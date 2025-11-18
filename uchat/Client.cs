@@ -68,6 +68,6 @@ public class Client
         var authReq = CreateRequest(CommandType.Authenticate, authReqPaylod);
 
         var response = await ExecuteRequest(authReq);
-        return response?.status == Status.Success;
+        return response?.Status == Status.Success;
     }
 }
