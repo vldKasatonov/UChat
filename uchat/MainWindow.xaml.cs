@@ -20,4 +20,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
+
+    private void LogInButton_Click(object sender, RoutedEventArgs e)
+    {
+        // bool isLogIn =
+        // call Client Authorise() method
+    }
 }
