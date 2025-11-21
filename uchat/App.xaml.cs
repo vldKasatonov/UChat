@@ -13,7 +13,8 @@ public partial class App : Application
     {
         if (e.Args.Length != 2 || !int.TryParse(e.Args[1], out int port))
         {
-            //TODO: make msgbox
+            MessageBox.Show("Usage: uchat <ip> <port>");
+            Shutdown();
             return;
         }
         //TODO: validate program args
@@ -25,7 +26,7 @@ public partial class App : Application
         };
             
         mainWindow.Show();
-        //TODO:remove call
+        /* //TODO:remove call
         Task.Run(async () =>
         {
             if (await client.Authorise("user", "password"))
@@ -33,7 +34,7 @@ public partial class App : Application
                 
             }
         });
-        //
+        // */
         base.OnStartup(e);
     }
 }
