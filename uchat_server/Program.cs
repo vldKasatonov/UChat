@@ -1,9 +1,15 @@
 ﻿namespace uchat_server;
 
-class Program
+public class Program
 {
-    static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
-        Console.WriteLine("Hello, World!");
+        if (args.Length != 1 || !int.TryParse(args[0], out int port))
+        {
+            Console.WriteLine("Usage: uchat_server <port>");//TODO: refactor message
+            return;
+        }
+
+        await Server.Run(port);
     }
 }
