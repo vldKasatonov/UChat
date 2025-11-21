@@ -1,0 +1,44 @@
+<UserControl x:Class="uchat.InputTextBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:uchat"
+             mc:Ignorable="d" 
+             d:DesignHeight="40" d:DesignWidth="250">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+ 
+        <TextBlock Grid.Row="0" x:Name="tbName" Foreground="#7243A9" FontSize="20" Margin="10,0,0,10" FontWeight="Bold"/>
+        <Border x:Name="borderInput" Grid.Row="1" CornerRadius="10" BorderThickness="3" BorderBrush="#7D619B" 
+                Background="White" Height="60" Width="400">
+            <Grid x:Name="inputContainer">
+                <TextBox x:Name="txtInput" VerticalContentAlignment="Center" Background="Transparent" Margin="11,0,11,0"
+                         TextChanged="txtInput_TextChanged" BorderThickness="0" Padding="4,0,0,0" FontSize="20"/>
+                <PasswordBox x:Name="passwordBox" VerticalContentAlignment="Center" Background="Transparent" Margin="11,0,11,0"
+                             PasswordChanged="PasswordBox_PasswordChanged" BorderThickness="0" Padding="4,0,0,0" FontSize="20"
+                             Visibility="Collapsed"/>
+                <TextBlock x:Name="tbPlaceholder" Text="{Binding Placeholder, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                           FontSize="20" FontWeight="Light" Foreground="#604184" VerticalAlignment="Center" Margin="15,0,0,0"
+                           Panel.ZIndex="-1"/>
+                <Button x:Name="btnClear" Width="50" Height="30" HorizontalAlignment="Right" 
+                        Background="Transparent" BorderThickness="0" Click="btnClear_Click"
+                        Focusable="False" Cursor="Hand">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <ContentPresenter/>
+                        </ControlTemplate>
+                    </Button.Template>
+                    <Image Source="/images/delete.png" Stretch="Uniform" Width="40" Height="40"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <TextBlock Grid.Row="2" x:Name="tbError" Foreground="Red" FontSize="16" 
+                   Visibility="Collapsed" Margin="15,0,0,0"/>
+    </Grid>
+</UserControl>

@@ -60,14 +60,37 @@ public class Client
 
     public async Task<bool> Authorise(string username, string password)
     {
-        var authReqPaylod = new AuthRequestPayload
+        try
+        {
+            var authReqPayload = new AuthRequestPayload
+            {
+                Username = username,
+                Password = password
+            };
+
+            var authReq = CreateRequest(CommandType.Authenticate, authReqPayload);
+
+            var response = await ExecuteRequest(authReq);
+            return response.Status == Status.Success;
+        }
+        catch
+        {
+            throw;
+        }
+    }
+
+    /*public async Task<bool> Register(string username, string password, string nickname)
+    {
+        var regPayload = new RegisterRequestPayload
         {
             Username = username,
             Password = password,
+            Nickname = nickname
         };
-        var authReq = CreateRequest(CommandType.Authenticate, authReqPaylod);
 
-        var response = await ExecuteRequest(authReq);
+        var regReq = CreateRequest(CommandType.Register, regPayload);
+
+        var response = await ExecuteRequest(regReq);
         return response?.Status == Status.Success;
-    }
+    } */
 }
