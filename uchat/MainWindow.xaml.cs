@@ -14,10 +14,19 @@ namespace uchat;
 /// <summary>
 /// Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow : NavigationWindow
 {
-    public MainWindow()
+        public MainWindow()
+        {
+            InitializeComponent();
+            Client client = new Client("127.0.0.1", 8080);
+            this.Navigate(new PageLogin(client));
+        }
+
+
+    /* private void LogInButton_Click(object sender, RoutedEventArgs e)
     {
-        InitializeComponent();
-    }
+        // bool isLogIn =
+        // call Client Authorise() method
+    } */
 }
