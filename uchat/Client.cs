@@ -60,8 +60,6 @@ public class Client
 
     public async Task<bool> Authorise(string username, string password)
     {
-        try
-        {
             var authReqPayload = new AuthRequestPayload
             {
                 Username = username,
@@ -72,11 +70,6 @@ public class Client
 
             var response = await ExecuteRequest(authReq);
             return response.Status == Status.Success;
-        }
-        catch
-        {
-            throw;
-        }
     }
 
     /*public async Task<bool> Register(string username, string password, string nickname)
@@ -93,4 +86,14 @@ public class Client
         var response = await ExecuteRequest(regReq);
         return response?.Status == Status.Success;
     } */
+    
+    public async Task<bool> Register(string username, string password, string nickname)
+    {
+        await Task.Delay(500);
+        if (username == "1")
+        {
+            return false;
+        }
+        return true;
+    }
 }

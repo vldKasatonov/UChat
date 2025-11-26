@@ -1,0 +1,70 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="uchat.PageRegister">
+
+    <Border CornerRadius="50" Background="White">
+        <Grid ColumnDefinitions="Auto,*">
+            <Grid Grid.Column="0" Width="415">
+                <Grid Grid.Column="0">
+                    <Image Source="avares://uchat/Resources/images/bg.jpg" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <Grid RowDefinitions="Auto,*,Auto">
+                        <Grid Grid.Row="0" ColumnDefinitions="*,*" Margin="35">
+                            <TextBlock Grid.Column="0" Text="UChat"
+                                       FontSize="16" FontWeight="Bold" Foreground="rgba(255,255,255,0.9)"
+                                       VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" Spacing="15" HorizontalAlignment="Right" Orientation="Horizontal">
+                                <Button Content="Sign Up" Foreground="White" FontSize="12"
+                                         Width="80" Height="40" HorizontalContentAlignment="Center"
+                                         VerticalContentAlignment="Center" CornerRadius="20" Background="Transparent" BorderBrush="White"/>
+                                <Button Content="Sign In" Foreground="White" FontSize="12" Click="SignInButtonTop_Click"
+                                        Width="80" Height="40" HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center" CornerRadius="20" Background="Transparent"
+                                        />  
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Grid>
+
+            <Grid Grid.Column="1" Margin="70 0 70 0">
+                <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Center" Orientation="Vertical"
+                            Spacing="30">
+                    <TextBlock Text="Register" HorizontalAlignment="Center" FontSize="40" FontWeight="ExtraBold"
+                               Foreground="rgba(0,0,0,0.9)"/>
+                    <TextBlock Text="Welcome! Please create your account." HorizontalAlignment="Center"
+                               FontSize="17" Foreground="rgba(0,0,0,0.8)"/>
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Nickname" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBox x:Name="NicknameTextBox" Watermark="Enter nickname" FontSize="20" Margin="0,0,0,5"/>
+                        <TextBlock x:Name="NicknameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
+                        
+                        <TextBlock Text="Username" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"/>
+                        <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
+                        
+                        <TextBlock Text="Password" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="*" FontSize="25" Margin="0,0,0,5"/>
+                        <TextBlock x:Name="PasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
+                        
+                        <TextBlock Text="Confirm password" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBox x:Name="ConfirmPasswordTextBox" Watermark="Confirm password" PasswordChar="*" FontSize="25" Margin="0,0,0,5"/>
+                        <TextBlock x:Name="ConfirmPasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Vertical">
+                    <Button x:Name="RegisterButton" Click="RegisterButton_Click" Classes="submitBtn" Content="Register" FontSize="23" FontWeight="Bold" Width="250" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="RegisterErrorText" Foreground="Red" Margin="0,5,0,0" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock HorizontalAlignment="Center" FontWeight="Medium" FontSize="17">
+                        <Run Text="Already have an account?" Foreground="rgba(0,0,0,0.8)"/>
+                        <InlineUIContainer BaselineAlignment="Bottom">
+                            <TextBlock Text=" Sing In" Foreground="{StaticResource prColor}" Cursor="Hand" PointerPressed="SignInText_PointerPressed"/>
+                        </InlineUIContainer>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

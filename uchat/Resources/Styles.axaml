@@ -1,0 +1,117 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Design.PreviewWith>
+    <Border Padding="20" Width="400">
+		<StackPanel Orientation="Vertical" Spacing="10">
+			<TextBox Watermark="Email"/>
+			<Button Classes="submitBtn" Content="Login" HorizontalAlignment="Stretch"/>
+		</StackPanel>
+	</Border>
+  </Design.PreviewWith>
+
+	<Style Selector="TextBox">
+		<Setter Property="Background" Value="White"/>
+		<Setter Property="VerticalContentAlignment" Value="Center"/>
+		<Setter Property="Height" Value="50"/>
+		<Setter Property="BorderThickness" Value="2"/>
+		<Setter Property="BorderBrush" Value="rgba(0,0,0,0.3)"/>
+		<Setter Property="CornerRadius" Value="12"/>
+		<Setter Property="Foreground" Value="rgba(0,0,0,0.3)"/>
+		<Setter Property="FontWeight" Value="Medium"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="Transitions">
+			<Transitions>
+				<BrushTransition Property="Foreground" Duration="0:0:0.5" Easing="QuarticEaseOut"/>
+			</Transitions>
+		</Setter>
+		<Style Selector="^ /template/ TextBlock#PART_Watermark">
+			<Setter Property="FontSize" Value="17"/>
+			<Setter Property="Foreground" Value="rgba(0,0,0,0.3)"/>
+			<Setter Property="FontWeight" Value="Medium"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<BrushTransition Property="Foreground" Duration="0:0:0.5" Easing="QuarticEaseOut"/>
+				</Transitions>
+			</Setter>
+		</Style>
+		<Style Selector="^ /template/ Border#PART_BorderElement">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<BrushTransition Property="BorderBrush" Duration="0:0:0.5" Easing="QuarticEaseOut"/>
+				</Transitions>
+			</Setter>
+		</Style>
+		<Style Selector="^:pointerover">
+			<Style Selector="^ /template/ Border#PART_BorderElement">
+				<Setter Property="Background" Value="Transparent"/>
+				<Setter Property="BorderBrush" Value="{DynamicResource prColor}"/>
+			</Style>
+			<Style Selector="^ /template/ TextBlock#PART_Watermark">
+				<Setter Property="Foreground" Value="rgba(0,0,0,0.6)"/>
+			</Style>
+		</Style>
+		<Style Selector="^:focus">
+			<Setter Property="Foreground" Value="{DynamicResource prColor}"/>
+			<Style Selector="^ /template/ Border#PART_BorderElement">
+				<Setter Property="Background" Value="Transparent"/>
+				<Setter Property="BorderBrush" Value="{DynamicResource prColor}"/>
+			</Style>
+		</Style>
+	</Style> 
+
+	<Style Selector="Button.submitBtn">
+		<Setter Property="Height" Value="50"/>
+		<Setter Property="FontSize" Value="14"/>
+		<Setter Property="FontWeight" Value="Medium"/>
+		<Setter Property="Foreground" Value="White"/>
+		<Setter Property="Background" Value="{DynamicResource prColor}"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="Button">
+					<Border x:Name="MainBorder"
+					        CornerRadius="15"
+					        Background="{TemplateBinding Background}"
+					        BorderBrush="{TemplateBinding BorderBrush}"
+					        BorderThickness="{TemplateBinding BorderThickness}">
+						<ContentPresenter HorizontalAlignment="Center"
+						                  VerticalAlignment="Center"
+						                  Content="{TemplateBinding Content}"/>
+					</Border>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	
+	
+	<Style Selector="TextBox:not(:empty)">
+		<Setter Property="Foreground" Value="{DynamicResource prColor}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource prColor}"/>
+
+		<Style Selector="^ /template/ Border#PART_BorderElement">
+			<Setter Property="BorderBrush" Value="{DynamicResource prColor}"/>
+		</Style>
+	</Style>
+	
+	<Style Selector="TextBox:empty">
+		<Setter Property="Foreground" Value="rgba(0,0,0,0.3)"/>
+		<Setter Property="BorderBrush" Value="rgba(0,0,0,0.3)"/>
+
+		<Style Selector="^ /template/ Border#PART_BorderElement">
+			<Setter Property="BorderBrush" Value="rgba(0,0,0,0.3)"/>
+		</Style>
+	</Style>
+	
+	<Style Selector="TextBox.error /template/ Border#PART_BorderElement">
+		<Setter Property="BorderBrush" Value="Red"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+	
+	<Style Selector="Button.error">
+		<Setter Property="BorderBrush" Value="Red"/>
+		<Setter Property="BorderThickness" Value="2"/>
+	</Style>
+	
+	
+	
+</Styles>
