@@ -4,7 +4,8 @@ using System.Text.Json.Serialization;
 
 public enum CommandType
 {
-    Authenticate,
+    Login,
+    Register
 }
 
 public enum Status

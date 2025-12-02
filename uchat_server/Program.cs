@@ -6,10 +6,18 @@ public class Program
     {
         if (args.Length != 1 || !int.TryParse(args[0], out int port))
         {
-            Console.WriteLine("Usage: uchat_server <port>");//TODO: refactor message
+            Console.WriteLine("Usage: uchat_server <port>"); //TODO: refactor message
             return;
         }
 
-        await Server.Run(port);
+        try
+        {
+            Server server = new Server(port);
+            server.Run().Wait();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Server error."); //TODO: refactor message
+        }
     }
 }
