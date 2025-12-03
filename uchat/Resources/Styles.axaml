@@ -112,6 +112,22 @@
 		<Setter Property="BorderThickness" Value="2"/>
 	</Style>
 	
+	<Style Selector="ListBoxItem">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Foreground" Value="White"/>
+		<Setter Property="Height" Value="50"/>
+		<Setter Property="FontSize" Value="20"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+	</Style>
+
+	<Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="#9183B0"/>
+	</Style>
+	
+	<Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+		<Setter Property="Background" Value="#8A6FC2"/>
+	</Style>
+	
 	
 	
 </Styles>

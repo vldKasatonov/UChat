@@ -96,4 +96,28 @@ public class Client
         }
         return true;
     }
+    
+    /* public async Task<bool> SendMessageAsync(string chatId, Message msg)
+    {
+        var payload = new { ChatId = chatId, Message = msg };
+        var request = CreateRequest(CommandType.SendMessage, payload);
+        var response = await ExecuteRequest(request);
+        return response?.Status == Status.Success;
+    }
+
+    public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
+    {
+        var payload = new { ChatId = chatId, MessageId = messageId };
+        var request = CreateRequest(CommandType.DeleteForMe, payload);
+        var response = await ExecuteRequest(request);
+        return response?.Status == Status.Success;
+    }
+
+    public async Task<bool> DeleteMessageForAllAsync(string chatId, string messageId)
+    {
+        var payload = new { ChatId = chatId, MessageId = messageId };
+        var request = CreateRequest(CommandType.DeleteForAll, payload);
+        var response = await ExecuteRequest(request);
+        return response?.Status == Status.Success;
+    } */
 }
