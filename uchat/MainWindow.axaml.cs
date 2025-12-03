@@ -5,12 +5,15 @@ namespace uchat;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    private Client _client;
+    private ContentControl? _control;
+    
+    public MainWindow(Client client)
     {
+        _client = client;
         InitializeComponent();
-        Client client = new Client("127.0.0.1", 8080);
-        var loginPage = new PageLogin(client);
-        this.FindControl<ContentControl>("PageHost").Content = loginPage;
+        _control = this.FindControl<ContentControl>("PageHost");
+        Navigate(new PageLogin(_client));
     }
 
     private void InitializeComponent()
@@ -20,6 +23,9 @@ public partial class MainWindow : Window
     
     public void Navigate(UserControl page)
     {
-        this.FindControl<ContentControl>("PageHost").Content = page;
+        if (_control != null)
+        {
+            _control.Content = page;
+        }
     }
 }
