@@ -1,30 +1,36 @@
-﻿namespace uchat_server;
-
-using dto;
+﻿using dto;
 using System.Text;
 using System.Text.Json;
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Concurrent;
+
+namespace uchat_server;
 
 public class Server
 {
-    public static async Task Run(int port)
-    {
-        TcpListener listener = new TcpListener(IPAddress.Any, port);
+    private TcpListener _listener;
+    private ConcurrentDictionary<string, TcpClient> _clients = new();
 
+    public Server(int port)
+    {
+        _listener = new TcpListener(IPAddress.Any, port);
+    }
+
+    public async Task Run()
+    {
+        _listener.Start();
+        //TODO: refactor message
+        Console.WriteLine($"Process ID: {Environment.ProcessId}"); 
+        Console.WriteLine("Awaiting connections...");
+        
         try
         {
-            listener.Start();
-            //TODO: refactor message
-            Console.WriteLine($"Server started and listening on port {port}.");
-            Console.WriteLine($"Process ID: {Environment.ProcessId}"); 
-            Console.WriteLine("Awaiting connections...");
-
             while (true)
             {
-                TcpClient client = await listener.AcceptTcpClientAsync();
+                TcpClient client = await _listener.AcceptTcpClientAsync();
                 Console.WriteLine("New client connected."); //TODO: refactor message
-                _ = Task.Run(() => HandleClientAsync(client));
+                _ = HandleClientAsync(client);
             }
         }
         catch (SocketException e)
@@ -33,34 +39,62 @@ public class Server
         }
         finally
         {
-            listener.Stop();
+            _listener.Stop();
         }
     }
-    
-    private static async Task HandleClientAsync(TcpClient client)
+
+    private async Task HandleClientAsync(TcpClient client)
     {
+        string username = string.Empty;
         NetworkStream stream = client.GetStream();
-        byte[] buffer = new byte[1024];
-        
-        try 
+        using StreamReader reader = new(stream, Encoding.UTF8);
+        using StreamWriter writer = new(stream, Encoding.UTF8);
+        writer.AutoFlush = true;
+
+        try
         {
-            int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-            if (bytesRead <= 0)
+            while (client.Connected)
             {
-                return;//TODO: return response to user
+                string? jsonRequest = await reader.ReadLineAsync();
+                
+                if (jsonRequest is null)
+                {
+                    break;
+                }
+                
+                if (string.IsNullOrWhiteSpace(jsonRequest))
+                {
+                    continue;
+                }
+                
+                Console.WriteLine($"Received from client: {jsonRequest}");  //TODO: delete message
+                Request? request = JsonSerializer.Deserialize<Request>(jsonRequest);
+                
+                if (request is null)
+                {
+                    continue; //TODO: return response to user
+                }
+
+                Response response = ProcessRequest(request);
+                
+                Console.WriteLine($"Response for client: {JsonSerializer.Serialize(response)}");
+
+                if (response.Status == Status.Success && response.Type == CommandType.Login)
+                {
+                    var loginResponsePayload = response.Payload.Deserialize<LoginResponsePayload>();
+
+                    if (loginResponsePayload != null)
+                    {
+                        username = loginResponsePayload.Username;
+                        _clients.TryAdd(username, client);
+                        Console.WriteLine($"User '{username}' logged in.");
+                    }
+                }
+                
+                string jsonResponse = JsonSerializer.Serialize(response);
+                await writer.WriteLineAsync(jsonResponse);
             }
-            string jsonRequest = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-            Console.WriteLine($"Received from client: {jsonRequest}");  //TODO: delete message
-            Request? request = JsonSerializer.Deserialize<Request>(jsonRequest);
-            if (request is null)
-            {
-                return;//TODO: return response to user
-            }
-            Response response = ProcessRequest(request);
             
-            string jsonResponse = JsonSerializer.Serialize(response);
-            var responseData = Encoding.UTF8.GetBytes(jsonResponse);
-            await stream.WriteAsync(responseData, 0, responseData.Length);
         }
         catch (Exception ex)
         {
@@ -68,6 +102,12 @@ public class Server
         }
         finally
         {
+            if (!string.IsNullOrEmpty(username))
+            {
+                _clients.TryRemove(username, out _);
+                Console.WriteLine($"User '{username}' disconnected.");
+            }
+            
             client.Close();
             Console.WriteLine("Client disconnected.");
         }
@@ -79,9 +119,12 @@ public class Server
         {
             switch (request.Type)
             {
-                case CommandType.Authenticate:
-                    var authReqPayload = JsonSerializer.Deserialize<AuthRequestPayload>(request.Payload);
-                    return HandleAuthenticate(authReqPayload);
+                case CommandType.Login:
+                    var loginReqPayload = request.Payload.Deserialize<LoginRequestPayload>();
+                    return HandleLogin(loginReqPayload);
+                case CommandType.Register:
+                    var registerReqPayload = request.Payload.Deserialize<RegisterRequestPayload>();
+                    return HandleRegister(registerReqPayload);
             }
         }
         catch (Exception) //ex)
@@ -89,20 +132,73 @@ public class Server
             //TODO
         }
         
-        return new Response { Status = Status.Error };
+        return new Response
+        {
+            Status = Status.Error,
+            Type = request.Type,
+        };
     }
     
-    private static Response HandleAuthenticate(AuthRequestPayload? authReqPayload)
+    private static Response HandleLogin(LoginRequestPayload? loginReqPayload)
     {
-        if (authReqPayload is null)
+        if (loginReqPayload is null)
         {
-            return new Response { Status = Status.Error };
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Login
+            };
         }
-        // TODO: realise authenticate to DB
-        if (authReqPayload is { Username: "user", Password: "password" })
+        
+        // TODO: realise login to DB
+        if (loginReqPayload is { Username: "1", Password: "password" })
         {
-            return new Response { Status = Status.Success };
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Login
+            };
         }
-        return new Response { Status = Status.Error };
+
+        var responsePayload = new LoginResponsePayload
+        {
+            UserId = "1",
+            Username = loginReqPayload.Username
+        };
+        
+        return new Response
+        {
+            Status = Status.Success,
+            Type = CommandType.Login,
+            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+        };
+    }
+
+    private static Response HandleRegister(RegisterRequestPayload? registerReqPayload)
+    {
+        if (registerReqPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Register
+            };
+        }
+
+        // TODO: realise register to DB
+
+        var responsePayload = new RegisterResponsePayload
+        {
+            UserId = "1",
+            Nickname = registerReqPayload.Nickname,
+            Username = registerReqPayload.Username
+        };
+        
+        return new Response
+        {
+            Status = Status.Success,
+            Type = CommandType.Register,
+            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+        };
     }
 }

@@ -22,7 +22,7 @@ public class Client
         return new Request
         {
             Type = type,
-            Payload = JsonSerializer.Serialize(payload)
+            Payload = JsonSerializer.SerializeToNode(payload)?.AsObject()
         };
     }
     
@@ -60,16 +60,23 @@ public class Client
 
     public async Task<bool> Authorise(string username, string password)
     {
-            var authReqPayload = new AuthRequestPayload
+        try
+        {
+            var authReqPayload = new LoginRequestPayload
             {
                 Username = username,
                 Password = password
             };
 
-            var authReq = CreateRequest(CommandType.Authenticate, authReqPayload);
+            var authReq = CreateRequest(CommandType.Login, authReqPayload);
 
             var response = await ExecuteRequest(authReq);
             return response.Status == Status.Success;
+        }
+        catch
+        {
+            throw;
+        }
     }
 
     /*public async Task<bool> Register(string username, string password, string nickname)

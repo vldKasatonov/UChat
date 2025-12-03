@@ -1,22 +1,26 @@
-﻿namespace dto;
+﻿using System.Text.Json.Nodes;
 
-using System.Text.Json.Serialization;
+namespace dto;
 
 public class Request
 {
-    [JsonPropertyName("type")]
     public CommandType Type { get; set; }
-
-    [JsonPropertyName("payload")]
-    public string Payload { get; set; } = string.Empty;
+    public JsonObject? Payload { get; set; } = new JsonObject();
 }
 
-public class AuthRequestPayload
+public class LoginRequestPayload
 {
-    [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
-    
+
     //TODO: hash password
-    [JsonPropertyName("password")]
+    public string Password { get; set; } = string.Empty; 
+}
+
+public class RegisterRequestPayload
+{
+    public string Nickname { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
+
+    //TODO: hash password
     public string Password { get; set; } = string.Empty; 
 }

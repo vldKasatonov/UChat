@@ -2,7 +2,7 @@
 
 public enum CommandType
 {
-    Authenticate,
+    Login,
     Register,
     SendMessage,
     DeleteForMe,
