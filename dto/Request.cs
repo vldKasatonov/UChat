@@ -2,8 +2,6 @@
 
 namespace dto;
 
-using System.Text.Json.Serialization;
-
 public class Request
 {
     public CommandType Type { get; set; }

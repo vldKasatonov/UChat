@@ -1,8 +1,7 @@
 ﻿using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace dto;
-
-using System.Text.Json.Serialization;
 
 public class Response
 {
