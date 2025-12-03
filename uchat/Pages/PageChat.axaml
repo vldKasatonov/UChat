@@ -17,9 +17,9 @@
 
             <Border Grid.Row="0" Padding="10">
                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBox x:Name="SearchTextBox" Width="200" FontSize="16" Watermark="Search in chat..." 
-                             Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged"/>
-                    <Button Content="s"/>
+                    <TextBox x:Name="SearchTextBox" Width="230" FontSize="16" Watermark="Search in chat..." 
+                             Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged"
+                             CaretBrush = "White" Padding="10,0,10,0"/>
                 </StackPanel>
             </Border>
             
