@@ -60,8 +60,6 @@ public class Client
 
     public async Task<bool> Authorise(string username, string password)
     {
-        try
-        {
             var authReqPayload = new AuthRequestPayload
             {
                 Username = username,
@@ -72,11 +70,6 @@ public class Client
 
             var response = await ExecuteRequest(authReq);
             return response.Status == Status.Success;
-        }
-        catch
-        {
-            throw;
-        }
     }
 
     /*public async Task<bool> Register(string username, string password, string nickname)
@@ -91,6 +84,40 @@ public class Client
         var regReq = CreateRequest(CommandType.Register, regPayload);
 
         var response = await ExecuteRequest(regReq);
+        return response?.Status == Status.Success;
+    } */
+    
+    public async Task<bool> Register(string username, string password, string nickname)
+    {
+        await Task.Delay(500);
+        if (username == "1")
+        {
+            return false;
+        }
+        return true;
+    }
+    
+    /* public async Task<bool> SendMessageAsync(string chatId, Message msg)
+    {
+        var payload = new { ChatId = chatId, Message = msg };
+        var request = CreateRequest(CommandType.SendMessage, payload);
+        var response = await ExecuteRequest(request);
+        return response?.Status == Status.Success;
+    }
+
+    public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
+    {
+        var payload = new { ChatId = chatId, MessageId = messageId };
+        var request = CreateRequest(CommandType.DeleteForMe, payload);
+        var response = await ExecuteRequest(request);
+        return response?.Status == Status.Success;
+    }
+
+    public async Task<bool> DeleteMessageForAllAsync(string chatId, string messageId)
+    {
+        var payload = new { ChatId = chatId, MessageId = messageId };
+        var request = CreateRequest(CommandType.DeleteForAll, payload);
+        var response = await ExecuteRequest(request);
         return response?.Status == Status.Success;
     } */
 }
