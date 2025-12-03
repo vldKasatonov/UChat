@@ -13,11 +13,11 @@ public class Program
         try
         {
             Server server = new Server(port);
-            server.Run().Wait();
+            await server.Run();
         }
         catch (Exception e)
         {
-            Console.WriteLine("Server error."); //TODO: refactor message
+            Console.WriteLine($"Server error: {e.Message}"); //TODO: refactor message
         }
     }
 }

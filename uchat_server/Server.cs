@@ -1,13 +1,11 @@
-﻿using System.Collections.Concurrent;
-using System.Text.Json.Nodes;
-
-namespace uchat_server;
-
-using dto;
+﻿using dto;
 using System.Text;
 using System.Text.Json;
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Concurrent;
+
+namespace uchat_server;
 
 public class Server
 {
@@ -50,7 +48,8 @@ public class Server
         string username = string.Empty;
         NetworkStream stream = client.GetStream();
         using StreamReader reader = new(stream, Encoding.UTF8);
-        using StreamWriter writer = new(stream, Encoding.UTF8) { AutoFlush = true };
+        using StreamWriter writer = new(stream, Encoding.UTF8);
+        writer.AutoFlush = true;
 
         try
         {
@@ -75,8 +74,23 @@ public class Server
                 {
                     continue; //TODO: return response to user
                 }
-                
+
                 Response response = ProcessRequest(request);
+                
+                Console.WriteLine($"Response for client: {JsonSerializer.Serialize(response)}");
+
+                if (response.Status == Status.Success && response.Type == CommandType.Login)
+                {
+                    var loginResponsePayload = response.Payload.Deserialize<LoginResponsePayload>();
+
+                    if (loginResponsePayload != null)
+                    {
+                        username = loginResponsePayload.Username;
+                        _clients.TryAdd(username, client);
+                        Console.WriteLine($"User '{username}' logged in.");
+                    }
+                }
+                
                 string jsonResponse = JsonSerializer.Serialize(response);
                 await writer.WriteLineAsync(jsonResponse);
             }
@@ -88,6 +102,12 @@ public class Server
         }
         finally
         {
+            if (!string.IsNullOrEmpty(username))
+            {
+                _clients.TryRemove(username, out _);
+                Console.WriteLine($"User '{username}' disconnected.");
+            }
+            
             client.Close();
             Console.WriteLine("Client disconnected.");
         }
@@ -131,7 +151,7 @@ public class Server
         }
         
         // TODO: realise login to DB
-        if (loginReqPayload is not { Username: "user", Password: "password" })
+        if (loginReqPayload is { Username: "1", Password: "password" })
         {
             return new Response
             {
@@ -143,7 +163,7 @@ public class Server
         var responsePayload = new LoginResponsePayload
         {
             UserId = "1",
-            Username = "user"
+            Username = loginReqPayload.Username
         };
         
         return new Response
@@ -154,9 +174,9 @@ public class Server
         };
     }
 
-    private static Response HandleRegister(RegisterRequestPayload? loginReqPayload)
+    private static Response HandleRegister(RegisterRequestPayload? registerReqPayload)
     {
-        if (loginReqPayload is null)
+        if (registerReqPayload is null)
         {
             return new Response
             {
@@ -170,8 +190,8 @@ public class Server
         var responsePayload = new RegisterResponsePayload
         {
             UserId = "1",
-            Nickname = "qwerty",
-            Username = "user"
+            Nickname = registerReqPayload.Nickname,
+            Username = registerReqPayload.Username
         };
         
         return new Response
