@@ -33,17 +33,25 @@
         <Grid Grid.Column="1" Background="#453359" RowDefinitions="Auto,*">
 
             <Border Grid.Row="0" Padding="10">
-                <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBox x:Name="SearchTextBox" Width="210" FontSize="16" Watermark="Search in chat..." 
-                             Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged"
-                             CaretBrush = "White" Padding="10,0,10,0"/>
-                </StackPanel>
+                 <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Grid Width = "210">
+                        <TextBox x:Name="SearchTextBox" Width="210" FontSize="15" Watermark="Search in chat..." 
+                               Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged"
+                               CaretBrush = "White" Padding="10,0,30,0" 
+                               GotFocus="SearchTextBox_GotFocus" LostFocus="SearchTextBox_LostFocus"/>
+                        <Button x:Name="ClearSearchButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                                HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
+                                IsVisible="False" Background="Transparent" Click="ClearSearchButton_Click"
+                                FontWeight="Bold" Cursor="Hand" Classes = "nohover"
+                                PointerPressed="ClearSearchButton_OnPointerPressed"/>
+                    </Grid>
+                </StackPanel> 
             </Border>
             
             <ListBox Grid.Row="1" x:Name="ChatList" Background="#453359" SelectionChanged="ChatList_SelectionChanged">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="45,*">
+                        <Grid ColumnDefinitions="45,*" PointerPressed="ChatItem_OnPointerPressed">
                             <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="5,0">
                                 <TextBlock Text="{Binding Name}" />

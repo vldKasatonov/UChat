@@ -1,7 +1,10 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
 using System.Collections.ObjectModel;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using System.ComponentModel;
+
 using dto;
 
 namespace uchat;
@@ -13,6 +16,8 @@ public partial class PageChat : UserControl
     public ObservableCollection<ChatItem> FilteredChats { get; } = new();
     public event PropertyChangedEventHandler? PropertyChanged;
     private ObservableCollection<Message> _selectedChatMessages = new();
+    private bool _searchLocked = false;
+    private bool _isApplyingFilter = false;
     
     public PageChat(Client client)
     {
@@ -123,24 +128,87 @@ public partial class PageChat : UserControl
             }
         }
     }
+    
+    private void UpdateChatView(ChatItem contact)
+    {
+        ChatHeader.Text = contact.Name;
+        ChatAvatar.IsVisible = true;
+        ChatStatus.Text = contact.Status;
+        ChatStatus.IsVisible = true;
+        SelectedChatMessages.Clear();
+        foreach (var msg in contact.Messages)
+        { 
+            msg.IsGroup = contact.IsGroup;
+            SelectedChatMessages.Add(msg);
+        }
+        MessageTextBox.Text = contact.Draft;
+        MessageInputPanel.IsVisible = true;
+    }
+
+    private void ClearChatView()
+    {
+        ChatHeader.Text = "Select a chat";
+        ChatAvatar.IsVisible = false;
+        ChatStatus.IsVisible = false;
+        SelectedChatMessages.Clear();
+    }
 
     private void ApplyFilter(string text)
     {
+        if (_isApplyingFilter) return;
+    
         text = text?.Trim().ToLower() ?? "";
+        _isApplyingFilter = true;
+    
         FilteredChats.Clear();
-
+    
         foreach (var chat in Chats)
         {
-            if (chat.Name.ToLower().Contains(text))
+            if (string.IsNullOrEmpty(text) || chat.Name.ToLower().Contains(text))
+            {
                 FilteredChats.Add(chat);
+            }
         }
+    
+        _isApplyingFilter = false;
     }
 
     private void SearchTextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
+        if (_searchLocked)
+            return;
+
         if (sender is TextBox tb)
+        {
             ApplyFilter(tb.Text);
+            ClearSearchButton.IsVisible = !string.IsNullOrEmpty(tb.Text);
+        }
     }
+
+    private void SearchTextBox_GotFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        ClearSearchButton.IsVisible = !string.IsNullOrEmpty(SearchTextBox.Text);
+    }
+
+    private void SearchTextBox_LostFocus(object? sender, RoutedEventArgs e)
+    {
+        ClearSearchButton.IsVisible = !string.IsNullOrEmpty(SearchTextBox.Text);
+    }
+    
+    private void ClearSearchButton_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        ClearSearchButton.IsVisible = true;
+    }
+    
+    private void ClearSearchButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        _searchLocked = true;
+        SearchTextBox.Text = "";
+        _searchLocked = false;
+        ClearSearchButton.IsVisible = false;
+        ApplyFilter(""); 
+    }
+    
     
     private void MessagesPanel_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
@@ -149,32 +217,69 @@ public partial class PageChat : UserControl
             DispatcherPriority.Background);
     }
     
+    private void ChatItem_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!string.IsNullOrEmpty(SearchTextBox.Text))
+        {
+            var selectedChat = ChatList.SelectedItem as ChatItem;
+
+            _searchLocked = true;
+            SearchTextBox.Text = "";
+            _searchLocked = false;
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                _isApplyingFilter = true;
+
+                FilteredChats.Clear();
+                foreach (var c in Chats)
+                    FilteredChats.Add(c);
+
+                _isApplyingFilter = false;
+
+                if (selectedChat != null)
+                    ChatList.SelectedItem = selectedChat;
+            });
+        }
+    }
+
     private void ChatList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (_isApplyingFilter)
+            return;
+        
+        if (ChatList.SelectedItem is ChatItem selectedChat && !string.IsNullOrEmpty(SearchTextBox.Text))
+        {
+            _searchLocked = true;
+            SearchTextBox.Text = "";
+            _searchLocked = false;
+            
+            Dispatcher.UIThread.Post(() =>
+            {
+                _isApplyingFilter = true;
+
+                FilteredChats.Clear();
+                foreach (var c in Chats)
+                    FilteredChats.Add(c);
+
+                _isApplyingFilter = false;
+
+                ChatList.SelectedItem = selectedChat;
+            });
+        }
+
+        
         if (ChatList.SelectedItem is ChatItem contact)
         {
-            ChatHeader.Text = contact.Name;
-            ChatAvatar.IsVisible = true;
-            ChatStatus.Text = contact.Status;
-            ChatStatus.IsVisible = true;
-            SelectedChatMessages.Clear();
-            foreach (var msg in contact.Messages)
-            { 
-                msg.IsGroup = contact.IsGroup;
-                SelectedChatMessages.Add(msg);
-            }
-            MessageTextBox.Text = contact.Draft;
-            MessageInputPanel.IsVisible = true;
+            UpdateChatView(contact);
         }
         else
         {
-            ChatHeader.Text = "Select a chat";
-            ChatAvatar.IsVisible = false;
-            ChatStatus.IsVisible = false;
-            SelectedChatMessages.Clear();
+            ClearChatView();
         }
+
     }
-    
+
     private async void SendMessage_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (ChatList.SelectedItem is not ChatItem contact)
