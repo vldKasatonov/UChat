@@ -10,6 +10,7 @@ public partial class PageChat : UserControl
 {
     private readonly Client _client;
     public ObservableCollection<ChatItem> Chats { get; } = new();
+    public ObservableCollection<ChatItem> FilteredChats { get; } = new();
     public event PropertyChangedEventHandler? PropertyChanged;
     private ObservableCollection<Message> _selectedChatMessages = new();
     
@@ -77,7 +78,11 @@ public partial class PageChat : UserControl
                 new Message { Sender = "Vlad", Text = "pon", IsMine = false }
             }
         });
-        ChatList.ItemsSource = Chats;
+        
+        foreach (var chat in Chats)
+            FilteredChats.Add(chat);
+        
+        ChatList.ItemsSource = FilteredChats;
     }
     
     public class ChatItem : INotifyPropertyChanged
@@ -117,6 +122,24 @@ public partial class PageChat : UserControl
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChatMessages)));
             }
         }
+    }
+
+    private void ApplyFilter(string text)
+    {
+        text = text?.Trim().ToLower() ?? "";
+        FilteredChats.Clear();
+
+        foreach (var chat in Chats)
+        {
+            if (chat.Name.ToLower().Contains(text))
+                FilteredChats.Add(chat);
+        }
+    }
+
+    private void SearchTextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox tb)
+            ApplyFilter(tb.Text);
     }
     
     private void MessagesPanel_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
