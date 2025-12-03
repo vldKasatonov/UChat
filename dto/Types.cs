@@ -3,7 +3,10 @@
 public enum CommandType
 {
     Login,
-    Register
+    Register,
+    SendMessage,
+    DeleteForMe,
+    DeleteForAll
 }
 
 public enum Status

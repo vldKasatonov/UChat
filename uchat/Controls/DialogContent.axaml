@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="uchat.DialogContent"
+             Width="400" Height="150">
+    <Border BorderBrush="MediumPurple" BorderThickness="3" Padding="20" Background="White">
+        <StackPanel Spacing="30" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock x:Name="MessageText" TextWrapping="Wrap" HorizontalAlignment="Center" FontSize="20"/>
+            <Button x:Name="OkButton" Content="OK" Width="80" Height="40" FontSize="20" HorizontalAlignment="Center" Classes="submitBtn"/>
+        </StackPanel>
+    </Border>
+</UserControl>
