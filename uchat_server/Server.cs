@@ -45,7 +45,7 @@ public class Server
 
     private async Task HandleClientAsync(TcpClient client)
     {
-        string username = string.Empty;
+        string? username = string.Empty;
         NetworkStream stream = client.GetStream();
         using StreamReader reader = new(stream, Encoding.UTF8);
         using StreamWriter writer = new(stream, Encoding.UTF8);
@@ -79,13 +79,17 @@ public class Server
                 
                 Console.WriteLine($"Response for client: {JsonSerializer.Serialize(response)}");
 
-                if (response.Status == Status.Success && response.Type == CommandType.Login)
+                if (response.Status == Status.Success)
                 {
-                    var loginResponsePayload = response.Payload.Deserialize<LoginResponsePayload>();
-
-                    if (loginResponsePayload != null)
+                    username = response.Type switch
                     {
-                        username = loginResponsePayload.Username;
+                        CommandType.Login => response.Payload.Deserialize<LoginResponsePayload>()?.Username,
+                        CommandType.Register => response.Payload.Deserialize<RegisterResponsePayload>()?.Username,
+                        _ => null
+                    };
+                    
+                    if (!string.IsNullOrEmpty(username))
+                    {
                         _clients.TryAdd(username, client);
                         Console.WriteLine($"User '{username}' logged in.");
                     }
@@ -96,9 +100,9 @@ public class Server
             }
             
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error handling client: {ex.Message}");
+            //Console.WriteLine($"Error handling client: {ex.Message}");
         }
         finally
         {
@@ -153,10 +157,16 @@ public class Server
         // TODO: realise login to DB
         if (loginReqPayload is { Username: "1", Password: "password" })
         {
+            var errorPayload = new ErrorPayload
+            {
+                Message = "Invalid username or password."
+            };
+
             return new Response
             {
                 Status = Status.Error,
-                Type = CommandType.Login
+                Type = CommandType.Login,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
             };
         }
 
@@ -186,6 +196,20 @@ public class Server
         }
 
         // TODO: realise register to DB
+        if (registerReqPayload is { Username: "1", Password: "password" })
+        {
+            var errorPayload = new ErrorPayload
+            {
+                Message = "Username already exists."
+            };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Register,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
 
         var responsePayload = new RegisterResponsePayload
         {
