@@ -1,13 +1,5 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Design.PreviewWith>
-    <Border Padding="20" Width="400">
-		<StackPanel Orientation="Vertical" Spacing="10">
-			<TextBox Watermark="Email"/>
-			<Button Classes="submitBtn" Content="Login" HorizontalAlignment="Stretch"/>
-		</StackPanel>
-	</Border>
-  </Design.PreviewWith>
 
 	<Style Selector="TextBox">
 		<Setter Property="Background" Value="White"/>
@@ -115,7 +107,7 @@
 	<Style Selector="ListBoxItem">
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Foreground" Value="White"/>
-		<Setter Property="Height" Value="50"/>
+		<Setter Property="Height" Value="60"/>
 		<Setter Property="FontSize" Value="20"/>
 		<Setter Property="VerticalAlignment" Value="Center"/>
 	</Style>
@@ -128,6 +120,21 @@
 		<Setter Property="Background" Value="#8A6FC2"/>
 	</Style>
 	
+	<Style Selector="Button.nohover">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="Transparent"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="Template">
+			<ControlTemplate TargetType="Button">
+				<ContentPresenter 
+					HorizontalAlignment="Center"
+					VerticalAlignment="Center"
+					Content="{TemplateBinding Content}"
+					Background="Transparent"/>
+			</ControlTemplate>
+		</Setter>
+	</Style>
 	
 	
 </Styles>

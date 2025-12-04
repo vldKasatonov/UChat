@@ -3,17 +3,22 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 using Avalonia;
+using dto;
 
 namespace uchat
 {
     public partial class PageLogin : UserControl
     {
-        private Client _client;
+        private Client _client = null!;
+
+        public PageLogin()
+        {
+            InitializeComponent();
+        }
         
-        public PageLogin(Client client)
+        public PageLogin(Client client) : this()
         {
             _client = client;
-            InitializeComponent();
             AttachTextChangedHandlers();
         }
 
@@ -75,7 +80,7 @@ namespace uchat
             var usernameError = this.FindControl<TextBlock>("UsernameErrorText");
             var passwordError = this.FindControl<TextBlock>("PasswordErrorText");
             var loginError = this.FindControl<TextBlock>("LoginErrorText");
-            loginError.Text = "";
+            loginError!.Text = "";
 
             if (usernameBox == null || passwordBox == null || usernameError == null || passwordError == null)
             {
@@ -92,21 +97,18 @@ namespace uchat
                 return;
             }
 
-            bool ok = false;
-            try
-            {
-                ok = await _client.Authorise(usernameBox.Text, passwordBox.Text);
-            }
-            catch
+            var response = await _client.Login(usernameBox.Text!, passwordBox.Text!);
+
+            if (response is null)
             {
                 await ShowDialog("Error connecting to server.");
                 return;
             }
 
-            if (ok)
+            if (response.Status == Status.Success)
             {
                 loginError.Text = "";
-                loginButton.Classes.Remove("error");
+                loginButton!.Classes.Remove("error");
                 var main = this.GetVisualRoot() as MainWindow;
                 if (main != null)
                 {
@@ -115,8 +117,17 @@ namespace uchat
             }
             else
             {
-                loginError.Text = "Invalid username or password.";
-                if (!loginButton.Classes.Contains("error"))
+                if (response.Payload != null
+                    && response.Payload.TryGetPropertyValue("message", out var message))
+                {
+                   loginError.Text = message?.ToString();
+                }
+                else
+                {
+                    loginError.Text = "Unknown error";
+                }
+
+                if (!loginButton!.Classes.Contains("error"))
                 {
                     loginButton.Classes.Add("error");
                 }
