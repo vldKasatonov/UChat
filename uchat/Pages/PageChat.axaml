@@ -51,7 +51,8 @@
             <ListBox Grid.Row="1" x:Name="ChatList" Background="#453359" SelectionChanged="ChatList_SelectionChanged">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="45,*" PointerPressed="ChatItem_OnPointerPressed">
+                        <Grid ColumnDefinitions="45,*" IsHitTestVisible="True" Background="Transparent"
+                              PointerPressed="ChatItem_OnPointerPressed">
                             <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="5,0">
                                 <TextBlock Text="{Binding Name}" />
