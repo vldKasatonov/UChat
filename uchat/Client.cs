@@ -3,18 +3,17 @@
 using dto;
 using System.Text;
 using System.Text.Json;
-using System.Net;
 using System.Net.Sockets;
 
 public class Client
 {
     private string _ip;
     private int _port;
-    private TcpClient _client = null!;
-    private NetworkStream _stream = null!;
-    private StreamReader _reader = null!;
-    private StreamWriter _writer = null!;
-    private bool _connected = false;
+    private TcpClient? _client;
+    private NetworkStream? _stream;
+    private StreamReader? _reader;
+    private StreamWriter? _writer;
+    private bool _connected;
     private TaskCompletionSource<string>? _pendingResponse;
     
     public Client(string ip, int port)
@@ -52,6 +51,13 @@ public class Client
         {
             while (true)
             {
+                if (_reader is null)
+                {
+                    _connected = false;
+                    await ConnectToServer();
+                    break;
+                }
+                
                 string? jsonResponse = await _reader.ReadLineAsync();
                 
                 if (jsonResponse is null)
@@ -67,6 +73,8 @@ public class Client
                     _pendingResponse = null;
                     continue;
                 }
+
+                //receive info from server (new, edit, delete message)
             }
         }
         catch (Exception)
@@ -82,6 +90,12 @@ public class Client
         {
             await ConnectToServer();
         }
+
+        if (_writer is null)
+        {
+            return null;
+        }
+        
         try
         {
             _pendingResponse = new TaskCompletionSource<string>();
@@ -109,14 +123,14 @@ public class Client
 
     public async Task<Response?> Login(string username, string password)
     {
-        var authReqPayload = new LoginRequestPayload
+        var loginReqPayload = new LoginRequestPayload
         {
             Username = username,
             Password = password
         };
 
-        var authReq = CreateRequest(CommandType.Login, authReqPayload);
-        var response = await ExecuteRequest(authReq);
+        var loginReq = CreateRequest(CommandType.Login, loginReqPayload);
+        var response = await ExecuteRequest(loginReq);
 
         if (response != null && response.Payload != null)
         {
@@ -126,29 +140,24 @@ public class Client
         return null;
     }
 
-    /*public async Task<bool> Register(string username, string password, string nickname)
+    public async Task<Response?> Register(string username, string password, string nickname)
     {
-        var regPayload = new RegisterRequestPayload
+        var registerReqPayload = new RegisterRequestPayload
         {
             Username = username,
             Password = password,
             Nickname = nickname
         };
 
-        var regReq = CreateRequest(CommandType.Register, regPayload);
+        var registerReq = CreateRequest(CommandType.Register, registerReqPayload);
+        var response = await ExecuteRequest(registerReq);
 
-        var response = await ExecuteRequest(regReq);
-        return response?.Status == Status.Success;
-    } */
-    
-    public async Task<bool> Register(string username, string password, string nickname)
-    {
-        await Task.Delay(500);
-        if (username == "1")
+        if (response != null && response.Payload != null)
         {
-            return false;
+            return response;
         }
-        return true;
+        
+        return null;
     }
     
     /* public async Task<bool> SendMessageAsync(string chatId, Message msg)
