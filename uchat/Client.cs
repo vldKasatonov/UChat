@@ -3,18 +3,113 @@
 using dto;
 using System.Text;
 using System.Text.Json;
-using System.Net;
 using System.Net.Sockets;
 
 public class Client
 {
     private string _ip;
     private int _port;
+    private TcpClient? _client;
+    private NetworkStream? _stream;
+    private StreamReader? _reader;
+    private StreamWriter? _writer;
+    private bool _connected;
+    private TaskCompletionSource<string>? _pendingResponse;
     
     public Client(string ip, int port)
     {
         _ip = ip;
         _port = port;
+    }
+
+    public async Task ConnectToServer()
+    {
+        while (!_connected)
+        {
+            try
+            {
+                _client = new TcpClient();
+                await _client.ConnectAsync(_ip, _port);
+
+                _stream = _client.GetStream();
+                _reader = new StreamReader(_stream, Encoding.UTF8);
+                _writer = new StreamWriter(_stream, Encoding.UTF8) { AutoFlush = true };
+                _connected = true;
+
+                _ = Task.Run(ListenServer);
+            }
+            catch (Exception)
+            {
+                await Task.Delay(3000); //pause before next try
+            }
+        }
+    }
+
+    private async Task ListenServer()
+    {
+        try
+        {
+            while (true)
+            {
+                if (_reader is null)
+                {
+                    _connected = false;
+                    await ConnectToServer();
+                    break;
+                }
+                
+                string? jsonResponse = await _reader.ReadLineAsync();
+                
+                if (jsonResponse is null)
+                {
+                    _connected = false;
+                    await ConnectToServer();
+                    break;
+                }
+                
+                if (_pendingResponse != null)
+                {
+                    _pendingResponse.TrySetResult(jsonResponse);
+                    _pendingResponse = null;
+                    continue;
+                }
+
+                //receive info from server (new, edit, delete message)
+            }
+        }
+        catch (Exception)
+        {
+            _connected = false;
+            await ConnectToServer();
+        }
+    }
+    
+    private async Task<Response?> ExecuteRequest(Request request)
+    {
+        if (!_connected)
+        {
+            await ConnectToServer();
+        }
+
+        if (_writer is null)
+        {
+            return null;
+        }
+        
+        try
+        {
+            _pendingResponse = new TaskCompletionSource<string>();
+            string jsonRequest = JsonSerializer.Serialize(request);
+            await _writer.WriteLineAsync(jsonRequest);
+
+            string jsonResponse = await _pendingResponse.Task;
+
+            return JsonSerializer.Deserialize<Response>(jsonResponse);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
     
     private static Request CreateRequest(CommandType type, object payload)
@@ -25,83 +120,44 @@ public class Client
             Payload = JsonSerializer.SerializeToNode(payload)?.AsObject()
         };
     }
-    
-    private async Task<Response?> ExecuteRequest(Request request)
+
+    public async Task<Response?> Login(string username, string password)
     {
-        using var client = new TcpClient();
+        var loginReqPayload = new LoginRequestPayload
+        {
+            Username = username,
+            Password = password
+        };
 
-        try
-        {
-            await client.ConnectAsync(_ip, _port);
-            NetworkStream stream = client.GetStream();
-            
-            string jsonRequest = JsonSerializer.Serialize(request);
-            byte[] dataToSend = Encoding.UTF8.GetBytes(jsonRequest);
-            await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
+        var loginReq = CreateRequest(CommandType.Login, loginReqPayload);
+        var response = await ExecuteRequest(loginReq);
 
-            byte[] buffer = new byte[4096];
-            int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-            if (bytesRead > 0)
-            {
-                string jsonResponse = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                return JsonSerializer.Deserialize<Response>(jsonResponse);
-            }
-        }
-        catch (SocketException e)
+        if (response != null && response.Payload != null)
         {
-            //TODO: make msgbox
+            return response;
         }
-        catch (Exception e)
-        {
-            //TODO: make msgbox
-        }
+        
         return null;
     }
 
-    public async Task<bool> Authorise(string username, string password)
+    public async Task<Response?> Register(string username, string password, string nickname)
     {
-        try
-        {
-            var authReqPayload = new LoginRequestPayload
-            {
-                Username = username,
-                Password = password
-            };
-
-            var authReq = CreateRequest(CommandType.Login, authReqPayload);
-
-            var response = await ExecuteRequest(authReq);
-            return response.Status == Status.Success;
-        }
-        catch
-        {
-            throw;
-        }
-    }
-
-    /*public async Task<bool> Register(string username, string password, string nickname)
-    {
-        var regPayload = new RegisterRequestPayload
+        var registerReqPayload = new RegisterRequestPayload
         {
             Username = username,
             Password = password,
             Nickname = nickname
         };
 
-        var regReq = CreateRequest(CommandType.Register, regPayload);
+        var registerReq = CreateRequest(CommandType.Register, registerReqPayload);
+        var response = await ExecuteRequest(registerReq);
 
-        var response = await ExecuteRequest(regReq);
-        return response?.Status == Status.Success;
-    } */
-    
-    public async Task<bool> Register(string username, string password, string nickname)
-    {
-        await Task.Delay(500);
-        if (username == "1")
+        if (response != null && response.Payload != null)
         {
-            return false;
+            return response;
         }
-        return true;
+        
+        return null;
     }
     
     /* public async Task<bool> SendMessageAsync(string chatId, Message msg)

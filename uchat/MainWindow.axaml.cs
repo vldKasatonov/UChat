@@ -5,12 +5,17 @@ namespace uchat;
 
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    private ContentControl? _control;
+
+    public MainWindow() //required by the Avalonia
     {
         InitializeComponent();
-        Client client = new Client("127.0.0.1", 8080);
-        var loginPage = new PageLogin(client);
-        this.FindControl<ContentControl>("PageHost").Content = loginPage;
+    }
+    
+    public MainWindow(Client client) : this()
+    {
+        _control = this.FindControl<ContentControl>("PageHost");
+        Navigate(new PageLogin(client));
     }
 
     private void InitializeComponent()
@@ -20,6 +25,9 @@ public partial class MainWindow : Window
     
     public void Navigate(UserControl page)
     {
-        this.FindControl<ContentControl>("PageHost").Content = page;
+        if (_control != null)
+        {
+            _control.Content = page;
+        }
     }
 }
