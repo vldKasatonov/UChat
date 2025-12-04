@@ -5,15 +5,17 @@ namespace uchat;
 
 public partial class MainWindow : Window
 {
-    private Client _client;
     private ContentControl? _control;
-    
-    public MainWindow(Client client)
+
+    public MainWindow() //required by the Avalonia
     {
-        _client = client;
         InitializeComponent();
+    }
+    
+    public MainWindow(Client client) : this()
+    {
         _control = this.FindControl<ContentControl>("PageHost");
-        Navigate(new PageLogin(_client));
+        Navigate(new PageLogin(client));
     }
 
     private void InitializeComponent()

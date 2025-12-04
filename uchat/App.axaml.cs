@@ -6,11 +6,13 @@ namespace uchat;
 
 public partial class App : Application
 {
-    private string _ip;
+    private string _ip = string.Empty;
     private int _port;
     private Client? _client;
 
-    public App(string ip, int port)
+    public App() { } //required by the Avalonia
+    
+    public App(string ip, int port) : this()
     {
         _ip = ip;
         _port = port;
