@@ -173,7 +173,7 @@ public partial class PageLogin : UserControl
             SystemDecorations = SystemDecorations.None,
             ShowInTaskbar = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Topmost = true,
+            Topmost = false,
             Content = content
         };
 
