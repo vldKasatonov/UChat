@@ -3,18 +3,149 @@
 using dto;
 using System.Text;
 using System.Text.Json;
-using System.Net;
 using System.Net.Sockets;
 
 public class Client
 {
     private string _ip;
     private int _port;
+    private TcpClient? _client;
+    private int? _id;
+    private NetworkStream? _stream;
+    private StreamReader? _reader;
+    private StreamWriter? _writer;
+    private bool _connected;
+    private TaskCompletionSource<string>? _pendingResponse;
+    private bool _reconnecting;
+    public event Action? Disconnected;
+    public event Action? Reconnected;
+    public event Action? Shutdown;
     
     public Client(string ip, int port)
     {
         _ip = ip;
         _port = port;
+    }
+
+    public async Task ConnectToServer()
+    {
+        while (!_connected)
+        {
+            try
+            {
+                _client = new TcpClient();
+                await _client.ConnectAsync(_ip, _port);
+
+                _stream = _client.GetStream();
+                _reader = new StreamReader(_stream, Encoding.UTF8);
+                _writer = new StreamWriter(_stream, Encoding.UTF8) { AutoFlush = true };
+                _connected = true;
+
+                _ = Task.Run(ListenServer);
+            }
+            catch (Exception)
+            {
+                await Task.Delay(5000); //pause before next try
+            }
+        }
+    }
+
+    private async Task ListenServer()
+    {
+        try
+        {
+            while (true)
+            {
+                if (_reader is null)
+                {
+                    _connected = false;
+                    await ConnectToServer();
+                    break;
+                }
+                
+                string? jsonResponse = await _reader.ReadLineAsync();
+                
+                if (jsonResponse is null)
+                {
+                    HandleDisconnection();
+                    break;
+                }
+                
+                if (_pendingResponse != null)
+                {
+                    _pendingResponse.TrySetResult(jsonResponse);
+                    _pendingResponse = null;
+                    continue;
+                }
+
+                //receive info from server (new, edit, delete message)
+            }
+        }
+        catch (Exception)
+        {
+            HandleDisconnection();
+        }
+    }
+
+    private async void HandleDisconnection()
+    {
+        if (_reconnecting)
+        {
+            return;
+        }
+
+        _reconnecting = true;
+        _connected = false;
+        Disconnected?.Invoke();
+        await ConnectToServer();
+
+        if (_id != null)
+        {
+            var payload = new ReconnectRequestPayload
+            {
+                UserId = (int)_id
+            };
+    
+            var request = CreateRequest(CommandType.Reconnect, payload);
+            var response = await ExecuteRequest(request);
+    
+            if (response != null && response.Status == Status.Success)
+            {
+                _reconnecting = false;
+                Reconnected?.Invoke();
+                return;
+            }
+        }
+
+        Shutdown?.Invoke();
+    }
+    
+    private async Task<Response?> ExecuteRequest(Request request)
+    {
+        if (!_connected)
+        {
+            HandleDisconnection();
+        }
+
+        if (_writer is null)
+        {
+            return null;
+        }
+        
+        try
+        {
+            _pendingResponse = new TaskCompletionSource<string>();
+            string jsonRequest = JsonSerializer.Serialize(request);
+            await _writer.WriteLineAsync(jsonRequest);
+
+            string jsonResponse = await _pendingResponse.Task;
+
+            return JsonSerializer.Deserialize<Response>(jsonResponse);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
     
     private static Request CreateRequest(CommandType type, object payload)
@@ -25,83 +156,70 @@ public class Client
             Payload = JsonSerializer.SerializeToNode(payload)?.AsObject()
         };
     }
-    
-    private async Task<Response?> ExecuteRequest(Request request)
+
+    public async Task<Response?> Login(string username, string password)
     {
-        using var client = new TcpClient();
-
-        try
+        var loginReqPayload = new LoginRequestPayload
         {
-            await client.ConnectAsync(_ip, _port);
-            NetworkStream stream = client.GetStream();
-            
-            string jsonRequest = JsonSerializer.Serialize(request);
-            byte[] dataToSend = Encoding.UTF8.GetBytes(jsonRequest);
-            await stream.WriteAsync(dataToSend, 0, dataToSend.Length);
+            Username = username,
+            Password = password
+        };
 
-            byte[] buffer = new byte[4096];
-            int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-            if (bytesRead > 0)
+        var loginReq = CreateRequest(CommandType.Login, loginReqPayload);
+        var response = await ExecuteRequest(loginReq);
+
+        if (response != null)
+        {
+            if (response.Payload != null
+                && response.Payload.TryGetPropertyValue("user_id", out var id))
             {
-                string jsonResponse = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                return JsonSerializer.Deserialize<Response>(jsonResponse);
+                if (int.TryParse(id?.ToString(), out var parsed))
+                {
+                    _id = parsed;
+                }
+                else
+                {
+                    _id = null;
+                }
             }
+            
+            return response;
         }
-        catch (SocketException e)
-        {
-            //TODO: make msgbox
-        }
-        catch (Exception e)
-        {
-            //TODO: make msgbox
-        }
+        
         return null;
     }
 
-    public async Task<bool> Authorise(string username, string password)
+    public async Task<Response?> Register(string username, string password, string nickname)
     {
-        try
-        {
-            var authReqPayload = new LoginRequestPayload
-            {
-                Username = username,
-                Password = password
-            };
-
-            var authReq = CreateRequest(CommandType.Login, authReqPayload);
-
-            var response = await ExecuteRequest(authReq);
-            return response.Status == Status.Success;
-        }
-        catch
-        {
-            throw;
-        }
-    }
-
-    /*public async Task<bool> Register(string username, string password, string nickname)
-    {
-        var regPayload = new RegisterRequestPayload
+        var registerReqPayload = new RegisterRequestPayload
         {
             Username = username,
             Password = password,
             Nickname = nickname
         };
 
-        var regReq = CreateRequest(CommandType.Register, regPayload);
+        var registerReq = CreateRequest(CommandType.Register, registerReqPayload);
+        var response = await ExecuteRequest(registerReq);
 
-        var response = await ExecuteRequest(regReq);
-        return response?.Status == Status.Success;
-    } */
-    
-    public async Task<bool> Register(string username, string password, string nickname)
-    {
-        await Task.Delay(500);
-        if (username == "1")
+        if (response != null)
         {
-            return false;
+            if (response.Payload != null
+                && response.Payload.TryGetPropertyValue("user_id", out var id))
+            {
+                if (int.TryParse(id?.ToString(), out var parsed))
+                {
+                    _id = parsed;
+                }
+                else
+                {
+                    _id = null;
+                }
+            }
+            
+            return response;
         }
-        return true;
+        
+        return null;
     }
     
     /* public async Task<bool> SendMessageAsync(string chatId, Message msg)

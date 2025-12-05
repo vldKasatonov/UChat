@@ -3,16 +3,21 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 using Avalonia;
+using dto;
 
 namespace uchat;
 
 public partial class PageRegister : UserControl
 {
-    private Client? _client;
+    private Client _client = null!;
 
-    public PageRegister(Client? client = null)
+    public PageRegister()
     {
         InitializeComponent();
+    }
+    
+    public PageRegister(Client client) : this()
+    {
         _client = client;
         AttachTextChangedHandlers();
     }
@@ -114,18 +119,15 @@ public partial class PageRegister : UserControl
             return;
         }
         
-        bool ok = false;
-        try
-        {
-            ok = await _client.Register(usernameBox.Text, passwordBox.Text, nicknameBox.Text);
-        }
-        catch
+        var response = await _client.Register(usernameBox.Text!, passwordBox.Text!, nicknameBox.Text!);
+
+        if (response is null)
         {
             await ShowDialog("Error connecting to server.");
             return;
         }
 
-        if (ok)
+        if (response.Status == Status.Success)
         {
             var main = this.GetVisualRoot() as MainWindow;
             if (main != null)
@@ -135,7 +137,16 @@ public partial class PageRegister : UserControl
         }
         else
         {
-            usernameError.Text = "Username already exists.";
+            if (response.Payload != null
+                && response.Payload.TryGetPropertyValue("message", out var message))
+            {
+                usernameError.Text = message?.ToString();
+            }
+            else
+            {
+                usernameError.Text = "Unknown error";
+            }
+            
             if (!usernameError.Classes.Contains("error"))
             {
                 usernameBox.Classes.Add("error");
@@ -164,7 +175,7 @@ public partial class PageRegister : UserControl
             SystemDecorations = SystemDecorations.None,
             ShowInTaskbar = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Topmost = true,
+            Topmost = false,
             Content = content
         };
 

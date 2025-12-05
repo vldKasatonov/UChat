@@ -6,7 +6,8 @@ public enum CommandType
     Register,
     SendMessage,
     DeleteForMe,
-    DeleteForAll
+    DeleteForAll,
+    Reconnect
 }
 
 public enum Status
