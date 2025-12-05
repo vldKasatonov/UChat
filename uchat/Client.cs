@@ -15,6 +15,9 @@ public class Client
     private StreamWriter? _writer;
     private bool _connected;
     private TaskCompletionSource<string>? _pendingResponse;
+    private bool _reconnecting;
+    public event Action? Disconnected;
+    public event Action? Reconnected;
     
     public Client(string ip, int port)
     {
@@ -62,8 +65,7 @@ public class Client
                 
                 if (jsonResponse is null)
                 {
-                    _connected = false;
-                    await ConnectToServer();
+                    HandleDisconnection();
                     break;
                 }
                 
@@ -79,16 +81,31 @@ public class Client
         }
         catch (Exception)
         {
-            _connected = false;
-            await ConnectToServer();
+            HandleDisconnection();
         }
+    }
+
+    private async void HandleDisconnection()
+    {
+        if (_reconnecting)
+        {
+            return;
+        }
+
+        _reconnecting = true;
+        _connected = false;
+        Disconnected?.Invoke();
+        await ConnectToServer();
+
+        _reconnecting = false;
+        Reconnected?.Invoke();
     }
     
     private async Task<Response?> ExecuteRequest(Request request)
     {
         if (!_connected)
         {
-            await ConnectToServer();
+            HandleDisconnection();
         }
 
         if (_writer is null)
