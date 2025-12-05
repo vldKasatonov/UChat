@@ -175,7 +175,7 @@ public partial class PageRegister : UserControl
             SystemDecorations = SystemDecorations.None,
             ShowInTaskbar = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Topmost = true,
+            Topmost = false,
             Content = content
         };
 

@@ -10,13 +10,15 @@
         <local:GroupAvatarVisibilityConverter x:Key="GroupAvatarVisibilityConverter"/>
         <local:SenderToColorConverter x:Key="SenderToColorConverter"/>
         <local:GroupSenderVisibilityConverter x:Key="GroupSenderVisibilityConverter"/> 
+        <local:ShutdownTextConverter x:Key="ShutdownTextConverter"/>
         <local:PinnedToIconConverter x:Key="PinnedToIconConverter"/>
         <local:PinMenuTextConverter x:Key="PinMenuTextConverter"/>
     </UserControl.Resources>
 
-    <Grid ColumnDefinitions="50,230,*">
+    <Grid>
+        <Grid ColumnDefinitions="50,230,*">
         
-        <Grid Grid.Column="0" Background="#1C1729">
+        <Grid Grid.Column="0" Background="#45335D">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -82,14 +84,14 @@
             </ListBox>
         </Grid>
         
-        <Grid Grid.Column="2" Background="White">
+        <Grid Grid.Column="2" Background="#F3EFF5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Background="#5F4D74" Padding="10">
+            <Border Grid.Row="0" Background="#45335D" Padding="10">
                 <StackPanel Orientation="Horizontal" Spacing="10" >
                     <Ellipse x:Name="ChatAvatar" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center" 
                              IsVisible="False"/>
@@ -143,19 +145,25 @@
                                         </Polygon.RenderTransform>
                                         </Polygon>
 
-                                        <Border Grid.Column="1" VerticalAlignment="Bottom" Background="{Binding IsMine, 
-                                                Converter={StaticResource BoolToBrush}}" CornerRadius="10" Padding="10,5" ZIndex="1" MaxWidth="350">
-                                            <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap"  LineHeight="20" >
-                                                <TextBlock.ContextMenu>
-                                                    <ContextMenu>
-                                                        <MenuItem Header="Copy" Click="CopyMessage_Click"/>
-                                                        <MenuItem Header="Delete">
-                                                            <MenuItem Header="Delete for me" Click="DeleteMessageForMe_Click"/>
-                                                            <MenuItem Header="Delete for everyone" Click="DeleteMessageForAll_Click"/>
-                                                        </MenuItem>
-                                                    </ContextMenu>
-                                                </TextBlock.ContextMenu>
-                                            </TextBlock>
+                                        <Border Grid.Column="1" VerticalAlignment="Bottom" Background="{Binding IsMine, Converter={StaticResource BoolToBrush}}" 
+                                                CornerRadius="10" Padding="10,5" ZIndex="1" MaxWidth="350">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                
+                                                <Image Source="avares://uchat/Resources/images/DeletedMsg.png" Width="16" Height="16"
+                                                       IsVisible="{Binding IsDeleted}"/>
+
+                                                <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" LineHeight="20" Foreground="White"/>
+                                            </StackPanel>
+
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Copy" Click="CopyMessage_Click"/>
+                                                    <MenuItem Header="Delete">
+                                                        <MenuItem Header="Delete for me" Click="DeleteMessageForMe_Click"/>
+                                                        <MenuItem Header="Delete for everyone" Click="DeleteMessageForAll_Click"/>
+                                                    </MenuItem>
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
                                         </Border>
                                         
                                         <Polygon Grid.Column="2" Width="10" Height="10" Points="-10,-5 14,7 -15,11" Margin="-4,0,0,0" 
@@ -178,11 +186,27 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="MessageTextBox" FontSize="18" Watermark="Type a message..." Padding="10,5,60,5" 
-                         TextWrapping="Wrap" Text="{Binding ChatList.SelectedItem.Draft, Mode=TwoWay}" AcceptsReturn="True" 
-                         VerticalContentAlignment="Center" MinHeight="50" MaxHeight="120" TextChanged="MessageTextBox_OnTextChanged"/>
-                <Button Content="Send" Width="50" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
-                        Click="SendMessage_Click"/>
+                         TextWrapping="Wrap" Text="{Binding ChatList.SelectedItem.Draft, Mode=TwoWay}" AcceptsReturn="False"
+                         VerticalContentAlignment="Center" MinHeight="50" MaxHeight="120" TextChanged="MessageTextBox_OnTextChanged" KeyDown="MessageTextBox_SendWithEnter"/>
+                <Image Source="avares://uchat/Resources/images/send.png"
+                       Width="35" Height="35"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       Margin="0,0,10,0"
+                       PointerPressed="SendMessage_Click"/>
             </Grid>
         </Grid>
+        </Grid>
+        
+        <Border Background="#80000000" IsVisible="{Binding IsReconnecting}" 
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <Border Width="400" Height="150" BorderBrush="MediumPurple" BorderThickness="3" Padding="20" Background="White">
+                <StackPanel Spacing="30" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding NeedToShutdown,
+                               Converter={StaticResource ShutdownTextConverter}}"
+                               HorizontalAlignment="Center" FontSize="20"/>
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

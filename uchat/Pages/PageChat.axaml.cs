@@ -4,27 +4,57 @@ using System.Collections.ObjectModel;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using System.ComponentModel;
-
 using dto;
 
 namespace uchat;
 
-public partial class PageChat : UserControl
+public partial class PageChat : UserControl, INotifyPropertyChanged
 {
-    private readonly Client _client;
+    private readonly Client _client = null!;
     public ObservableCollection<ChatItem> Chats { get; } = new();
     public ObservableCollection<ChatItem> FilteredChats { get; } = new();
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public new event PropertyChangedEventHandler? PropertyChanged;
     private ObservableCollection<Message> _selectedChatMessages = new();
     private bool _isApplyingFilter = false;
     private ChatItem? _selectedChatBeforeSearch = null;
     private bool _isUpdatingFilteredChats = false;
     private ChatItem? _currentChat = null;
     private static long _pinSequence = 0;
+    private bool _isReconnecting;
+    public bool IsReconnecting
+    {
+        get => _isReconnecting;
+        set
+        {
+            if (_isReconnecting != value)
+            {
+                _isReconnecting = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsReconnecting)));
+            }
+        }
+    }
+    private bool _needToShutdown;
+    public bool NeedToShutdown
+    {
+        get => _needToShutdown;
+        set
+        {
+            if (_needToShutdown != value)
+            {
+                _needToShutdown = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NeedToShutdown)));
+            }
+        }
+    }
+    
+    public PageChat()
 
-    public PageChat(Client client)
     {
         InitializeComponent();
+    }
+    
+    public PageChat(Client client) : this()
+    {
         _client = client;
         DataContext = this;
         ChatList.SelectedIndex = -1;
@@ -62,13 +92,7 @@ public partial class PageChat : UserControl
             Status = "offline",
             Messages = new ObservableCollection<Message>
             {
-                new Message
-                {
-                    Sender = "Vika",
-                    Text =
-                        "fngngnbdgngfn ndfg nfgnfg n f nf gng ffg g nf g n dfv df ed  dfdfhggdfhgbfjhbdhfgjdfhgdfbhjbhjfg",
-                    IsMine = false
-                },
+                new Message { Sender = "Vika", Text = "fngngnbdgngfn ndfg nfgnfg n f nf gng ffg g nf g n dfv df ed  dfdfhggdfhgbfjhbdhfgjdfhgdfbhjbhjfg", IsMine = false },
                 new Message { Sender = "Me", Text = "hvjhyvkv", IsMine = true },
                 new Message { Sender = "Vika", Text = "dggzhgjyr", IsMine = false }
             }
@@ -87,13 +111,7 @@ public partial class PageChat : UserControl
             IsGroup = true,
             Messages = new ObservableCollection<Message>
             {
-                new Message
-                {
-                    Sender = "Vika",
-                    Text =
-                        "fngngnbdgngfn ndfg nfgnfg n f nf gng ffg g nf g n dfv df ed  dfdfhggdfhgbfjhbdhfgjdfhgdfbhjbhjfg",
-                    IsMine = false
-                },
+                new Message { Sender = "Vika", Text = "fngngnbdgngfn ndfg nfgnfg n f nf gng ffg g nf g n dfv df ed  dfdfhggdfhgbfjhbdhfgjdfhgdfbhjbhjfg", IsMine = false },
                 new Message { Sender = "Me", Text = "hvjhyvkv", IsMine = true },
                 new Message { Sender = "Mariia", Text = "bdgdfbfb", IsMine = false },
                 new Message { Sender = "Roma", Text = "scahbkhdcbs", IsMine = false },
@@ -108,6 +126,30 @@ public partial class PageChat : UserControl
         SortChats();
 
         ChatList.ItemsSource = FilteredChats;
+        
+        _client.Disconnected += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsReconnecting = true;
+            });
+        };
+
+        _client.Reconnected += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsReconnecting = false;
+            });
+        };
+        _client.Shutdown += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                NeedToShutdown = true;
+            });
+        };
+     
     }
 
     public class ChatItem : INotifyPropertyChanged
@@ -457,7 +499,7 @@ public partial class PageChat : UserControl
         {
             return;
         }
-        var lineCount = tb.Text.Split('\n').Length;
+        var lineCount = tb.Text!.Split('\n').Length;
         var lineHeight = tb.FontSize + 5;
         tb.Height = Math.Min(lineCount * lineHeight, 120);
         if (ChatList.SelectedItem is ChatItem chat)
@@ -499,19 +541,33 @@ public partial class PageChat : UserControl
     private async void DeleteMessageForAll_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not Message msg)
-        {
             return;
-        }
+
         if (ChatList.SelectedItem is not ChatItem chat)
+            return;
+
+        msg.IsDeleted = true; 
+    }
+
+    
+    private void MessageTextBox_SendWithEnter(object? sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox tb)
+            return;
+
+        if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.Shift)
         {
+            var pos = tb.CaretIndex;
+            tb.Text = tb.Text.Insert(pos, "\n");
+            tb.CaretIndex = pos + 1;
+            e.Handled = true;
             return;
         }
-       // bool success = await _client.DeleteMessageForAllAsync(chat.Name, msg.Id.ToString());
-       // if (success)
-        // {
-            msg.IsDeleted = true;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChatMessages)));
-        // }
+
+        if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.None)
+        {
+            SendMessage_Click(null!, null!);
+            e.Handled = true;
+        }
     }
-    
 }
