@@ -444,18 +444,33 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private async void DeleteMessageForAll_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not Message msg)
-        {
             return;
-        }
+
         if (ChatList.SelectedItem is not ChatItem chat)
+            return;
+
+        msg.IsDeleted = true; 
+    }
+
+    
+    private void MessageTextBox_SendWithEnter(object? sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox tb)
+            return;
+
+        if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.Shift)
         {
+            var pos = tb.CaretIndex;
+            tb.Text = tb.Text.Insert(pos, "\n");
+            tb.CaretIndex = pos + 1;
+            e.Handled = true;
             return;
         }
-       // bool success = await _client.DeleteMessageForAllAsync(chat.Name, msg.Id.ToString());
-       // if (success)
-        // {
-            msg.IsDeleted = true;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChatMessages)));
-        // }
+
+        if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.None)
+        {
+            SendMessage_Click(null!, null!);
+            e.Handled = true;
+        }
     }
 }
