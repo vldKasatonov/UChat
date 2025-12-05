@@ -1,0 +1,15 @@
+﻿services:
+  uchat_db:
+    image: postgres:16.1
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: uchat_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - uchat_data:/var/lib/postgresql/data
+
+volumes:
+  uchat_data:
