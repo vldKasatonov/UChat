@@ -4,26 +4,42 @@ using System.Collections.ObjectModel;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using System.ComponentModel;
-
 using dto;
 
 namespace uchat;
 
-public partial class PageChat : UserControl
+public partial class PageChat : UserControl, INotifyPropertyChanged
 {
-    private readonly Client _client;
+    private readonly Client _client = null!;
     public ObservableCollection<ChatItem> Chats { get; } = new();
     public ObservableCollection<ChatItem> FilteredChats { get; } = new();
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public new event PropertyChangedEventHandler? PropertyChanged;
     private ObservableCollection<Message> _selectedChatMessages = new();
     private bool _isApplyingFilter = false;
     private ChatItem? _selectedChatBeforeSearch = null;
     private bool _isUpdatingFilteredChats = false;
     private ChatItem? _currentChat = null;
+    private bool _isReconnecting;
+    public bool IsReconnecting
+    {
+        get => _isReconnecting;
+        set
+        {
+            if (_isReconnecting != value)
+            {
+                _isReconnecting = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsReconnecting)));
+            }
+        }
+    }
     
-    public PageChat(Client client)
+    public PageChat()
     {
         InitializeComponent();
+    }
+    
+    public PageChat(Client client) : this()
+    {
         _client = client;
         DataContext = this;
         ChatList.SelectedIndex = -1;
@@ -90,6 +106,22 @@ public partial class PageChat : UserControl
             FilteredChats.Add(chat);
         
         ChatList.ItemsSource = FilteredChats;
+        
+        _client.Disconnected += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsReconnecting = true;
+            });
+        };
+
+        _client.Reconnected += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsReconnecting = false;
+            });
+        };
     }
     
     public class ChatItem : INotifyPropertyChanged
@@ -350,7 +382,7 @@ public partial class PageChat : UserControl
         {
             return;
         }
-        var lineCount = tb.Text.Split('\n').Length;
+        var lineCount = tb.Text!.Split('\n').Length;
         var lineHeight = tb.FontSize + 5;
         tb.Height = Math.Min(lineCount * lineHeight, 120);
         if (ChatList.SelectedItem is ChatItem chat)
@@ -406,5 +438,4 @@ public partial class PageChat : UserControl
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChatMessages)));
         // }
     }
-    
 }

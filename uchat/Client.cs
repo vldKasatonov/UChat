@@ -43,7 +43,7 @@ public class Client
             }
             catch (Exception)
             {
-                await Task.Delay(3000); //pause before next try
+                await Task.Delay(5000); //pause before next try
             }
         }
     }
