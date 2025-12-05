@@ -10,9 +10,11 @@
         <local:GroupAvatarVisibilityConverter x:Key="GroupAvatarVisibilityConverter"/>
         <local:SenderToColorConverter x:Key="SenderToColorConverter"/>
         <local:GroupSenderVisibilityConverter x:Key="GroupSenderVisibilityConverter"/> 
+        <local:ShutdownTextConverter x:Key="ShutdownTextConverter"/>
     </UserControl.Resources>
 
-    <Grid ColumnDefinitions="50,230,*">
+    <Grid>
+        <Grid ColumnDefinitions="50,230,*">
         
         <Grid Grid.Column="0" Background="#1C1729">
             <Grid.RowDefinitions>
@@ -167,5 +169,17 @@
                         Click="SendMessage_Click"/>
             </Grid>
         </Grid>
+        </Grid>
+        
+        <Border Background="#80000000" IsVisible="{Binding IsReconnecting}" 
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+            <Border Width="400" Height="150" BorderBrush="MediumPurple" BorderThickness="3" Padding="20" Background="White">
+                <StackPanel Spacing="30" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding NeedToShutdown,
+                               Converter={StaticResource ShutdownTextConverter}}"
+                               HorizontalAlignment="Center" FontSize="20"/>
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

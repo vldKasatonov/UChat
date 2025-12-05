@@ -10,11 +10,16 @@ public class Client
     private string _ip;
     private int _port;
     private TcpClient? _client;
+    private int? _id;
     private NetworkStream? _stream;
     private StreamReader? _reader;
     private StreamWriter? _writer;
     private bool _connected;
     private TaskCompletionSource<string>? _pendingResponse;
+    private bool _reconnecting;
+    public event Action? Disconnected;
+    public event Action? Reconnected;
+    public event Action? Shutdown;
     
     public Client(string ip, int port)
     {
@@ -40,7 +45,7 @@ public class Client
             }
             catch (Exception)
             {
-                await Task.Delay(3000); //pause before next try
+                await Task.Delay(5000); //pause before next try
             }
         }
     }
@@ -62,8 +67,7 @@ public class Client
                 
                 if (jsonResponse is null)
                 {
-                    _connected = false;
-                    await ConnectToServer();
+                    HandleDisconnection();
                     break;
                 }
                 
@@ -79,16 +83,48 @@ public class Client
         }
         catch (Exception)
         {
-            _connected = false;
-            await ConnectToServer();
+            HandleDisconnection();
         }
+    }
+
+    private async void HandleDisconnection()
+    {
+        if (_reconnecting)
+        {
+            return;
+        }
+
+        _reconnecting = true;
+        _connected = false;
+        Disconnected?.Invoke();
+        await ConnectToServer();
+
+        if (_id != null)
+        {
+            var payload = new ReconnectRequestPayload
+            {
+                UserId = (int)_id
+            };
+    
+            var request = CreateRequest(CommandType.Reconnect, payload);
+            var response = await ExecuteRequest(request);
+    
+            if (response != null && response.Status == Status.Success)
+            {
+                _reconnecting = false;
+                Reconnected?.Invoke();
+                return;
+            }
+        }
+
+        Shutdown?.Invoke();
     }
     
     private async Task<Response?> ExecuteRequest(Request request)
     {
         if (!_connected)
         {
-            await ConnectToServer();
+            HandleDisconnection();
         }
 
         if (_writer is null)
@@ -132,8 +168,21 @@ public class Client
         var loginReq = CreateRequest(CommandType.Login, loginReqPayload);
         var response = await ExecuteRequest(loginReq);
 
-        if (response != null && response.Payload != null)
+        if (response != null)
         {
+            if (response.Payload != null
+                && response.Payload.TryGetPropertyValue("user_id", out var id))
+            {
+                if (int.TryParse(id?.ToString(), out var parsed))
+                {
+                    _id = parsed;
+                }
+                else
+                {
+                    _id = null;
+                }
+            }
+            
             return response;
         }
         
@@ -152,8 +201,21 @@ public class Client
         var registerReq = CreateRequest(CommandType.Register, registerReqPayload);
         var response = await ExecuteRequest(registerReq);
 
-        if (response != null && response.Payload != null)
+        if (response != null)
         {
+            if (response.Payload != null
+                && response.Payload.TryGetPropertyValue("user_id", out var id))
+            {
+                if (int.TryParse(id?.ToString(), out var parsed))
+                {
+                    _id = parsed;
+                }
+                else
+                {
+                    _id = null;
+                }
+            }
+            
             return response;
         }
         
