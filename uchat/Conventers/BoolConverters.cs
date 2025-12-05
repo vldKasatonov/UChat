@@ -17,7 +17,7 @@ namespace uchat
     public class BoolToBrush : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-            => (value is bool b && b) ? Brushes.MediumPurple : Brushes.LightGray;
+            => (value is bool b && b) ? Brush.Parse("#B56B9C") :Brush.Parse("#45335D");
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
             => Avalonia.Data.BindingOperations.DoNothing;
     }

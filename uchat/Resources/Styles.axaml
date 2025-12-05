@@ -65,7 +65,7 @@
 		<Setter Property="FontSize" Value="14"/>
 		<Setter Property="FontWeight" Value="Medium"/>
 		<Setter Property="Foreground" Value="White"/>
-		<Setter Property="Background" Value="{DynamicResource prColor}"/>
+		<Setter Property="Background" Value="#995988"/>
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="Button">
@@ -121,11 +121,11 @@
 	</Style>
 
 	<Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-		<Setter Property="Background" Value="#9183B0"/>
+		<Setter Property="Background" Value="#45335D"/>
 	</Style>
 	
 	<Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-		<Setter Property="Background" Value="#8A6FC2"/>
+		<Setter Property="Background" Value="#705595"/>
 	</Style>
 	
 	
