@@ -32,6 +32,19 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
         }
     }
+    private bool _needToShutdown;
+    public bool NeedToShutdown
+    {
+        get => _needToShutdown;
+        set
+        {
+            if (_needToShutdown != value)
+            {
+                _needToShutdown = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NeedToShutdown)));
+            }
+        }
+    }
     
     public PageChat()
     {
@@ -120,6 +133,13 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 IsReconnecting = false;
+            });
+        };
+        _client.Shutdown += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                NeedToShutdown = true;
             });
         };
     }

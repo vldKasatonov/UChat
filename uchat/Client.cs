@@ -10,6 +10,7 @@ public class Client
     private string _ip;
     private int _port;
     private TcpClient? _client;
+    private int? _id;
     private NetworkStream? _stream;
     private StreamReader? _reader;
     private StreamWriter? _writer;
@@ -18,6 +19,7 @@ public class Client
     private bool _reconnecting;
     public event Action? Disconnected;
     public event Action? Reconnected;
+    public event Action? Shutdown;
     
     public Client(string ip, int port)
     {
@@ -97,8 +99,25 @@ public class Client
         Disconnected?.Invoke();
         await ConnectToServer();
 
-        _reconnecting = false;
-        Reconnected?.Invoke();
+        if (_id != null)
+        {
+            var payload = new ReconnectRequestPayload
+            {
+                UserId = (int)_id
+            };
+    
+            var request = CreateRequest(CommandType.Reconnect, payload);
+            var response = await ExecuteRequest(request);
+    
+            if (response != null && response.Status == Status.Success)
+            {
+                _reconnecting = false;
+                Reconnected?.Invoke();
+                return;
+            }
+        }
+
+        Shutdown?.Invoke();
     }
     
     private async Task<Response?> ExecuteRequest(Request request)
@@ -149,8 +168,21 @@ public class Client
         var loginReq = CreateRequest(CommandType.Login, loginReqPayload);
         var response = await ExecuteRequest(loginReq);
 
-        if (response != null && response.Payload != null)
+        if (response != null)
         {
+            if (response.Payload != null
+                && response.Payload.TryGetPropertyValue("user_id", out var id))
+            {
+                if (int.TryParse(id?.ToString(), out var parsed))
+                {
+                    _id = parsed;
+                }
+                else
+                {
+                    _id = null;
+                }
+            }
+            
             return response;
         }
         
@@ -169,8 +201,21 @@ public class Client
         var registerReq = CreateRequest(CommandType.Register, registerReqPayload);
         var response = await ExecuteRequest(registerReq);
 
-        if (response != null && response.Payload != null)
+        if (response != null)
         {
+            if (response.Payload != null
+                && response.Payload.TryGetPropertyValue("user_id", out var id))
+            {
+                if (int.TryParse(id?.ToString(), out var parsed))
+                {
+                    _id = parsed;
+                }
+                else
+                {
+                    _id = null;
+                }
+            }
+            
             return response;
         }
         
