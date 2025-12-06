@@ -16,12 +16,39 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     public ObservableCollection<ChatItem> Chats { get; } = new();
     public ObservableCollection<ChatItem> FilteredChats { get; } = new();
     private ObservableCollection<User> _selectedGroupMembers = new();
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public new event PropertyChangedEventHandler? PropertyChanged;
     private ObservableCollection<Message> _selectedChatMessages = new();
     private bool _isApplyingFilter = false;
     private ChatItem? _selectedChatBeforeSearch = null;
     private bool _isUpdatingFilteredChats = false;
     private ChatItem? _currentChat = null;
+    private static long _pinSequence = 0;
+    private bool _isReconnecting;
+    public bool IsReconnecting
+    {
+        get => _isReconnecting;
+        set
+        {
+            if (_isReconnecting != value)
+            {
+                _isReconnecting = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsReconnecting)));
+            }
+        }
+    }
+    private bool _needToShutdown;
+    public bool NeedToShutdown
+    {
+        get => _needToShutdown;
+        set
+        {
+            if (_needToShutdown != value)
+            {
+                _needToShutdown = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NeedToShutdown)));
+            }
+        }
+    }
     public string CurrentUserName { get; set; } = "Mister Crabs";
     public string CurrentUserUsername { get; set; } = "@crabs";
     
@@ -43,7 +70,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         Chats.Add(new ChatItem
         {
-            Name = "Vlad", Status = "online", Messages = new ObservableCollection<Message>
+            Name = "Vlad", Username = "online", Messages = new ObservableCollection<Message>
             {
                 new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
                 new Message { Sender = "Me", Text = "fgnf", IsMine = true },
@@ -113,6 +140,30 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         SortChats();
 
         ChatList.ItemsSource = FilteredChats;
+        
+        _client.Disconnected += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsReconnecting = true;
+            });
+        };
+
+        _client.Reconnected += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsReconnecting = false;
+            });
+        };
+        _client.Shutdown += async () =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                NeedToShutdown = true;
+            });
+        };
+        
         AttachGroupTextChangedHandlers();
     }
     
