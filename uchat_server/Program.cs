@@ -1,4 +1,8 @@
-﻿namespace uchat_server;
+﻿using Microsoft.EntityFrameworkCore;
+using uchat_server.Config;
+using uchat_server.Data;
+
+namespace uchat_server;
 
 public class Program
 {
@@ -10,6 +14,31 @@ public class Program
             return;
         }
 
+        string dbConnectionString;
+        try
+        {
+            string projectDirectory = Path.Combine(Directory.GetCurrentDirectory(), "uchat_server");
+            dbConnectionString = Configer.GetDbConnectionString(projectDirectory); 
+            Console.WriteLine("DB configuration loaded successfully.");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Failed to configure database connection string. " + e.Message);
+            return;
+        }
+        
+        try
+        {
+            await using var dbContext = new UchatDbContext(dbConnectionString);
+            await dbContext.Database.MigrateAsync(); 
+            Console.WriteLine("Migration is up to date.");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Failed to apply migrations. " + e.Message);
+            return;
+        }
+        
         try
         {
             Server server = new Server(port);
