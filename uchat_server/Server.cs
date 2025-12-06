@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Concurrent;
+using uchat_server.Data;
 
 namespace uchat_server;
 
@@ -11,10 +12,12 @@ public class Server
 {
     private TcpListener _listener;
     private ConcurrentDictionary<string, TcpClient> _clients = new();
+    private string _dbConnection;
 
-    public Server(int port)
+    public Server(int port, string dbConnection)
     {
         _listener = new TcpListener(IPAddress.Any, port);
+        _dbConnection = dbConnection;
     }
 
     public async Task Run()
@@ -41,6 +44,11 @@ public class Server
         {
             _listener.Stop();
         }
+    }
+    
+    private UchatDbContext CreateDbContext()
+    {
+        return new UchatDbContext(_dbConnection); 
     }
 
     private async Task HandleClientAsync(TcpClient client)
@@ -225,4 +233,14 @@ public class Server
             Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
         };
     }
+    
+    // public async Task RegisterUserAsync()
+    // {
+    //     var newUser = new User{};
+    //     await using (var dbContext = CreateDbContext())
+    //     {
+    //         dbContext.Users.Add(newUser);
+    //         await dbContext.SaveChangesAsync(); 
+    //     }
+    // }
 }

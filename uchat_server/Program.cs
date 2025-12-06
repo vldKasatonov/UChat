@@ -41,7 +41,7 @@ public class Program
         
         try
         {
-            Server server = new Server(port);
+            Server server = new Server(port, dbConnectionString);
             await server.Run();
         }
         catch (Exception e)
