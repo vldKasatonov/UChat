@@ -9,9 +9,9 @@ using dto;
 
 namespace uchat;
 
-public partial class PageChat : UserControl
+public partial class PageChat : UserControl, INotifyPropertyChanged
 {
-    private readonly Client _client;
+    private readonly Client _client = null!;
     private List<User> _allUsers = new();
     public ObservableCollection<ChatItem> Chats { get; } = new();
     public ObservableCollection<ChatItem> FilteredChats { get; } = new();
@@ -25,9 +25,14 @@ public partial class PageChat : UserControl
     public string CurrentUserName { get; set; } = "Mister Crabs";
     public string CurrentUserUsername { get; set; } = "@crabs";
     
-    public PageChat(Client client)
+    public PageChat()
+
     {
         InitializeComponent();
+    }
+    
+    public PageChat(Client client) : this()
+    {
         _client = client;
         DataContext = this;
         ChatList.SelectedIndex = -1;
@@ -35,26 +40,29 @@ public partial class PageChat : UserControl
         ChatList.SelectionChanged += ChatList_SelectionChanged;
         SelectedChatMessages.CollectionChanged += MessagesPanel_CollectionChanged;
         ChatAvatar.IsVisible = false;
-        
-        Chats.Add(new ChatItem { Name = "Vlad", Username = "@vlad", Messages = new ObservableCollection<Message>
+
+        Chats.Add(new ChatItem
         {
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-            new Message { Sender = "Me", Text = "fgnf", IsMine = true }
-        }});
+            Name = "Vlad", Status = "online", Messages = new ObservableCollection<Message>
+            {
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
+                new Message { Sender = "Me", Text = "fgnf", IsMine = true }
+            }
+        });
 
         Chats.Add(new ChatItem
         {
@@ -73,7 +81,7 @@ public partial class PageChat : UserControl
             Name = "Masha",
             Username = "@2"
         });
-        
+
         Chats.Add(new ChatItem
         {
             Name = "Uchat",
@@ -102,6 +110,8 @@ public partial class PageChat : UserControl
         foreach (var chat in Chats)
             FilteredChats.Add(chat);
         
+        SortChats();
+
         ChatList.ItemsSource = FilteredChats;
         AttachGroupTextChangedHandlers();
     }
@@ -111,7 +121,7 @@ public partial class PageChat : UserControl
         public string Name { get; set; } = "";
         public string Username { get; set; } = "";
     }
-    
+
     public class ChatItem : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -121,6 +131,24 @@ public partial class PageChat : UserControl
         public bool IsGroup { get; set; } = false;
         public string LastMessage => Messages.LastOrDefault()?.Text ?? "";
         private string _draft = "";
+        private bool _isPinned = false;
+        public long PinOrder { get; set; }
+
+        public bool IsPinned
+        {
+            get => _isPinned;
+            set
+            {
+                if (_isPinned != value)
+                {
+                    _isPinned = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPinned)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PinMenuText)));
+                }
+            }
+        }
+        public string PinMenuText => IsPinned ? "Unpin chat" : "Pin chat";
+
         public string Draft
         {
             get => _draft;
@@ -137,7 +165,7 @@ public partial class PageChat : UserControl
         public void NotifyLastMessageChanged() =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessage)));
     }
-    
+
     public ObservableCollection<Message> SelectedChatMessages
     {
         get => _selectedChatMessages;
@@ -150,7 +178,32 @@ public partial class PageChat : UserControl
             }
         }
     }
-    
+
+    private void SortChats()
+    {
+        if (_isApplyingFilter) return;
+
+        _isUpdatingFilteredChats = true;
+
+        var pinnedChats = Chats
+            .Where(chat => chat.IsPinned)
+            .OrderByDescending(chat => chat.PinOrder)  
+            .ToList();
+
+        var unpinnedChats = Chats
+            .Where(chat => !chat.IsPinned)
+            .ToList();
+
+        FilteredChats.Clear();
+
+        foreach (var chat in pinnedChats)
+            FilteredChats.Add(chat);
+        foreach (var chat in unpinnedChats)
+            FilteredChats.Add(chat);
+
+        _isUpdatingFilteredChats = false;
+    }
+
     private void UpdateChatView(ChatItem contact)
     {
         ChatHeader.Text = contact.Name;
@@ -159,10 +212,11 @@ public partial class PageChat : UserControl
         ChatUsernameTextBlock.IsVisible = true;
         SelectedChatMessages.Clear();
         foreach (var msg in contact.Messages)
-        { 
+        {
             msg.IsGroup = contact.IsGroup;
             SelectedChatMessages.Add(msg);
         }
+
         MessageTextBox.Text = contact.Draft;
         MessageInputPanel.IsVisible = true;
     }
@@ -183,22 +237,33 @@ public partial class PageChat : UserControl
         text = text?.Trim().ToLower() ?? "";
         _isApplyingFilter = true;
         _isUpdatingFilteredChats = true;
-        
+
         if (!string.IsNullOrEmpty(text))
             ChatList.SelectedIndex = -1;
 
         FilteredChats.Clear();
 
-        foreach (var chat in Chats)
-        {
-            if (string.IsNullOrEmpty(text) || chat.Name.ToLower().Contains(text))
-                FilteredChats.Add(chat);
-        }
+        var pinnedChats = Chats
+            .Where(chat => chat.IsPinned &&
+                           (string.IsNullOrEmpty(text) || chat.Name.ToLower().Contains(text)))
+            .OrderByDescending(chat => chat.PinOrder)
+            .ToList();
+
+        var unpinnedChats = Chats
+            .Where(chat => !chat.IsPinned &&
+                           (string.IsNullOrEmpty(text) || chat.Name.ToLower().Contains(text)))
+            .ToList();
+
+        foreach (var chat in pinnedChats)
+            FilteredChats.Add(chat);
+
+        foreach (var chat in unpinnedChats)
+            FilteredChats.Add(chat);
 
         _isUpdatingFilteredChats = false;
         _isApplyingFilter = false;
     }
-    
+
     private void SelectChatAfterFilterUpdate(ChatItem chatToSelect)
     {
         Dispatcher.UIThread.Post(() =>
@@ -233,7 +298,7 @@ public partial class PageChat : UserControl
             if (string.IsNullOrEmpty(searchText))
             {
                 ClearSearchButton.IsVisible = false;
-                
+
                 if (_selectedChatBeforeSearch != null)
                 {
                     SelectChatAfterFilterUpdate(_selectedChatBeforeSearch);
@@ -250,7 +315,7 @@ public partial class PageChat : UserControl
     private void SearchTextBox_GotFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         ClearSearchButton.IsVisible = !string.IsNullOrEmpty(SearchTextBox.Text);
-        
+
         if (_selectedChatBeforeSearch == null && ChatList.SelectedItem is ChatItem current)
             _selectedChatBeforeSearch = current;
     }
@@ -259,25 +324,43 @@ public partial class PageChat : UserControl
     {
         ClearSearchButton.IsVisible = !string.IsNullOrEmpty(SearchTextBox.Text);
     }
-    
+
     private void ClearSearchButton_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         ClearSearchButton.IsVisible = true;
     }
-    
+
     private void ClearSearchButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         SearchTextBox.Text = "";
         ClearSearchButton.IsVisible = false;
-    
+
         ApplyFilter("");
-    
+
         if (_selectedChatBeforeSearch != null)
         {
             SelectChatAfterFilterUpdate(_selectedChatBeforeSearch);
         }
-    
+
         SearchTextBox.Focus();
+    }
+
+    private void TogglePinChat_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menu || menu.DataContext is not ChatItem chat)
+            return;
+        
+        chat.IsPinned = !chat.IsPinned;
+
+        if (chat.IsPinned)
+            chat.PinOrder = ++_pinSequence;  
+        else
+            chat.PinOrder = 0;
+
+        SortChats();
+
+        if (!string.IsNullOrEmpty(SearchTextBox.Text))
+            ApplyFilter(SearchTextBox.Text);
     }
     
     
@@ -288,8 +371,25 @@ public partial class PageChat : UserControl
             DispatcherPriority.Background);
     }
     
+    private void ChatItem_ContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (sender is Control ctrl && ctrl.ContextMenu != null)
+        {
+            ctrl.ContextMenu.Open(ctrl);
+        }
+
+        e.Handled = true;
+    }
+
+    
     private void ChatItem_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+        {
+            e.Handled = true; 
+            return;           
+        }
+        
         if (sender is not Control ctrl) return;
         if (ctrl.DataContext is not ChatItem pressedChat) return;
 
@@ -374,7 +474,7 @@ public partial class PageChat : UserControl
         {
             return;
         }
-        var lineCount = tb.Text.Split('\n').Length;
+        var lineCount = tb.Text!.Split('\n').Length;
         var lineHeight = tb.FontSize + 5;
         tb.Height = Math.Min(lineCount * lineHeight, 120);
         if (ChatList.SelectedItem is ChatItem chat)
@@ -710,19 +810,33 @@ public partial class PageChat : UserControl
     private async void DeleteMessageForAll_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not Message msg)
-        {
             return;
-        }
+
         if (ChatList.SelectedItem is not ChatItem chat)
+            return;
+
+        msg.IsDeleted = true; 
+    }
+
+    
+    private void MessageTextBox_SendWithEnter(object? sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox tb)
+            return;
+
+        if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.Shift)
         {
+            var pos = tb.CaretIndex;
+            tb.Text = tb.Text.Insert(pos, "\n");
+            tb.CaretIndex = pos + 1;
+            e.Handled = true;
             return;
         }
-       // bool success = await _client.DeleteMessageForAllAsync(chat.Name, msg.Id.ToString());
-       // if (success)
-        // {
-            msg.IsDeleted = true;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedChatMessages)));
-        // }
+
+        if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.None)
+        {
+            SendMessage_Click(null!, null!);
+            e.Handled = true;
+        }
     }
-    
 }
