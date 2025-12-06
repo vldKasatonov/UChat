@@ -23,6 +23,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private bool _isUpdatingFilteredChats = false;
     private ChatItem? _currentChat = null;
     private static long _pinSequence = 0;
+    
     private bool _isReconnecting;
     public bool IsReconnecting
     {
