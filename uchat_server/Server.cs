@@ -4,6 +4,8 @@ using System.Text.Json;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using uchat_server.Data;
 
 namespace uchat_server;
@@ -83,7 +85,7 @@ public class Server
                     continue; //TODO: return response to user
                 }
 
-                Response response = ProcessRequest(request);
+                Response response = await ProcessRequest(request);
                 
                 Console.WriteLine($"Response for client: {JsonSerializer.Serialize(response)}");
 
@@ -125,18 +127,18 @@ public class Server
         }
     }
     
-    private static Response ProcessRequest(Request request)
+    private async Task<Response> ProcessRequest(Request request)
     {
         try
         {
             switch (request.Type)
             {
-                case CommandType.Login:
-                    var loginReqPayload = request.Payload.Deserialize<LoginRequestPayload>();
-                    return HandleLogin(loginReqPayload);
                 case CommandType.Register:
                     var registerReqPayload = request.Payload.Deserialize<RegisterRequestPayload>();
-                    return HandleRegister(registerReqPayload);
+                    return await HandleRegister(registerReqPayload);
+                case CommandType.Login:
+                    var loginReqPayload = request.Payload.Deserialize<LoginRequestPayload>();
+                    return await HandleLogin(loginReqPayload);
             }
         }
         catch (Exception) //ex)
@@ -150,16 +152,66 @@ public class Server
             Type = request.Type,
         };
     }
+
+    private Task<Response> HandleRegister(RegisterRequestPayload? registerReqPayload)
+    {
+        if (registerReqPayload is null)
+        {
+            return Task.FromResult(new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Register
+            });
+        }
+
+        try
+        {
+            User newUser = RegisterUserAsync(registerReqPayload)
+                .GetAwaiter()
+                .GetResult();
+            var responsePayload = new RegisterResponsePayload
+            {
+                UserId = newUser.Id,
+                Nickname = newUser.Nickname,
+                Username = newUser.Username
+            };
+
+            return Task.FromResult(new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.Register,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            });
+        }
+        catch (InvalidOperationException e)
+        {
+            var errorPayload = new ErrorPayload
+            {
+                Message = e.Message
+            };
+
+            return Task.FromResult(new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Register,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            });
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
     
-    private static Response HandleLogin(LoginRequestPayload? loginReqPayload)
+    private static Task<Response> HandleLogin(LoginRequestPayload? loginReqPayload)
     {
         if (loginReqPayload is null)
         {
-            return new Response
+            return Task.FromResult(new Response
             {
                 Status = Status.Error,
                 Type = CommandType.Login
-            };
+            });
         }
         
         // TODO: realise login to DB
@@ -170,77 +222,52 @@ public class Server
                 Message = "Invalid username or password."
             };
 
-            return new Response
+            return Task.FromResult(new Response
             {
                 Status = Status.Error,
                 Type = CommandType.Login,
                 Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
-            };
+            });
         }
 
         var responsePayload = new LoginResponsePayload
         {
-            UserId = "1",
+            UserId = 1,
             Username = loginReqPayload.Username
         };
         
-        return new Response
+        return Task.FromResult(new Response
         {
             Status = Status.Success,
             Type = CommandType.Login,
             Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-        };
-    }
-
-    private static Response HandleRegister(RegisterRequestPayload? registerReqPayload)
-    {
-        if (registerReqPayload is null)
-        {
-            return new Response
-            {
-                Status = Status.Error,
-                Type = CommandType.Register
-            };
-        }
-
-        // TODO: realise register to DB
-        if (registerReqPayload is { Username: "1", Password: "password" })
-        {
-            var errorPayload = new ErrorPayload
-            {
-                Message = "Username already exists."
-            };
-
-            return new Response
-            {
-                Status = Status.Error,
-                Type = CommandType.Register,
-                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
-            };
-        }
-
-        var responsePayload = new RegisterResponsePayload
-        {
-            UserId = "1",
-            Nickname = registerReqPayload.Nickname,
-            Username = registerReqPayload.Username
-        };
-        
-        return new Response
-        {
-            Status = Status.Success,
-            Type = CommandType.Register,
-            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-        };
+        });
     }
     
-    // public async Task RegisterUserAsync()
-    // {
-    //     var newUser = new User{};
-    //     await using (var dbContext = CreateDbContext())
-    //     {
-    //         dbContext.Users.Add(newUser);
-    //         await dbContext.SaveChangesAsync(); 
-    //     }
-    // }
+    private async Task<User> RegisterUserAsync(RegisterRequestPayload payload)
+    {
+        var newUser = new User
+        {
+            Username = payload.Username,
+            Nickname = payload.Nickname,
+            HashPassword = payload.Password, //TODO: hash
+            IsOnline = false,
+            Avatar = null
+        };
+
+        await using (var dbContext = CreateDbContext())
+        {
+            try
+            {
+                dbContext.Users.Add(newUser);
+                await dbContext.SaveChangesAsync();
+            }
+            catch(DbUpdateException e) when ((e.InnerException as PostgresException)?.SqlState == "23505")
+            {
+                throw new InvalidOperationException("Username already exists");
+            }
+        }
+        
+        return newUser;
+    }
 }
