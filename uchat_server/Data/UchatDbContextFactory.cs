@@ -8,7 +8,15 @@ public class UchatDbContextFactory : IDesignTimeDbContextFactory<UchatDbContext>
 {
     public UchatDbContext CreateDbContext(string[] args)
     {
-        string dbConnectionString = Configer.GetDbConnectionString();
+        string dbConnectionString;
+        try 
+        {   
+            dbConnectionString = Configer.GetDbConnectionString();
+        }
+        catch (InvalidOperationException e)
+        {
+            throw new InvalidOperationException("Failed to configure database connection string. " + e.Message);
+        }
 
         var optionsBuilder = new DbContextOptionsBuilder<UchatDbContext>();
         optionsBuilder.UseNpgsql(dbConnectionString);
