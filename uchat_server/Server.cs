@@ -8,6 +8,8 @@ using System.Collections.Concurrent;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
+using BCrypt.Net;
+
 namespace uchat_server;
 
 public class Server
@@ -182,8 +184,25 @@ public class Server
                 Type = CommandType.Login
             };
         }
-        
+
         // TODO: realise login to DB
+        
+        // get hashedPassword from DB
+        // if (!BCrypt.Net.BCrypt.EnhancedVerify(loginReqPayload.Password, hashedPassword))
+        // {
+        //     var errorPayload = new ErrorPayload
+        //     {
+        //         Message = "Invalid username or password."
+        //     };
+
+        //     return new Response
+        //     {
+        //         Status = Status.Error,
+        //         Type = CommandType.Login,
+        //         Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+        //     };
+        // }
+
         if (loginReqPayload is { Username: "1", Password: "password" })
         {
             var errorPayload = new ErrorPayload
@@ -224,6 +243,7 @@ public class Server
             };
         }
 
+        string hashedPassword = BCrypt.Net.BCrypt.EnhancedHashPassword(registerReqPayload.Password, workFactor: 12);
         // TODO: realise register to DB
         if (registerReqPayload is { Username: "1", Password: "password" })
         {
