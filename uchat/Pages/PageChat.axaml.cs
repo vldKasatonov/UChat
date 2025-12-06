@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using System.ComponentModel;
+using Avalonia;
 using dto;
 
 namespace uchat;
@@ -11,41 +12,18 @@ namespace uchat;
 public partial class PageChat : UserControl, INotifyPropertyChanged
 {
     private readonly Client _client = null!;
+    private List<User> _allUsers = new();
     public ObservableCollection<ChatItem> Chats { get; } = new();
     public ObservableCollection<ChatItem> FilteredChats { get; } = new();
-    public new event PropertyChangedEventHandler? PropertyChanged;
+    private ObservableCollection<User> _selectedGroupMembers = new();
+    public event PropertyChangedEventHandler? PropertyChanged;
     private ObservableCollection<Message> _selectedChatMessages = new();
     private bool _isApplyingFilter = false;
     private ChatItem? _selectedChatBeforeSearch = null;
     private bool _isUpdatingFilteredChats = false;
     private ChatItem? _currentChat = null;
-    private static long _pinSequence = 0;
-    private bool _isReconnecting;
-    public bool IsReconnecting
-    {
-        get => _isReconnecting;
-        set
-        {
-            if (_isReconnecting != value)
-            {
-                _isReconnecting = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsReconnecting)));
-            }
-        }
-    }
-    private bool _needToShutdown;
-    public bool NeedToShutdown
-    {
-        get => _needToShutdown;
-        set
-        {
-            if (_needToShutdown != value)
-            {
-                _needToShutdown = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NeedToShutdown)));
-            }
-        }
-    }
+    public string CurrentUserName { get; set; } = "Mister Crabs";
+    public string CurrentUserUsername { get; set; } = "@crabs";
     
     public PageChat()
 
@@ -89,7 +67,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         Chats.Add(new ChatItem
         {
             Name = "Vika",
-            Status = "offline",
+            Username = "@1",
             Messages = new ObservableCollection<Message>
             {
                 new Message { Sender = "Vika", Text = "fngngnbdgngfn ndfg nfgnfg n f nf gng ffg g nf g n dfv df ed  dfdfhggdfhgbfjhbdhfgjdfhgdfbhjbhjfg", IsMine = false },
@@ -101,13 +79,13 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         Chats.Add(new ChatItem
         {
             Name = "Masha",
-            Status = "offline"
+            Username = "@2"
         });
 
         Chats.Add(new ChatItem
         {
             Name = "Uchat",
-            Status = "6 members, 2 online",
+            Username = "6 members",
             IsGroup = true,
             Messages = new ObservableCollection<Message>
             {
@@ -119,37 +97,29 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 new Message { Sender = "Vlad", Text = "pon", IsMine = false }
             }
         });
-
+        
+        _allUsers = new List<User>
+        {
+            new User { Name = "Vlad", Username = "@vlad" },
+            new User { Name = "Vika", Username = "@1" },
+            new User { Name = "Masha", Username = "@2" },
+            new User { Name = "Mariia", Username = "@3" },
+            new User { Name = "Roma", Username = "@4" }
+        };
+        
         foreach (var chat in Chats)
             FilteredChats.Add(chat);
         
         SortChats();
 
         ChatList.ItemsSource = FilteredChats;
-        
-        _client.Disconnected += async () =>
-        {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                IsReconnecting = true;
-            });
-        };
-
-        _client.Reconnected += async () =>
-        {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                IsReconnecting = false;
-            });
-        };
-        _client.Shutdown += async () =>
-        {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                NeedToShutdown = true;
-            });
-        };
-     
+        AttachGroupTextChangedHandlers();
+    }
+    
+    public class User
+    {
+        public string Name { get; set; } = "";
+        public string Username { get; set; } = "";
     }
 
     public class ChatItem : INotifyPropertyChanged
@@ -157,7 +127,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         public event PropertyChangedEventHandler? PropertyChanged;
         public string Name { get; set; } = "";
         public ObservableCollection<Message> Messages { get; set; } = new();
-        public string Status { get; set; } = "";
+        public string Username { get; set; } = "";
         public bool IsGroup { get; set; } = false;
         public string LastMessage => Messages.LastOrDefault()?.Text ?? "";
         private string _draft = "";
@@ -238,8 +208,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     {
         ChatHeader.Text = contact.Name;
         ChatAvatar.IsVisible = true;
-        ChatStatus.Text = contact.Status;
-        ChatStatus.IsVisible = true;
+        ChatUsernameTextBlock.Text = contact.Username;
+        ChatUsernameTextBlock.IsVisible = true;
         SelectedChatMessages.Clear();
         foreach (var msg in contact.Messages)
         {
@@ -255,7 +225,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     {
         ChatHeader.Text = "Select a chat";
         ChatAvatar.IsVisible = false;
-        ChatStatus.IsVisible = false;
+        ChatUsernameTextBlock.IsVisible = false;
         SelectedChatMessages.Clear();
         MessageInputPanel.IsVisible = false;
     }
@@ -315,7 +285,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         if (sender is TextBox tb)
         {
             string searchText = tb.Text?.Trim() ?? "";
-            
+
             if (!string.IsNullOrEmpty(searchText) && _selectedChatBeforeSearch == null)
             {
                 if (ChatList.SelectedItem is ChatItem current)
@@ -455,6 +425,11 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (ChatList.SelectedItem is ChatItem contact)
         {
+            SingleChatOverlay.IsVisible = false;
+            GroupChatOverlay.IsVisible = false;
+            MessageInputPanel.IsVisible = true;
+            MessagesPanel.IsVisible = true;
+            
             if (_currentChat == contact)
                 return;
         
@@ -506,6 +481,300 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         {
             chat.Draft = tb.Text;
         }
+    }
+    
+    private void OpenSingleChat_Click(object? sender, RoutedEventArgs e)
+    {
+        ResetChatView();
+        ChatHeader.Text = "Start single chat";
+        SingleChatOverlay.IsVisible = true;
+        ResetUserSearch();
+    }
+    
+    private void OpenGroupChat_Click(object? sender, RoutedEventArgs e)
+    {
+        ResetChatView();
+        ChatHeader.Text = "Create group chat";
+        GroupChatOverlay.IsVisible = true;
+        GroupSearchBox.Text = "";
+        GroupSearchResultBorder.IsVisible = false;
+        _selectedGroupMembers.Clear();
+        GroupNameBox.Text = "";
+    }
+    
+    private void ResetUserSearch()
+    {
+        SearchUserBox.Text = "";
+        SearchResultBorder.IsVisible = false;
+        SearchErrorText.IsVisible = false;
+        SearchUserBox.Classes.Remove("error");
+        ResultUserName.Text = "";
+        ResultUserUsername.Text = "";
+    }
+    
+    private void ResetChatView()
+    {
+        MessageInputPanel.IsVisible = false;
+        MessagesPanel.IsVisible = false;
+        ChatList.SelectedIndex = -1;
+        ChatAvatar.IsVisible = false;
+        ChatUsernameTextBlock.IsVisible = false;
+        SingleChatOverlay.IsVisible = false;
+        GroupChatOverlay.IsVisible = false;
+    }
+    
+    private string NormalizeUsername(string username)
+    {
+        username = username.Trim().ToLower();
+        return username.StartsWith("@") ? username[1..] : username;
+    }
+    
+    private User? FindUserByUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            return null;
+        }
+        var normalized = NormalizeUsername(username);
+        return _allUsers.FirstOrDefault(u =>
+            NormalizeUsername(u.Username) == normalized);
+    }
+    
+    private void SearchButton_Click(object? sender, RoutedEventArgs e)
+    {
+        string username = SearchUserBox.Text.Trim();
+        if (string.IsNullOrEmpty(username))
+        {
+            SearchErrorText.Text = "Enter a username";
+            SearchErrorText.IsVisible = true;
+            if (!SearchUserBox.Classes.Contains("error"))
+            {
+                SearchUserBox.Classes.Add("error");
+            }
+            return;
+        }
+
+        var user = FindUserByUsername(username);
+        if (user != null)
+        {
+            SearchResultBorder.IsVisible = true;
+            SearchErrorText.IsVisible = false;
+            ResultUserName.Text = user.Name;
+            ResultUserUsername.Text = user.Username;
+            SearchUserBox.Classes.Remove("error");
+            SearchResultBorder.DataContext = user;
+        }
+        else
+        {
+            SearchResultBorder.IsVisible = false;
+            SearchErrorText.Text = "User not found";
+            SearchErrorText.IsVisible = true;
+            if (!SearchUserBox.Classes.Contains("error"))
+            {
+                SearchUserBox.Classes.Add("error");
+            }
+        }
+    }
+    
+    private void SearchUserBox_OnTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        SearchResultBorder.DataContext = null;
+        SearchResultBorder.IsVisible = false;
+    }
+    
+    private void StartChatButton_Click(object? sender, RoutedEventArgs e)
+    {
+        string username = SearchUserBox.Text.Trim();
+        if (string.IsNullOrEmpty(username))
+        {
+            SearchErrorText.Text = "Enter a username";
+            SearchErrorText.IsVisible = true;
+            if (!SearchUserBox.Classes.Contains("error"))
+            {
+                SearchUserBox.Classes.Add("error");
+            }
+            return;
+        }
+        if (SearchResultBorder.DataContext is not User user)
+        {
+            SearchErrorText.Text = "Find the user first";
+            SearchErrorText.IsVisible = true;
+            if (!SearchUserBox.Classes.Contains("error"))
+            {
+                SearchUserBox.Classes.Add("error");
+            }
+            return;
+        }
+        SingleChatOverlay.IsVisible = false;
+        MessageInputPanel.IsVisible = true;
+        MessagesPanel.IsVisible = true;
+        var chat = Chats.FirstOrDefault(c => !c.IsGroup && c.Username == user.Username);
+
+        if (chat == null)
+        {
+            chat = new ChatItem
+            {
+                Name = user.Name,
+                Username = user.Username,
+                Messages = new ObservableCollection<Message>()
+            };
+
+            Chats.Add(chat);
+            FilteredChats.Add(chat);
+        }
+        _currentChat = chat;
+        ChatList.SelectedItem = chat;
+        UpdateChatView(chat);
+    }
+    
+    private void GroupSearchButton_Click(object? sender, RoutedEventArgs e)
+    {
+        string username = GroupSearchBox.Text.Trim();
+        if (string.IsNullOrEmpty(username))
+        {
+            GroupSearchErrorText.Text = "Enter a username";
+            GroupSearchErrorText.IsVisible = true;
+            if (!GroupSearchBox.Classes.Contains("error"))
+            {
+                GroupSearchBox.Classes.Add("error");
+            }
+            GroupSearchResultBorder.IsVisible = false;
+            return;
+        }
+        var user = FindUserByUsername(username);
+        if (user != null)
+        {
+            GroupSearchResultBorder.DataContext = user;
+            GroupResultName.Text = user.Name;
+            GroupResultUsername.Text = user.Username;
+            GroupSearchResultBorder.IsVisible = true;
+            GroupSearchErrorText.IsVisible = false;
+            GroupSearchBox.Classes.Remove("error");
+        }
+        else
+        {
+            GroupSearchResultBorder.IsVisible = false;
+            GroupSearchErrorText.Text = "User not found";
+            GroupSearchErrorText.IsVisible = true;
+            if (!GroupSearchBox.Classes.Contains("error"))
+                GroupSearchBox.Classes.Add("error");
+        }
+    }
+    
+    private void AddMemberButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (GroupSearchResultBorder.DataContext is User user)
+        {
+            if (_selectedGroupMembers.Any(u => u.Username == user.Username))
+            {
+                GroupSearchErrorText.Text = "This user has already been added";
+                GroupSearchErrorText.IsVisible = true;
+                if (!GroupSearchBox.Classes.Contains("error"))
+                {
+                    GroupSearchBox.Classes.Add("error");
+                }
+                GroupSearchResultBorder.IsVisible = false;
+                return;
+            }
+            GroupSearchErrorText.IsVisible = false;
+            GroupSearchBox.Classes.Remove("error");
+            _selectedGroupMembers.Add(user);
+            SelectedMembersList.ItemsSource = _selectedGroupMembers;
+            GroupSearchBox.Text = "";
+            GroupSearchResultBorder.IsVisible = false;
+            GroupSearchResultBorder.DataContext = null;
+        }
+    }
+    
+    private void GroupNameBox_OnTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (GroupNameBox == null || GroupNameErrorText == null)
+        {
+            return;
+        }
+
+        if (GroupSearchErrorText.IsVisible && !string.IsNullOrWhiteSpace(GroupSearchBox.Text))
+        {
+            GroupSearchErrorText.IsVisible = false;
+            GroupSearchBox.Classes.Remove("error");
+        }
+    }
+    
+    private void CreateGroupChat_Click(object? sender, RoutedEventArgs e)
+    {
+        if (GroupNameBox == null || GroupNameErrorText == null || GroupChatOverlay == null)
+        {
+            return;
+        }
+        if (_selectedGroupMembers.Count < 2)
+        {
+            GroupSearchErrorText.Text = "Add at least 2 group members";
+            GroupSearchErrorText.IsVisible = true;
+            if (!GroupSearchBox.Classes.Contains("error"))
+            {
+                GroupSearchBox.Classes.Add("error");
+            }
+            return;
+        }
+        GroupSearchErrorText.IsVisible = false;
+        GroupSearchBox.Classes.Remove("error");
+        
+        string groupName = GroupNameBox.Text?.Trim() ?? "";
+
+        if (string.IsNullOrEmpty(groupName))
+        {
+            GroupNameErrorText.Text = "Name cannot be empty";
+            GroupNameErrorText.IsVisible = true;
+            if (!GroupNameBox.Classes.Contains("error"))
+            {
+                GroupNameBox.Classes.Add("error");
+            }
+            return;
+        }
+        GroupNameErrorText.IsVisible = false;
+        GroupNameBox.Classes.Remove("error");
+
+        var group = new ChatItem
+        {
+            Name = groupName,
+            Username = $"{_selectedGroupMembers.Count + 1} members",
+            IsGroup = true,
+            Messages = new ObservableCollection<Message>()
+        };
+
+        Chats.Add(group);
+        FilteredChats.Add(group);
+        GroupChatOverlay.IsVisible = false;
+        ChatList.SelectedItem = group;
+        _currentChat = group;
+        UpdateChatView(group);
+        _selectedGroupMembers.Clear();
+        SelectedMembersList.ItemsSource = null;
+    }
+    
+    private void AttachTextChangedHandlers(params (TextBox box, TextBlock errorText)[] pairs)
+    {
+        foreach (var (box, errorText) in pairs)
+        {
+            if (box != null && errorText != null)
+            {
+                box.GetObservable(TextBox.TextProperty).Subscribe(_ =>
+                {
+                    box.Classes.Remove("error");
+                    errorText.IsVisible = false;
+                    errorText.Text = "";
+                });
+            }
+        }
+    }
+    
+    private void AttachGroupTextChangedHandlers()
+    {
+        AttachTextChangedHandlers(
+            (this.FindControl<TextBox>("SearchUserBox"), this.FindControl<TextBlock>("SearchErrorText")),
+            (this.FindControl<TextBox>("GroupNameBox"), this.FindControl<TextBlock>("GroupNameErrorText")),
+            (this.FindControl<TextBox>("GroupSearchBox"), this.FindControl<TextBlock>("GroupSearchErrorText"))
+        );
     }
     
     private async void CopyMessage_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

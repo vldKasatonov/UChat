@@ -23,20 +23,41 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             
             <Button Grid.Row="0" Classes="nohover" HorizontalAlignment="Center" Margin="3,15,0,0" Cursor="Hand">
                 <Image Source="avares://uchat/Resources/images/exit.png" Width="30" Height="30"/>
             </Button>
             
-            <Button Grid.Row="2" Classes="nohover" HorizontalAlignment="Center" Margin="0,0,0,15" Cursor="Hand">
-                <Image Source="avares://uchat/Resources/images/light_mode.png" Width="35" Height="35"/>
+            <Button Grid.Row="2" Classes="nohover" HorizontalAlignment="Center" Cursor="Hand" Click="OpenSingleChat_Click">
+                <Image Source="avares://uchat/Resources/images/single_chat.png" Width="40" Height="40"/>
+            </Button>
+            
+            <Button Grid.Row="3" Classes="nohover" HorizontalAlignment="Center" Margin="0,20,0,30" Cursor="Hand" Click="OpenGroupChat_Click">
+                <Image Source="avares://uchat/Resources/images/group_chat.png" Width="35" Height="35"/>
+            </Button>
+            
+            <Button Grid.Row="4" Classes="nohover" HorizontalAlignment="Center" Margin="0,0,0,15" Cursor="Hand">
+                <Image Source="avares://uchat/Resources/images/mode.png" Width="35" Height="35"/>
             </Button>
         </Grid>
         
-        <Grid Grid.Column="1" Background="#453359" RowDefinitions="Auto,*">
+        <Grid Grid.Column="1" Background="#453359" RowDefinitions="Auto,Auto,*">
+            
+            <Border Grid.Row="0" Background="#3A2C4A" Padding="10">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                    <Ellipse Width="45" Height="45" Fill="Gray"/>
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Spacing="5">
+                        <TextBlock Text="{Binding CurrentUserName}" FontSize="17" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="{Binding CurrentUserUsername}" 
+                                   FontSize="14" Foreground="rgba(255,255,255,0.6)"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
-            <Border Grid.Row="0" Padding="10">
+            <Border Grid.Row="1" Padding="10">
                  <StackPanel Orientation="Horizontal" Spacing="5">
                     <Grid Width = "210">
                         <TextBox x:Name="SearchTextBox" Width="210" FontSize="15" Watermark="Search in chat..." 
@@ -52,7 +73,7 @@
                 </StackPanel> 
             </Border>
             
-            <ListBox Grid.Row="1" x:Name="ChatList" Background="#453359" SelectionChanged="ChatList_SelectionChanged">
+            <ListBox Grid.Row="2" x:Name="ChatList" Background="#453359" SelectionChanged="ChatList_SelectionChanged">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Grid ColumnDefinitions="45,*,24" IsHitTestVisible="True" Background="Transparent"
@@ -92,12 +113,12 @@
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0" Background="#45335D" Padding="10">
-                <StackPanel Orientation="Horizontal" Spacing="10" >
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <Ellipse x:Name="ChatAvatar" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center" 
                              IsVisible="False"/>
                     <StackPanel Orientation="Vertical" Spacing="5">
-                        <TextBlock x:Name="ChatHeader" FontSize="20" FontWeight="Bold" Foreground="White"/>
-                        <TextBlock x:Name="ChatStatus" FontSize="15" IsVisible="False" Foreground="White"/>
+                        <TextBlock x:Name="ChatHeader" FontSize="20" FontWeight="Bold" Foreground="White" />
+                        <TextBlock x:Name="ChatUsernameTextBlock" FontSize="15" IsVisible="False" Foreground="White" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -195,6 +216,111 @@
                        Margin="0,0,10,0"
                        PointerPressed="SendMessage_Click"/>
             </Grid>
+            
+            <Border x:Name="SingleChatOverlay" Background="#1C1729" Grid.Row="1" Grid.RowSpan="2" IsVisible="False">
+                <Grid Margin="30">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="23"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="50"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18" Padding="10" 
+                                 HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="SearchUserBox_OnTextChanged"/>
+                        <Button Grid.Column="1" x:Name="SearchButton" Content="S" FontSize="18" Margin="5,0,0,0" 
+                                Foreground="White" HorizontalAlignment="Right" Click="SearchButton_Click"/>
+                    </Grid>
+                    
+                    <TextBlock Grid.Row="1" x:Name="SearchErrorText" Text="" FontSize="14" Foreground="Red" Margin="10,7,0,0" IsVisible="False"/>
+                    
+                    <Border Grid.Row="2" x:Name="SearchResultBorder" Background="#3A2C4A" CornerRadius="10" Padding="10" Margin="0,10,0,0" IsVisible="False">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                            <Ellipse Width="45" Height="45" Fill="Gray"/>
+                            <StackPanel Orientation="Vertical" VerticalAlignment="Center" Spacing="5">
+                                <TextBlock x:Name="ResultUserName" Text="" FontSize="17" FontWeight="Bold" Foreground="White"/>
+                                <TextBlock x:Name="ResultUserUsername" Text="" FontSize="14" Foreground="rgba(255,255,255,0.6)"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                   
+                    <Button Grid.Row="4" Content="Start chat" x:Name="StartChatButton" Classes="submitBtn" Width="200" 
+                            HorizontalAlignment="Center" FontSize="18" Click="StartChatButton_Click"/>
+                </Grid>
+            </Border>
+            
+            <Border x:Name="GroupChatOverlay" Background="#1C1729" Grid.Row="1" Grid.RowSpan="2" IsVisible="False">
+                <Grid Margin="30,20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="23"/>
+                        <RowDefinition Height="60"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="50"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" x:Name="GroupSearchBox" Watermark="Search for user..." FontSize="18" Padding="10" 
+                                 HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" />
+                        <Button Grid.Column="1" x:Name="GroupSearchButton" Content="S" FontSize="18" Margin="5,0,0,0" 
+                                Foreground="White" HorizontalAlignment="Right" Click="GroupSearchButton_Click"/>
+                    </Grid>
+                    
+                    <TextBlock Grid.Row="1" x:Name="GroupSearchErrorText" Text="" FontSize="14" Foreground="Red" Margin="10,7,0,0" IsVisible="False"/>
+                    
+                    <Border Grid.Row="2" x:Name="GroupSearchResultBorder"
+                            Background="#3A2C4A" CornerRadius="10" Padding="10" Margin="0,10,0,0"
+                            IsVisible="False">
+                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                            <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" Margin="0,0,10,0"/>
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <TextBlock x:Name="GroupResultName" FontSize="17" Foreground="White"/>
+                                <TextBlock x:Name="GroupResultUsername" FontSize="14" Foreground="LightGray"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" x:Name="AddMemberButton" Classes="nohover" VerticalAlignment="Center" Margin="5,0,0,0" Cursor="Hand" Click="AddMemberButton_Click">
+                                <Image Source="avares://uchat/Resources/images/add.png" Width="30" Height="30"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                    
+                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                        <ListBox x:Name="SelectedMembersList" ItemsSource="{Binding SelectedGroupMembers}" Height="280"
+                                 Background="#3A2C4A" CornerRadius="10" BorderBrush="Transparent" Margin="0,15,0,15">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Ellipse Width="30" Height="30" Fill="Gray"/>
+                                        <StackPanel Orientation="Vertical" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                                            <TextBlock Text="{Binding Username}" FontSize="14" Foreground="#CCCCCC"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </ScrollViewer>
+                    
+                    <TextBox Grid.Row="4" x:Name="GroupNameBox" Watermark="Enter chat name" FontSize="18" Padding="10"
+                             HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="GroupNameBox_OnTextChanged"/>
+                    
+                    <TextBlock Grid.Row="5" x:Name="GroupNameErrorText" Text="Name cannot be empty" FontSize="14" Foreground="Red" Margin="10,2,0,0" IsVisible="False"/>
+                    
+                    <Button Grid.Row="6" Content="Create group chat" x:Name="CreateGroupButton" Classes="submitBtn" Width="200" VerticalAlignment="Bottom"
+                            HorizontalAlignment="Center" FontSize="18" Click="CreateGroupChat_Click"/>
+                </Grid>
+            </Border>
+            
         </Grid>
         </Grid>
         
