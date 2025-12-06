@@ -11,7 +11,7 @@ public class UchatDbContextFactory : IDesignTimeDbContextFactory<UchatDbContext>
         string dbConnectionString;
         try 
         {   
-            dbConnectionString = Configer.GetDbConnectionString();
+            dbConnectionString = Configer.GetDbConnectionString(Directory.GetCurrentDirectory());
         }
         catch (InvalidOperationException e)
         {

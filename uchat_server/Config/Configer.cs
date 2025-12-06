@@ -15,11 +15,11 @@ public static class Configer
         "POSTGRES_PASSWORD"
     ];
     
-    public static string GetDbConnectionString()
+    public static string GetDbConnectionString(string basePath)
     {
         new EnvLoader().Load();
         IConfigurationRoot configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
+            .SetBasePath(basePath)
             .AddJsonFile(ConfigFile)
             .AddEnvironmentVariables()
             .Build();
