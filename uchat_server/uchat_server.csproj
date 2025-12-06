@@ -10,5 +10,18 @@
     <ItemGroup>
       <ProjectReference Include="..\dto\dto.csproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="DotEnv.Core" Version="3.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+    </ItemGroup>
 
 </Project>

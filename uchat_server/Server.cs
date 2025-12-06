@@ -4,6 +4,9 @@ using System.Text.Json;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using uchat_server.Data;
 
 namespace uchat_server;
 
@@ -11,10 +14,12 @@ public class Server
 {
     private TcpListener _listener;
     private ConcurrentDictionary<int, TcpClient> _clients = new();
-
-    public Server(int port)
+    private string _dbConnection;
+    
+    public Server(int port, string dbConnection)
     {
         _listener = new TcpListener(IPAddress.Any, port);
+        _dbConnection = dbConnection;
     }
 
     public async Task Run()
@@ -39,6 +44,11 @@ public class Server
         {
             _listener.Stop();
         }
+    }
+    
+    private UchatDbContext CreateDbContext()
+    {
+        return new UchatDbContext(_dbConnection); 
     }
 
     private async Task HandleClientAsync(TcpClient client)
@@ -84,7 +94,7 @@ public class Server
                     continue;
                 }
 
-                Response response = ProcessRequest(request);
+                Response response = await ProcessRequest(request);
                 
                 Console.WriteLine($"Response for client: {JsonSerializer.Serialize(response)}");
 
@@ -126,21 +136,21 @@ public class Server
         }
     }
     
-    private static Response ProcessRequest(Request request)
+    private async Task<Response> ProcessRequest(Request request)
     {
         try
         {
             switch (request.Type)
             {
-                case CommandType.Login:
-                    var loginReqPayload = request.Payload.Deserialize<LoginRequestPayload>();
-                    return HandleLogin(loginReqPayload);
                 case CommandType.Register:
                     var registerReqPayload = request.Payload.Deserialize<RegisterRequestPayload>();
-                    return HandleRegister(registerReqPayload);
+                    return await HandleRegister(registerReqPayload);
+                case CommandType.Login:
+                    var loginReqPayload = request.Payload.Deserialize<LoginRequestPayload>();
+                    return await HandleLogin(loginReqPayload);
                 case CommandType.Reconnect:
                     var reconnectReqPayload = request.Payload.Deserialize<ReconnectRequestPayload>();
-                    return HandleReconnect(reconnectReqPayload);
+                    return await HandleReconnect(reconnectReqPayload);
             }
         }
         catch (Exception)
@@ -150,16 +160,66 @@ public class Server
         
         return new Response { Status = Status.Error, Type = request.Type };
     }
+
+    private Task<Response> HandleRegister(RegisterRequestPayload? registerReqPayload)
+    {
+        if (registerReqPayload is null)
+        {
+            return Task.FromResult(new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Register
+            });
+        }
+
+        try
+        {
+            User newUser = RegisterUserAsync(registerReqPayload)
+                .GetAwaiter()
+                .GetResult();
+            var responsePayload = new RegisterResponsePayload
+            {
+                UserId = newUser.Id,
+                Nickname = newUser.Nickname,
+                Username = newUser.Username
+            };
+
+            return Task.FromResult(new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.Register,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            });
+        }
+        catch (InvalidOperationException e)
+        {
+            var errorPayload = new ErrorPayload
+            {
+                Message = e.Message
+            };
+
+            return Task.FromResult(new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Register,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            });
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+    }
     
-    private static Response HandleLogin(LoginRequestPayload? loginReqPayload)
+    private Task<Response> HandleLogin(LoginRequestPayload? loginReqPayload)
     {
         if (loginReqPayload is null)
         {
-            return new Response
+            return Task.FromResult(new Response
             {
                 Status = Status.Error,
                 Type = CommandType.Login
-            };
+            });
         }
         
         // TODO: realise login to DB
@@ -170,12 +230,12 @@ public class Server
                 Message = "Invalid username or password."
             };
 
-            return new Response
+            return Task.FromResult(new Response
             {
                 Status = Status.Error,
                 Type = CommandType.Login,
                 Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
-            };
+            });
         }
 
         var responsePayload = new LoginResponsePayload
@@ -184,65 +244,50 @@ public class Server
             Username = loginReqPayload.Username
         };
         
-        return new Response
+        return Task.FromResult(new Response
         {
             Status = Status.Success,
             Type = CommandType.Login,
             Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-        };
+        });
     }
-
-    private static Response HandleRegister(RegisterRequestPayload? registerReqPayload)
+    
+    private async Task<User> RegisterUserAsync(RegisterRequestPayload payload)
     {
-        if (registerReqPayload is null)
+        var newUser = new User
         {
-            return new Response
-            {
-                Status = Status.Error,
-                Type = CommandType.Register
-            };
-        }
-
-        // TODO: realise register to DB
-        if (registerReqPayload is { Username: "1", Password: "password" })
-        {
-            var errorPayload = new ErrorPayload
-            {
-                Message = "Username already exists."
-            };
-
-            return new Response
-            {
-                Status = Status.Error,
-                Type = CommandType.Register,
-                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
-            };
-        }
-
-        var responsePayload = new RegisterResponsePayload
-        {
-            UserId = 1,
-            Nickname = registerReqPayload.Nickname,
-            Username = registerReqPayload.Username
+            Username = payload.Username,
+            Nickname = payload.Nickname,
+            HashPassword = payload.Password, //TODO: hash
+            IsOnline = false,
+            Avatar = null
         };
+
+        await using (var dbContext = CreateDbContext())
+        {
+            try
+            {
+                dbContext.Users.Add(newUser);
+                await dbContext.SaveChangesAsync();
+            }
+            catch(DbUpdateException e) when ((e.InnerException as PostgresException)?.SqlState == "23505")
+            {
+                throw new InvalidOperationException("Username already exists");
+            }
+        }
         
-        return new Response
-        {
-            Status = Status.Success,
-            Type = CommandType.Register,
-            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-        };
+        return newUser;
     }
 
-    private static Response HandleReconnect(ReconnectRequestPayload? requestPayload)
+    private Task<Response> HandleReconnect(ReconnectRequestPayload? requestPayload)
     {
         if (requestPayload is null)
         {
-            return new Response
+            return Task.FromResult(new Response
             {
                 Status = Status.Error,
                 Type = CommandType.Reconnect
-            };
+            });
         }
         
         // TODO: check ID in DB
@@ -252,11 +297,11 @@ public class Server
             UserId = requestPayload.UserId
         };
         
-        return new Response
+        return Task.FromResult(new Response
         {
             Status = Status.Success,
             Type = CommandType.Reconnect,
             Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-        };
+        });
     }
 }
