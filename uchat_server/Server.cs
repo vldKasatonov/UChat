@@ -13,9 +13,9 @@ namespace uchat_server;
 public class Server
 {
     private TcpListener _listener;
-    private ConcurrentDictionary<string, TcpClient> _clients = new();
+    private ConcurrentDictionary<int, TcpClient> _clients = new();
     private string _dbConnection;
-
+    
     public Server(int port, string dbConnection)
     {
         _listener = new TcpListener(IPAddress.Any, port);
@@ -25,16 +25,14 @@ public class Server
     public async Task Run()
     {
         _listener.Start();
-        //TODO: refactor message
-        Console.WriteLine($"Process ID: {Environment.ProcessId}"); 
-        Console.WriteLine("Awaiting connections...");
+        Console.WriteLine($"Process ID: {Environment.ProcessId}");
         
         try
         {
             while (true)
             {
                 TcpClient client = await _listener.AcceptTcpClientAsync();
-                Console.WriteLine("New client connected."); //TODO: refactor message
+                Console.WriteLine("New client connected."); //TODO: delete message
                 _ = HandleClientAsync(client);
             }
         }
@@ -55,7 +53,7 @@ public class Server
 
     private async Task HandleClientAsync(TcpClient client)
     {
-        string? username = string.Empty;
+        int? userId = null;
         NetworkStream stream = client.GetStream();
         using StreamReader reader = new(stream, Encoding.UTF8);
         using StreamWriter writer = new(stream, Encoding.UTF8);
@@ -67,48 +65,59 @@ public class Server
             {
                 string? jsonRequest = await reader.ReadLineAsync();
                 
-                if (jsonRequest is null)
-                {
-                    break;
-                }
-                
                 if (string.IsNullOrWhiteSpace(jsonRequest))
                 {
                     continue;
                 }
                 
-                Console.WriteLine($"Received from client: {jsonRequest}");  //TODO: delete message
-                Request? request = JsonSerializer.Deserialize<Request>(jsonRequest);
+                //TODO: delete logs
+                
+                Console.WriteLine($"Received from client: {jsonRequest}");
+                Request? request;
+
+                try
+                {
+                    request = JsonSerializer.Deserialize<Request>(jsonRequest);
+                }
+                catch (JsonException)
+                {
+                    request = null;
+                }
                 
                 if (request is null)
                 {
-                    continue; //TODO: return response to user
+                    string errorResponse = JsonSerializer.Serialize
+                    (
+                        new Response { Status = Status.Error }
+                    );
+                    await writer.WriteLineAsync(errorResponse);
+                    continue;
                 }
 
                 Response response = await ProcessRequest(request);
                 
                 Console.WriteLine($"Response for client: {JsonSerializer.Serialize(response)}");
 
-                if (response.Status == Status.Success)
+                string jsonResponse = JsonSerializer.Serialize(response);
+                await writer.WriteLineAsync(jsonResponse);
+
+                if (userId is null && response.Status == Status.Success)
                 {
-                    username = response.Type switch
+                    userId = response.Type switch
                     {
-                        CommandType.Login => response.Payload.Deserialize<LoginResponsePayload>()?.Username,
-                        CommandType.Register => response.Payload.Deserialize<RegisterResponsePayload>()?.Username,
+                        CommandType.Login => response.Payload.Deserialize<LoginResponsePayload>()?.UserId,
+                        CommandType.Register => response.Payload.Deserialize<RegisterResponsePayload>()?.UserId,
+                        CommandType.Reconnect => response.Payload.Deserialize<ReconnectResponsePayload>()?.UserId,
                         _ => null
                     };
                     
-                    if (!string.IsNullOrEmpty(username))
+                    if (userId != null)
                     {
-                        _clients.TryAdd(username, client);
-                        Console.WriteLine($"User '{username}' logged in.");
+                        _clients.TryAdd((int)userId, client);
+                        Console.WriteLine($"User '{userId}' is active.");
                     }
                 }
-                
-                string jsonResponse = JsonSerializer.Serialize(response);
-                await writer.WriteLineAsync(jsonResponse);
             }
-            
         }
         catch (Exception)
         {
@@ -116,10 +125,10 @@ public class Server
         }
         finally
         {
-            if (!string.IsNullOrEmpty(username))
+            if (userId != null)
             {
-                _clients.TryRemove(username, out _);
-                Console.WriteLine($"User '{username}' disconnected.");
+                _clients.TryRemove((int)userId, out _);
+                Console.WriteLine($"User '{userId}' disconnected.");
             }
             
             client.Close();
@@ -139,18 +148,17 @@ public class Server
                 case CommandType.Login:
                     var loginReqPayload = request.Payload.Deserialize<LoginRequestPayload>();
                     return await HandleLogin(loginReqPayload);
+                case CommandType.Reconnect:
+                    var reconnectReqPayload = request.Payload.Deserialize<ReconnectRequestPayload>();
+                    return await HandleReconnect(reconnectReqPayload);
             }
         }
-        catch (Exception) //ex)
+        catch (Exception)
         {
-            //TODO
+            return new Response { Status = Status.Error };
         }
         
-        return new Response
-        {
-            Status = Status.Error,
-            Type = request.Type,
-        };
+        return new Response { Status = Status.Error, Type = request.Type };
     }
 
     private Task<Response> HandleRegister(RegisterRequestPayload? registerReqPayload)
@@ -203,7 +211,7 @@ public class Server
         }
     }
     
-    private static Task<Response> HandleLogin(LoginRequestPayload? loginReqPayload)
+    private Task<Response> HandleLogin(LoginRequestPayload? loginReqPayload)
     {
         if (loginReqPayload is null)
         {
@@ -269,5 +277,31 @@ public class Server
         }
         
         return newUser;
+    }
+
+    private Task<Response> HandleReconnect(ReconnectRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return Task.FromResult(new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Reconnect
+            });
+        }
+        
+        // TODO: check ID in DB
+        
+        var responsePayload = new ReconnectResponsePayload()
+        {
+            UserId = requestPayload.UserId
+        };
+        
+        return Task.FromResult(new Response
+        {
+            Status = Status.Success,
+            Type = CommandType.Reconnect,
+            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+        });
     }
 }

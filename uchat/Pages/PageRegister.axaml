@@ -5,7 +5,7 @@
              mc:Ignorable="d"
              x:Class="uchat.PageRegister">
 
-    <Border Background="White">
+    <Border Background="#F1EFF5">
         <Grid ColumnDefinitions="Auto,*">
             <Grid Grid.Column="0" Width="255">
                 <Grid Grid.Column="0">

@@ -32,3 +32,9 @@ public class RegisterRequestPayload
     [JsonPropertyName("password")]
     public string Password { get; set; } = string.Empty;
 }
+
+public class ReconnectRequestPayload
+{
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+}

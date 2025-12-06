@@ -41,3 +41,9 @@ public class RegisterResponsePayload
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
 }
+
+public class ReconnectResponsePayload
+{
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+}
