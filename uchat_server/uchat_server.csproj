@@ -11,4 +11,13 @@
       <ProjectReference Include="..\dto\dto.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include="server_certificate.pfx"> <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    </ItemGroup>
+
 </Project>
