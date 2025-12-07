@@ -42,7 +42,7 @@ public class UchatDbContext : DbContext
                 .IsRequired();
 
             entity.Property(u => u.HashPassword)
-                .HasMaxLength(50) //change
+                .HasMaxLength(60)
                 .IsRequired();
 
             entity.Property(u => u.IsOnline)

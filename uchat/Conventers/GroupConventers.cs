@@ -13,7 +13,9 @@ namespace uchat
             }
             bool isMine = values[0] as bool? ?? false;
             bool isGroup = values[1] as bool? ?? false;
-            return isGroup && !isMine;
+            bool showAvatar = values[2] as bool? ?? false;
+            
+            return isGroup && !isMine && showAvatar;
         }
 
         public object ConvertBack(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)

@@ -24,6 +24,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private ChatItem? _currentChat = null;
     private static long _pinSequence = 0;
     private bool _isLight = true;
+    private bool _isMembersPanelOpen = false;
+    private bool _showToggleMembersButton;
     
     private bool _isReconnecting;
     public bool IsReconnecting
@@ -104,28 +106,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 new Message { Sender = "Vika", Text = "dggzhgjyr", IsMine = false }
             }
         });
-
-        Chats.Add(new ChatItem
-        {
-            Name = "Masha",
-            Username = "@2"
-        });
-
-        Chats.Add(new ChatItem
-        {
-            Name = "Uchat",
-            Username = "6 members",
-            IsGroup = true,
-            Messages = new ObservableCollection<Message>
-            {
-                new Message { Sender = "Vika", Text = "fngngnbdgngfn ndfg nfgnfg n f nf gng ffg g nf g n dfv df ed  dfdfhggdfhgbfjhbdhfgjdfhgdfbhjbhjfg", IsMine = false },
-                new Message { Sender = "Me", Text = "hvjhyvkv", IsMine = true },
-                new Message { Sender = "Mariia", Text = "bdgdfbfb", IsMine = false },
-                new Message { Sender = "Roma", Text = "scahbkhdcbs", IsMine = false },
-                new Message { Sender = "Masha", Text = "hfbeaskcjabsk", IsMine = false },
-                new Message { Sender = "Vlad", Text = "pon", IsMine = false }
-            }
-        });
         
         _allUsers = new List<User>
         {
@@ -133,6 +113,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             new User { Name = "Vika", Username = "@1" },
             new User { Name = "Masha", Username = "@2" },
             new User { Name = "Mariia", Username = "@3" },
+            new User { Name = "Vika 2", Username = "@5" },
+            new User { Name = "Masha 2", Username = "@6" },
+            new User { Name = "Mariia 2", Username = "@7" },
             new User { Name = "Roma", Username = "@4" }
         };
         
@@ -182,6 +165,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         public ObservableCollection<Message> Messages { get; set; } = new();
         public string Username { get; set; } = "";
         public bool IsGroup { get; set; } = false;
+        public ObservableCollection<User> Members { get; set; } = new();
         public string LastMessage => Messages.LastOrDefault()?.Text ?? "";
         private string _draft = "";
         private bool _isPinned = false;
@@ -263,6 +247,24 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         ChatAvatar.IsVisible = true;
         ChatUsernameTextBlock.Text = contact.Username;
         ChatUsernameTextBlock.IsVisible = true;
+        ShowToggleMembersButton = contact.IsGroup;
+        if (contact.IsGroup)
+        {
+            GroupMembersList.ItemsSource = contact.Members;
+            GroupMembersPanel.IsVisible = false;
+            _isMembersPanelOpen = false;
+            UpImage.IsVisible = false;
+            DownImage.IsVisible = true;
+        }
+        else
+        {
+            GroupMembersList.ItemsSource = null;
+            GroupMembersPanel.IsVisible = false;
+            _isMembersPanelOpen = false;
+        }
+        
+        ComputeGroupingFlags(contact.Messages);
+        
         SelectedChatMessages.Clear();
         foreach (var msg in contact.Messages)
         {
@@ -515,6 +517,16 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         // {
             contact.Messages.Add(msg);
             SelectedChatMessages.Add(msg);
+            int count = contact.Messages.Count;
+            if (count > 2)
+            {
+                ComputeFlagsAtIndex(contact.Messages, count - 1);
+                ComputeFlagsAtIndex(contact.Messages, count - 2);
+            }
+            else
+            {
+                ComputeGroupingFlags(contact.Messages);
+            }
             contact.Draft = "";
             MessageTextBox.Text = "";
             contact.NotifyLastMessageChanged();
@@ -574,6 +586,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         ChatUsernameTextBlock.IsVisible = false;
         SingleChatOverlay.IsVisible = false;
         GroupChatOverlay.IsVisible = false;
+        ShowToggleMembersButton = false;
     }
     
     private string NormalizeUsername(string username)
@@ -792,7 +805,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             Name = groupName,
             Username = $"{_selectedGroupMembers.Count + 1} members",
             IsGroup = true,
-            Messages = new ObservableCollection<Message>()
+            Messages = new ObservableCollection<Message>(),
+            Members = new ObservableCollection<User>(_selectedGroupMembers)
         };
 
         Chats.Add(group);
@@ -828,6 +842,52 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             (this.FindControl<TextBox>("GroupNameBox"), this.FindControl<TextBlock>("GroupNameErrorText")),
             (this.FindControl<TextBox>("GroupSearchBox"), this.FindControl<TextBlock>("GroupSearchErrorText"))
         );
+    }
+    
+    private void ToggleMembersButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_currentChat == null || !_currentChat.IsGroup)
+        {
+            return;
+        }
+
+        _isMembersPanelOpen = !_isMembersPanelOpen;
+        GroupMembersPanel.IsVisible = _isMembersPanelOpen;
+        UpImage.IsVisible = _isMembersPanelOpen;
+        DownImage.IsVisible = !_isMembersPanelOpen;
+
+        if (_isMembersPanelOpen)
+        {
+            var members = new ObservableCollection<User>
+            {
+                new User
+                {
+                    Name = CurrentUserName,
+                    Username = CurrentUserUsername
+                }
+            };
+            foreach (var member in _currentChat.Members)
+            {
+                if (member.Username != CurrentUserUsername)
+                {
+                    members.Add(member);
+                }
+            }
+            GroupMembersList.ItemsSource = members;
+        }
+    }
+    
+    public bool ShowToggleMembersButton
+    {
+        get => _showToggleMembersButton;
+        set
+        {
+            if (_showToggleMembersButton != value)
+            {
+                _showToggleMembersButton = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowToggleMembersButton)));
+            }
+        }
     }
     
     private async void CopyMessage_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -898,5 +958,50 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         _isLight = !_isLight;
 
         (Application.Current as App)?.SetTheme(_isLight ? "Light" : "Dark");
+    
+    //message grouping
+
+    private static readonly TimeSpan GroupThreshold = TimeSpan.FromMinutes(3);
+
+    private void ComputeGroupingFlags(IList<Message> messages)
+    {
+        if (messages == null || messages.Count == 0)
+            return;
+
+        for (int i = 0; i < messages.Count; i++)
+            ComputeFlagsAtIndex(messages, i);
+    }
+
+    private void ComputeFlagsAtIndex(IList<Message> messages, int index)
+    {
+        if (messages.Count == 0 || index < 0 || index >= messages.Count)
+            return;
+
+        var cur = messages[index];
+        Message? prev = index > 0 ? messages[index - 1] : null;
+        Message? next = index < messages.Count - 1 ? messages[index + 1] : null;
+
+        bool isFirst = true;
+        bool isLast = true;
+
+        if (prev != null &&
+            prev.Sender == cur.Sender &&
+            (cur.Timestamp - prev.Timestamp) <= GroupThreshold &&
+            !prev.IsDeleted && !cur.IsDeleted)
+        {
+            isFirst = false;
+        }
+
+        if (next != null &&
+            next.Sender == cur.Sender &&
+            (next.Timestamp - cur.Timestamp) <= GroupThreshold &&
+            !next.IsDeleted && !cur.IsDeleted)
+        {
+            isLast = false;
+        }
+
+        cur.IsFirstInGroup = isFirst;
+        cur.ShowAvatar = isLast;
+        cur.ShowTail = isLast;
     }
 }

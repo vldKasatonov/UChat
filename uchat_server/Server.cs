@@ -7,12 +7,16 @@ using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using uchat_server.Data;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using BCrypt.Net;
 
 namespace uchat_server;
 
 public class Server
 {
     private TcpListener _listener;
+    private readonly X509Certificate2 _serverCertificate;
     private ConcurrentDictionary<int, TcpClient> _clients = new();
     private string _dbConnection;
     
@@ -20,6 +24,7 @@ public class Server
     {
         _listener = new TcpListener(IPAddress.Any, port);
         _dbConnection = dbConnection;
+        _serverCertificate = GetServerCertificate();
     }
 
     public async Task Run()
@@ -54,13 +59,19 @@ public class Server
     private async Task HandleClientAsync(TcpClient client)
     {
         int? userId = null;
-        NetworkStream stream = client.GetStream();
-        using StreamReader reader = new(stream, Encoding.UTF8);
-        using StreamWriter writer = new(stream, Encoding.UTF8);
-        writer.AutoFlush = true;
+        NetworkStream networkStream = client.GetStream();
+        
+        SslStream sslStream = new SslStream(networkStream, false);
 
         try
         {
+            await sslStream.AuthenticateAsServerAsync(_serverCertificate);
+            Console.WriteLine("SSL authentication completed.");
+
+            using StreamReader reader = new(sslStream, Encoding.UTF8);
+            using StreamWriter writer = new(sslStream, Encoding.UTF8);
+            writer.AutoFlush = true;
+            
             while (client.Connected)
             {
                 string? jsonRequest = await reader.ReadLineAsync();
@@ -119,6 +130,16 @@ public class Server
                 }
             }
         }
+        catch (System.Security.Authentication.AuthenticationException ex)
+        {
+            // Error during SSL/TLS authentication
+            Console.WriteLine($"TLS Authentication Error: {ex.Message}");
+        }
+        catch (IOException ex) when (ex.InnerException is SocketException sockEx)
+        {
+            // Client disconnected 
+            Console.WriteLine($"Client disconnected unexpectedly or reset connection. Message: {sockEx.Message}");
+        }
         catch (Exception)
         {
             //Console.WriteLine($"Error handling client: {ex.Message}");
@@ -174,6 +195,8 @@ public class Server
 
         try
         {
+            string hashedPassword = BCrypt.Net.BCrypt.EnhancedHashPassword(registerReqPayload.Password, workFactor: 12);
+            registerReqPayload.Password = hashedPassword; //??
             User newUser = RegisterUserAsync(registerReqPayload)
                 .GetAwaiter()
                 .GetResult();
@@ -221,8 +244,25 @@ public class Server
                 Type = CommandType.Login
             });
         }
-        
+
         // TODO: realise login to DB
+        
+        // get hashedPassword from DB
+        // if (!BCrypt.Net.BCrypt.EnhancedVerify(loginReqPayload.Password, hashedPassword))
+        // {
+        //     var errorPayload = new ErrorPayload
+        //     {
+        //         Message = "Invalid username or password."
+        //     };
+
+        //     return new Response
+        //     {
+        //         Status = Status.Error,
+        //         Type = CommandType.Login,
+        //         Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+        //     };
+        // }
+
         if (loginReqPayload is { Username: "1", Password: "password" })
         {
             var errorPayload = new ErrorPayload
@@ -303,5 +343,25 @@ public class Server
             Type = CommandType.Reconnect,
             Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
         });
+    }
+
+    private X509Certificate2 GetServerCertificate()
+    {
+        string baseDirectory = AppContext.BaseDirectory;
+        string certPath = Path.Combine(baseDirectory, "server_certificate.pfx");
+        string certPassword = "MySuperSecretPassword"; 
+
+        try
+        {
+            byte[] certBytes = File.ReadAllBytes(certPath);
+
+            X509Certificate2 certificate = X509CertificateLoader.LoadPkcs12(certBytes, certPassword, X509KeyStorageFlags.DefaultKeySet);
+            return certificate;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Certificate upload error: {ex.Message}");
+            throw;
+        }
     }
 }
