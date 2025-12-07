@@ -958,7 +958,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         _isLight = !_isLight;
 
         (Application.Current as App)?.SetTheme(_isLight ? "Light" : "Dark");
-    
+    }
+
     //message grouping
 
     private static readonly TimeSpan GroupThreshold = TimeSpan.FromMinutes(3);
