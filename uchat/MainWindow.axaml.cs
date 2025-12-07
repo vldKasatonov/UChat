@@ -15,7 +15,7 @@ public partial class MainWindow : Window
     public MainWindow(Client client) : this()
     {
         _control = this.FindControl<ContentControl>("PageHost");
-        Navigate(new PageChat(client));
+        Navigate(new PageLogin(client));
     }
 
     private void InitializeComponent()
