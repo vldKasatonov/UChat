@@ -116,113 +116,144 @@
             </Grid.RowDefinitions>
 
             <Border Grid.Row="0" Background="#45335D" Padding="10">
-                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <Ellipse x:Name="ChatAvatar" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center" 
-                             IsVisible="False"/>
-                    <StackPanel Orientation="Vertical" Spacing="5">
+                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                    <Ellipse Grid.Column="0" x:Name="ChatAvatar" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center" 
+                                            IsVisible="False"/>
+                    <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="5" Margin="10,0,0,0">
                         <TextBlock x:Name="ChatHeader" FontSize="20" FontWeight="Bold" Foreground="White" />
                         <TextBlock x:Name="ChatUsernameTextBlock" FontSize="15" IsVisible="False" Foreground="White" />
                     </StackPanel>
-                </StackPanel>
+                    <Button Grid.Column="2" Width="30" Height="30" IsVisible="{Binding ShowToggleMembersButton}"
+                                  Cursor="Hand" Classes="nohover" Click="ToggleMembersButton_Click" Margin="0,0,10,0">
+                        <Grid>
+                            <Image x:Name="UpImage" Source="avares://uchat/Resources/images/up.png"/>
+                            <Image x:Name="DownImage" Source="avares://uchat/Resources/images/down.png"/>
+                        </Grid>
+                    </Button>
+                </Grid>
             </Border>
-
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,5,0">
-                <ItemsControl x:Name="MessagesPanel" ItemsSource="{Binding SelectedChatMessages}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="{Binding IsMine, 
-                                    Converter={StaticResource BoolToAlignment}}" Margin="3,5" VerticalAlignment="Bottom">
-                                <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom">
-                                    <Ellipse.IsVisible>
-                                        <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
-                                            <Binding Path="IsMine"/>
-                                            <Binding Path="IsGroup"/>
-                                            <Binding Path="ShowAvatar"/>
-                                        </MultiBinding>
-                                    </Ellipse.IsVisible>
-                                    <Ellipse.Fill>
-                                        <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
-                                    </Ellipse.Fill>
-                                </Ellipse>
-                                
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Sender}" Margin="10,0,0,2">
-                                        <TextBlock.IsVisible>
-                                            <MultiBinding Converter="{StaticResource GroupSenderVisibilityConverter}">
+            
+            <Grid Grid.Row="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0" ZIndex="0">
+                    <ItemsControl x:Name="MessagesPanel" ItemsSource="{Binding SelectedChatMessages}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="{Binding IsMine, 
+                                        Converter={StaticResource BoolToAlignment}}" Margin="3,5" VerticalAlignment="Bottom">
+                                    <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom" >
+                                        <Ellipse.Fill>
+                                            <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
+                                        </Ellipse.Fill>
+                                        <Ellipse.IsVisible>
+                                            <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
                                                 <Binding Path="IsMine"/>
                                                 <Binding Path="IsGroup"/>
+                                                <Binding Path="ShowAvatar"/>
                                             </MultiBinding>
-                                        </TextBlock.IsVisible>
-                                    </TextBlock>
+                                        </Ellipse.IsVisible>
+                                    </Ellipse>
                                     
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Sender}" Margin="10,0,0,2">
+                                            <TextBlock.IsVisible>
+                                                <MultiBinding Converter="{StaticResource GroupSenderVisibilityConverter}">
+                                                    <Binding Path="IsMine"/>
+                                                    <Binding Path="IsGroup"/>
+                                                </MultiBinding>
+                                            </TextBlock.IsVisible>
+                                        </TextBlock>
                                         
-                                        <Polygon Grid.Column="0" Width="10" Height="10" Points="10,0 -5,7 15,10" ZIndex="0" 
-                                                 Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
-                                                 VerticalAlignment="Bottom" Margin="0,0,-4,0">
-                                            <Polygon.IsVisible>
-                                                <MultiBinding Converter="{StaticResource TailLeftVisibilityConverter}">
-                                                    <Binding Path="ShowTail"/>
-                                                    <Binding Path="IsMine"/>
-                                                </MultiBinding>
-                                            </Polygon.IsVisible>
-                                            <Polygon.RenderTransform>
-                                            <TranslateTransform Y="-1"/>
-                                        </Polygon.RenderTransform>
-                                        </Polygon>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <Polygon Grid.Column="0" Width="10" Height="10" Points="10,0 -5,7 15,10" ZIndex="0" 
+                                                     Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
+                                                     VerticalAlignment="Bottom" Margin="0,0,-4,0">
+                                                <Polygon.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource TailLeftVisibilityConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                    </MultiBinding>
+                                                </Polygon.IsVisible>
+                                                <Polygon.RenderTransform>
+                                                <TranslateTransform Y="-1"/>
+                                            </Polygon.RenderTransform>
+                                            </Polygon>
 
-                                        <Border Grid.Column="1" VerticalAlignment="Bottom" Background="{Binding IsMine, Converter={StaticResource BoolToBrush}}" 
-                                                CornerRadius="10" Padding="10,5" ZIndex="1" MaxWidth="350">
-                                            <Border.Margin>
-                                                <MultiBinding Converter="{StaticResource TailMarginConverter}">
-                                                    <Binding Path="ShowTail"/>
-                                                    <Binding Path="IsMine"/>
-                                                </MultiBinding>
-                                            </Border.Margin>
-                                            <StackPanel Orientation="Horizontal" Spacing="5">
-                                                
-                                                <Image Source="avares://uchat/Resources/images/DeletedMsg.png" Width="16" Height="16"
-                                                       IsVisible="{Binding IsDeleted}"/>
+                                            <Border Grid.Column="1" VerticalAlignment="Bottom" Background="{Binding IsMine, Converter={StaticResource BoolToBrush}}" 
+                                                    CornerRadius="10" Padding="10,5" ZIndex="1">
+                                                <Border.Margin>
+                                                    <MultiBinding Converter="{StaticResource TailMarginConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                    </MultiBinding>
+                                                </Border.Margin>
+                                                <StackPanel Orientation="Horizontal" Spacing="5">
+                                                    
+                                                    <Image Source="avares://uchat/Resources/images/DeletedMsg.png" Width="16" Height="16"
+                                                           IsVisible="{Binding IsDeleted}"/>
 
-                                                <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" LineHeight="20" Foreground="White"/>
-                                            </StackPanel>
+                                                    <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" LineHeight="20" Foreground="White" MaxWidth="350"/>
+                                                </StackPanel>
 
-                                            <Border.ContextMenu>
-                                                <ContextMenu>
-                                                    <MenuItem Header="Copy" Click="CopyMessage_Click"/>
-                                                    <MenuItem Header="Delete">
-                                                        <MenuItem Header="Delete for me" Click="DeleteMessageForMe_Click"/>
-                                                        <MenuItem Header="Delete for everyone" Click="DeleteMessageForAll_Click"/>
-                                                    </MenuItem>
-                                                </ContextMenu>
-                                            </Border.ContextMenu>
-                                        </Border>
-                                        
-                                        <Polygon Grid.Column="2" Width="10" Height="10" Points="-10,-5 14,7 -15,11" Margin="-4,0,0,0" 
-                                                 ZIndex="0" Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
-                                                 VerticalAlignment="Bottom">
-                                            <Polygon.IsVisible>
-                                                <MultiBinding Converter="{StaticResource TailRightVisibilityConverter}">
-                                                    <Binding Path="ShowTail"/>
-                                                    <Binding Path="IsMine"/>
-                                                </MultiBinding>
-                                            </Polygon.IsVisible>
-                                            <Polygon.RenderTransform>
-                                            <TranslateTransform Y="-1"/>
-                                        </Polygon.RenderTransform>
-                                        </Polygon>
-                                    </Grid>
+                                                <Border.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Copy" Click="CopyMessage_Click"/>
+                                                        <MenuItem Header="Delete">
+                                                            <MenuItem Header="Delete for me" Click="DeleteMessageForMe_Click"/>
+                                                            <MenuItem Header="Delete for everyone" Click="DeleteMessageForAll_Click"/>
+                                                        </MenuItem>
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
+                                            </Border>
+                                            
+                                            <Polygon Grid.Column="2" Width="10" Height="10" Points="-10,-5 14,7 -15,11" Margin="-4,0,0,0" 
+                                                     ZIndex="0" Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
+                                                     VerticalAlignment="Bottom">
+                                                <Polygon.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource TailRightVisibilityConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                    </MultiBinding>
+                                                </Polygon.IsVisible>
+                                                <Polygon.RenderTransform>
+                                                <TranslateTransform Y="-1"/>
+                                            </Polygon.RenderTransform>
+                                            </Polygon>
+                                        </Grid>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                
+                <Border x:Name="GroupMembersPanel" Background="#453359" Padding="8" IsVisible="False" ZIndex="1" 
+                        VerticalAlignment="Top" Width="300" HorizontalAlignment="Right" MaxHeight="300">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Group members" FontSize="16" FontWeight="Bold" Margin="5,0,0,10" Foreground="White"/>
+                            <ItemsControl x:Name="GroupMembersList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="40,*" Margin="4">
+                                            <Ellipse Grid.Column="0" Width="35" Height="35" Fill="Gray" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="10,0">
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="White" Margin="0,0,0,3" />
+                                                <TextBlock Text="{Binding Username}" FontSize="14" Foreground="White"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
             
             <Grid x:Name="MessageInputPanel" Grid.Row="2" IsVisible="False" Margin="10">
                 <Grid.ColumnDefinitions>
