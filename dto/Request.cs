@@ -17,7 +17,6 @@ public class LoginRequestPayload
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
 
-    //TODO: hash password
     [JsonPropertyName("password")]
     public string Password { get; set; } = string.Empty; 
 }
@@ -30,9 +29,8 @@ public class RegisterRequestPayload
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
 
-    //TODO: hash password
     [JsonPropertyName("password")]
-    public string Password { get; set; } = string.Empty; 
+    public string Password { get; set; } = string.Empty;
 }
 
 public class ReconnectRequestPayload
