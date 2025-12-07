@@ -606,7 +606,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             NormalizeUsername(u.Username) == normalized);
     }
     
-    private void SearchButton_Click(object? sender, RoutedEventArgs e)
+    /*private void SearchButton_Click(object? sender, RoutedEventArgs e)
     {
         string username = SearchUserBox.Text.Trim();
         if (string.IsNullOrEmpty(username))
@@ -640,12 +640,129 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 SearchUserBox.Classes.Add("error");
             }
         }
-    }
-    
+    }*/
+    //search user box
     private void SearchUserBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
-        SearchResultBorder.DataContext = null;
+        if (sender is not TextBox tb) return;
+    
+        ClearSearchUserBoxButton.IsVisible = !string.IsNullOrEmpty(tb.Text);
+    
+        if (string.IsNullOrEmpty(tb.Text?.Trim()))
+        {
+            SearchResultBorder.IsVisible = false;
+            SearchErrorText.IsVisible = false;
+            SearchUserBox.Classes.Remove("error");
+        }
+        else
+        {
+            PerformUserSearch(tb.Text.Trim());
+        }
+    }
+    
+    private void SearchUserBox_GotFocus(object? sender, RoutedEventArgs e)
+    {
+        ClearSearchUserBoxButton.IsVisible = !string.IsNullOrEmpty(SearchUserBox.Text);
+    }
+    
+    private void SearchUserBox_LostFocus(object? sender, RoutedEventArgs e)
+    {
+        ClearSearchUserBoxButton.IsVisible = !string.IsNullOrEmpty(SearchUserBox.Text);
+    }
+    
+    private void ClearSearchUserBoxButton_Click(object? sender, RoutedEventArgs e)
+    {
+        SearchUserBox.Text = "";
+        ClearSearchUserBoxButton.IsVisible = false;
         SearchResultBorder.IsVisible = false;
+        SearchErrorText.IsVisible = false;
+        SearchUserBox.Classes.Remove("error");
+        SearchUserBox.Focus();
+    }
+    
+    private void PerformUserSearch(string username)
+    {
+        var user = FindUserByUsername(username);
+        if (user != null)
+        {
+            SearchResultBorder.IsVisible = true;
+            SearchErrorText.IsVisible = false;
+            ResultUserName.Text = user.Name;
+            ResultUserUsername.Text = user.Username;
+            SearchUserBox.Classes.Remove("error");
+            SearchResultBorder.DataContext = user;
+        }
+        else
+        {
+            SearchResultBorder.IsVisible = false;
+            SearchErrorText.Text = "User not found";
+            SearchErrorText.IsVisible = true;
+            if (!SearchUserBox.Classes.Contains("error"))
+            {
+                SearchUserBox.Classes.Add("error");
+            }
+        }
+    }
+    
+    //group search user box
+    private void GroupSearchBox_OnTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox tb) return;
+    
+        ClearGroupSearchBoxButton.IsVisible = !string.IsNullOrEmpty(tb.Text);
+    
+        if (string.IsNullOrEmpty(tb.Text?.Trim()))
+        {
+            GroupSearchResultBorder.IsVisible = false;
+            GroupSearchErrorText.IsVisible = false;
+            GroupSearchBox.Classes.Remove("error");
+        }
+        else
+        {
+            PerformGroupUserSearch(tb.Text.Trim());
+        }
+    }
+    
+    private void GroupSearchBox_GotFocus(object? sender, RoutedEventArgs e)
+    {
+        ClearGroupSearchBoxButton.IsVisible = !string.IsNullOrEmpty(GroupSearchBox.Text);
+    }
+    
+    private void GroupSearchBox_LostFocus(object? sender, RoutedEventArgs e)
+    {
+        ClearGroupSearchBoxButton.IsVisible = !string.IsNullOrEmpty(GroupSearchBox.Text);
+    }
+
+    private void ClearGroupSearchBoxButton_Click(object? sender, RoutedEventArgs e)
+    {
+        GroupSearchBox.Text = "";
+        ClearGroupSearchBoxButton.IsVisible = false;
+        GroupSearchResultBorder.IsVisible = false;
+        GroupSearchErrorText.IsVisible = false;
+        GroupSearchBox.Classes.Remove("error");
+        GroupSearchBox.Focus();
+    }
+    
+    private void PerformGroupUserSearch(string username)
+    {
+        var user = FindUserByUsername(username);
+        if (user != null)
+        {
+            GroupSearchResultBorder.DataContext = user;
+            GroupResultName.Text = user.Name;
+            GroupResultUsername.Text = user.Username;
+            GroupSearchResultBorder.IsVisible = true;
+            GroupSearchErrorText.IsVisible = false;
+            GroupSearchBox.Classes.Remove("error");
+        }
+        else
+        {
+            GroupSearchResultBorder.IsVisible = false;
+            GroupSearchErrorText.Text = "User not found";
+            GroupSearchErrorText.IsVisible = true;
+            if (!GroupSearchBox.Classes.Contains("error"))
+                GroupSearchBox.Classes.Add("error");
+        }
     }
     
     private void StartChatButton_Click(object? sender, RoutedEventArgs e)
@@ -693,7 +810,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         UpdateChatView(chat);
     }
     
-    private void GroupSearchButton_Click(object? sender, RoutedEventArgs e)
+    /*private void GroupSearchButton_Click(object? sender, RoutedEventArgs e)
     {
         string username = GroupSearchBox.Text.Trim();
         if (string.IsNullOrEmpty(username))
@@ -725,7 +842,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             if (!GroupSearchBox.Classes.Contains("error"))
                 GroupSearchBox.Classes.Add("error");
         }
-    }
+    }*/
     
     private void AddMemberButton_Click(object? sender, RoutedEventArgs e)
     {
@@ -838,9 +955,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private void AttachGroupTextChangedHandlers()
     {
         AttachTextChangedHandlers(
-            (this.FindControl<TextBox>("SearchUserBox"), this.FindControl<TextBlock>("SearchErrorText")),
-            (this.FindControl<TextBox>("GroupNameBox"), this.FindControl<TextBlock>("GroupNameErrorText")),
-            (this.FindControl<TextBox>("GroupSearchBox"), this.FindControl<TextBlock>("GroupSearchErrorText"))
+            (this.FindControl<TextBox>("GroupNameBox"), this.FindControl<TextBlock>("GroupNameErrorText"))
         );
     }
     
