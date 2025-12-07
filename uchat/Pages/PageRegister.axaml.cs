@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 using Avalonia;
+using System.Text.RegularExpressions;
 using dto;
 
 namespace uchat;
@@ -75,7 +76,6 @@ public partial class PageRegister : UserControl
 
     private async void RegisterButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var registerButton = this.FindControl<Button>("RegisterButton");
         var nicknameBox = this.FindControl<TextBox>("NicknameTextBox");
         var usernameBox = this.FindControl<TextBox>("UsernameTextBox");
         var passwordBox = this.FindControl<TextBox>("PasswordTextBox");
@@ -96,20 +96,97 @@ public partial class PageRegister : UserControl
 
         registerError.Text = "";
         
-        ShowError(nicknameBox, nicknameError, string.IsNullOrWhiteSpace(nicknameBox.Text) ? "Nickname cannot be empty!" : null);
-        ShowError(usernameBox, usernameError, string.IsNullOrWhiteSpace(usernameBox.Text) ? "Username cannot be empty!" : null);
-
-        if (!string.IsNullOrWhiteSpace(passwordBox.Text) && passwordBox.Text.Length < 8)
+        if (string.IsNullOrWhiteSpace(nicknameBox.Text))
         {
-            ShowError(passwordBox, passwordError, "Password must be at least 8 characters");
+            ShowError(nicknameBox, nicknameError, "Nickname cannot be empty.");
+        }
+        else if (nicknameBox.Text.Length > 20)
+        {
+            ShowError(nicknameBox, nicknameError, "Nickname must be 1–20 characters.");
         }
         else
         {
-            ShowError(passwordBox, passwordError, string.IsNullOrWhiteSpace(passwordBox.Text) ? "Password cannot be empty!" : null);
+            ShowError(nicknameBox, nicknameError, null);
         }
         
-        ShowError(confirmPasswordBox, confirmPasswordError, string.IsNullOrWhiteSpace(confirmPasswordBox.Text) ? "Confirm password cannot be empty!" : 
-            passwordBox.Text != confirmPasswordBox.Text ? "Passwords don't match" : null);
+        var username = usernameBox.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(usernameBox.Text))
+        {
+            ShowError(usernameBox, usernameError, "Username cannot be empty.");
+        }
+        else if (usernameBox.Text.Length < 3 || usernameBox.Text.Length > 20)
+        {
+            ShowError(usernameBox, usernameError, "Username must be 3–20 characters.");
+        }
+        else if (username.Contains(' '))
+        {
+            ShowError(usernameBox, usernameError, "Username cannot contain spaces.");
+        }
+        else if (!Regex.IsMatch(username, @"^[a-zA-Z0-9_]+$"))
+        {
+            ShowError(usernameBox, usernameError, "Only Latin letters, digits and _ are allowed.");
+        }
+        else
+        {
+            ShowError(usernameBox, usernameError, null);
+        }
+
+        var password = passwordBox.Text?.Trim() ?? "";
+        var confirm = confirmPasswordBox.Text ?? "";
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            ShowError(passwordBox, passwordError, "Password cannot be empty.");
+        }
+        else if (password.Length < 8)
+        {
+            ShowError(passwordBox, passwordError, "Password must be at least 8 characters.");
+        }
+        else if (password.Length > 50)
+        {
+            ShowError(passwordBox, passwordError, "Password must be at most 50 characters.");
+        }
+        else if (password.Contains(' '))
+        {
+            ShowError(passwordBox, passwordError, "Password cannot contain spaces.");
+        }
+        else if (Regex.IsMatch(password, @"\p{IsCyrillic}"))
+        {
+            ShowError(passwordBox, passwordError, "Password must contain only Latin letters, not Cyrillic.");
+        }
+        else if (!Regex.IsMatch(password, @"[a-z]"))
+        {
+            ShowError(passwordBox, passwordError, "Password must contain a lowercase letter.");
+        }
+        else if (!Regex.IsMatch(password, @"[A-Z]"))
+        {
+            ShowError(passwordBox, passwordError, "Password must contain an uppercase letter.");
+        }
+        else if (!Regex.IsMatch(password, @"\d"))
+        {
+            ShowError(passwordBox, passwordError, "Password must contain a digit.");
+        }
+        else if (!Regex.IsMatch(password, @"[!@#$%^&*()\-_=+<>?]"))
+        {
+            ShowError(passwordBox, passwordError, "Password must contain a special character (!@#$%^&*()-_+=<>?).");
+        }
+        else
+        {
+            ShowError(passwordBox, passwordError, null);
+        }
+        
+        if (string.IsNullOrWhiteSpace(confirm))
+        {
+            ShowError(confirmPasswordBox, confirmPasswordError, "Confirm password cannot be empty.");
+        }
+        else if (password != confirm)
+        {
+            ShowError(confirmPasswordBox, confirmPasswordError, "Passwords don't match.");
+        }
+        else
+        {
+            ShowError(confirmPasswordBox, confirmPasswordError, null);
+        }
         
         bool hasError = !string.IsNullOrEmpty(nicknameError.Text) || !string.IsNullOrEmpty(usernameError.Text) ||
                         !string.IsNullOrEmpty(passwordError.Text) || !string.IsNullOrEmpty(confirmPasswordError.Text);
