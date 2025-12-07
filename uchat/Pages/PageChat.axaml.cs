@@ -606,7 +606,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             NormalizeUsername(u.Username) == normalized);
     }
     
-    /*private void SearchButton_Click(object? sender, RoutedEventArgs e)
+    private void SearchButton_Click(object? sender, RoutedEventArgs e)
     {
         string username = SearchUserBox.Text.Trim();
         if (string.IsNullOrEmpty(username))
@@ -640,24 +640,17 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 SearchUserBox.Classes.Add("error");
             }
         }
-    }*/
+    }
     //search user box
     private void SearchUserBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (sender is not TextBox tb) return;
     
         ClearSearchUserBoxButton.IsVisible = !string.IsNullOrEmpty(tb.Text);
-    
-        if (string.IsNullOrEmpty(tb.Text?.Trim()))
-        {
-            SearchResultBorder.IsVisible = false;
-            SearchErrorText.IsVisible = false;
-            SearchUserBox.Classes.Remove("error");
-        }
-        else
-        {
-            PerformUserSearch(tb.Text.Trim());
-        }
+        
+        SearchResultBorder.IsVisible = false;
+        SearchErrorText.IsVisible = false;
+        SearchUserBox.Classes.Remove("error");
     }
     
     private void SearchUserBox_GotFocus(object? sender, RoutedEventArgs e)
@@ -680,7 +673,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         SearchUserBox.Focus();
     }
     
-    private void PerformUserSearch(string username)
+    /*private void PerformUserSearch(string username)
     {
         var user = FindUserByUsername(username);
         if (user != null)
@@ -702,7 +695,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 SearchUserBox.Classes.Add("error");
             }
         }
-    }
+    }*/
     
     //group search user box
     private void GroupSearchBox_OnTextChanged(object? sender, TextChangedEventArgs e)
@@ -710,17 +703,10 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         if (sender is not TextBox tb) return;
     
         ClearGroupSearchBoxButton.IsVisible = !string.IsNullOrEmpty(tb.Text);
-    
-        if (string.IsNullOrEmpty(tb.Text?.Trim()))
-        {
-            GroupSearchResultBorder.IsVisible = false;
-            GroupSearchErrorText.IsVisible = false;
-            GroupSearchBox.Classes.Remove("error");
-        }
-        else
-        {
-            PerformGroupUserSearch(tb.Text.Trim());
-        }
+        
+        GroupSearchResultBorder.IsVisible = false;
+        GroupSearchErrorText.IsVisible = false;
+        GroupSearchBox.Classes.Remove("error");
     }
     
     private void GroupSearchBox_GotFocus(object? sender, RoutedEventArgs e)
@@ -743,7 +729,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         GroupSearchBox.Focus();
     }
     
-    private void PerformGroupUserSearch(string username)
+    /*private void PerformGroupUserSearch(string username)
     {
         var user = FindUserByUsername(username);
         if (user != null)
@@ -763,7 +749,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             if (!GroupSearchBox.Classes.Contains("error"))
                 GroupSearchBox.Classes.Add("error");
         }
-    }
+    }*/
     
     private void StartChatButton_Click(object? sender, RoutedEventArgs e)
     {
@@ -810,7 +796,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         UpdateChatView(chat);
     }
     
-    /*private void GroupSearchButton_Click(object? sender, RoutedEventArgs e)
+    private void GroupSearchButton_Click(object? sender, RoutedEventArgs e)
     {
         string username = GroupSearchBox.Text.Trim();
         if (string.IsNullOrEmpty(username))
@@ -842,7 +828,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             if (!GroupSearchBox.Classes.Contains("error"))
                 GroupSearchBox.Classes.Add("error");
         }
-    }*/
+    }
     
     private void AddMemberButton_Click(object? sender, RoutedEventArgs e)
     {

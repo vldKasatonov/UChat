@@ -291,14 +291,20 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
-                        <Grid ColumnDefinitions="*">
-                        <TextBox x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18" Padding="10" 
-                                 HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="SearchUserBox_OnTextChanged"
-                                 GotFocus="SearchUserBox_GotFocus" LostFocus="SearchUserBox_LostFocus"/>
-                        <Button x:Name="ClearSearchUserBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="50"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18" Padding="10" 
+                                     HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="SearchUserBox_OnTextChanged"
+                                     GotFocus="SearchUserBox_GotFocus" LostFocus="SearchUserBox_LostFocus"/>
+                        <Button Grid.Column="0" x:Name="ClearSearchUserBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
                                 HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
                                 IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
                                 Click="ClearSearchUserBoxButton_Click"/>
+                            <Button Grid.Column="1" x:Name="SearchButton" Content="S" FontSize="18" Margin="5,0,0,0" 
+                                    Foreground="White" HorizontalAlignment="Right" Click="SearchButton_Click" Cursor="Hand"/>
                         </Grid>
                     </Grid>
                     
@@ -322,7 +328,7 @@
             <Border x:Name="GroupChatOverlay" Background="{DynamicResource MainBackgroundBrush}" Grid.Row="1" Grid.RowSpan="2" IsVisible="False">
                 <Grid Margin="30,20">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="23"/>
                         <RowDefinition Height="60"/>
                         <RowDefinition Height="5"/>
@@ -333,15 +339,21 @@
                     </Grid.RowDefinitions>
                     
                     <Grid Grid.Row="0">
-                       <Grid ColumnDefinitions="*">
-                        <TextBox x:Name="GroupSearchBox" Watermark="Search for user..." FontSize="18" Padding="10" 
-                                 HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" 
-                                 TextChanged="GroupSearchBox_OnTextChanged" GotFocus="GroupSearchBox_GotFocus" 
-                                 LostFocus="GroupSearchBox_LostFocus"/>
-                        <Button x:Name="ClearGroupSearchBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                       <Grid>
+                           <Grid.ColumnDefinitions>
+                               <ColumnDefinition Width="*"/>
+                               <ColumnDefinition Width="50"/>
+                           </Grid.ColumnDefinitions>
+                           <TextBox Grid.Column="0" x:Name="GroupSearchBox" Watermark="Search for user..." FontSize="18" Padding="10" 
+                                                   HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" 
+                                                   TextChanged="GroupSearchBox_OnTextChanged" GotFocus="GroupSearchBox_GotFocus" 
+                                                   LostFocus="GroupSearchBox_LostFocus"/>
+                        <Button Grid.Column="0" x:Name="ClearGroupSearchBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
                                 HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
                                 IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
                                 Click="ClearGroupSearchBoxButton_Click"/>
+                           <Button Grid.Column="1" x:Name="GroupSearchButton" Content="S" FontSize="18" Margin="5,0,0,0" 
+                                   Foreground="White" HorizontalAlignment="Right" Click="GroupSearchButton_Click" Cursor="Hand"/>
                         </Grid>
                     </Grid>
                     
