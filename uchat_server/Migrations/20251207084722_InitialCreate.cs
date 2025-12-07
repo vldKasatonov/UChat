@@ -35,7 +35,7 @@ namespace uchat_server.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Username = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Nickname = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
-                    HashPassword = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    HashPassword = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     IsOnline = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     Avatar = table.Column<byte[]>(type: "bytea", nullable: true)
                 },
