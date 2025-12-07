@@ -57,9 +57,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     public string CurrentUserUsername { get; set; } = "@crabs";
     
     public PageChat()
-
     {
         InitializeComponent();
+        UpdateExitThemeIcon();
     }
     
     public PageChat(Client client) : this()
@@ -952,12 +952,20 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             e.Handled = true;
         }
     }
+    
+    private void UpdateExitThemeIcon()
+    {
+        ExitLight.IsVisible = !_isLight;
+        ExitDark.IsVisible = _isLight;
+    }
 
     private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
     {
         _isLight = !_isLight;
 
         (Application.Current as App)?.SetTheme(_isLight ? "Light" : "Dark");
+        
+        UpdateExitThemeIcon();
     }
 
     //message grouping
