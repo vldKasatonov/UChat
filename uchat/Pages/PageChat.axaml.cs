@@ -261,6 +261,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             GroupMembersPanel.IsVisible = false;
             _isMembersPanelOpen = false;
         }
+        
+        ComputeGroupingFlags(contact.Messages);
+        
         SelectedChatMessages.Clear();
         foreach (var msg in contact.Messages)
         {
@@ -513,6 +516,16 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         // {
             contact.Messages.Add(msg);
             SelectedChatMessages.Add(msg);
+            int count = contact.Messages.Count;
+            if (count > 2)
+            {
+                ComputeFlagsAtIndex(contact.Messages, count - 1);
+                ComputeFlagsAtIndex(contact.Messages, count - 2);
+            }
+            else
+            {
+                ComputeGroupingFlags(contact.Messages);
+            }
             contact.Draft = "";
             MessageTextBox.Text = "";
             contact.NotifyLastMessageChanged();
@@ -937,5 +950,51 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             SendMessage_Click(null!, null!);
             e.Handled = true;
         }
+    }
+    
+    //message grouping
+
+    private static readonly TimeSpan GroupThreshold = TimeSpan.FromMinutes(3);
+
+    private void ComputeGroupingFlags(IList<Message> messages)
+    {
+        if (messages == null || messages.Count == 0)
+            return;
+
+        for (int i = 0; i < messages.Count; i++)
+            ComputeFlagsAtIndex(messages, i);
+    }
+
+    private void ComputeFlagsAtIndex(IList<Message> messages, int index)
+    {
+        if (messages.Count == 0 || index < 0 || index >= messages.Count)
+            return;
+
+        var cur = messages[index];
+        Message? prev = index > 0 ? messages[index - 1] : null;
+        Message? next = index < messages.Count - 1 ? messages[index + 1] : null;
+
+        bool isFirst = true;
+        bool isLast = true;
+
+        if (prev != null &&
+            prev.Sender == cur.Sender &&
+            (cur.Timestamp - prev.Timestamp) <= GroupThreshold &&
+            !prev.IsDeleted && !cur.IsDeleted)
+        {
+            isFirst = false;
+        }
+
+        if (next != null &&
+            next.Sender == cur.Sender &&
+            (next.Timestamp - cur.Timestamp) <= GroupThreshold &&
+            !next.IsDeleted && !cur.IsDeleted)
+        {
+            isLast = false;
+        }
+
+        cur.IsFirstInGroup = isFirst;
+        cur.ShowAvatar = isLast;
+        cur.ShowTail = isLast;
     }
 }

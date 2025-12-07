@@ -13,6 +13,9 @@
         <local:ShutdownTextConverter x:Key="ShutdownTextConverter"/>
         <local:PinnedToIconConverter x:Key="PinnedToIconConverter"/>
         <local:PinMenuTextConverter x:Key="PinMenuTextConverter"/>
+        <local:TailLeftVisibilityConverter x:Key="TailLeftVisibilityConverter"/>
+        <local:TailRightVisibilityConverter x:Key="TailRightVisibilityConverter"/>
+        <local:TailMarginConverter x:Key="TailMarginConverter"/>
     </UserControl.Resources>
 
     <Grid>
@@ -145,6 +148,7 @@
                                             <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
                                                 <Binding Path="IsMine"/>
                                                 <Binding Path="IsGroup"/>
+                                                <Binding Path="ShowAvatar"/>
                                             </MultiBinding>
                                         </Ellipse.IsVisible>
                                     </Ellipse>
@@ -168,14 +172,26 @@
                                             
                                             <Polygon Grid.Column="0" Width="10" Height="10" Points="10,0 -5,7 15,10" ZIndex="0" 
                                                      Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
-                                                     VerticalAlignment="Bottom" Margin="0,0,-4,0" IsVisible="{Binding IsMine, Converter={StaticResource InverseBoolConverter}}">
-                                            <Polygon.RenderTransform>
+                                                     VerticalAlignment="Bottom" Margin="0,0,-4,0">
+                                                <Polygon.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource TailLeftVisibilityConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                    </MultiBinding>
+                                                </Polygon.IsVisible>
+                                                <Polygon.RenderTransform>
                                                 <TranslateTransform Y="-1"/>
                                             </Polygon.RenderTransform>
                                             </Polygon>
 
                                             <Border Grid.Column="1" VerticalAlignment="Bottom" Background="{Binding IsMine, Converter={StaticResource BoolToBrush}}" 
                                                     CornerRadius="10" Padding="10,5" ZIndex="1">
+                                                <Border.Margin>
+                                                    <MultiBinding Converter="{StaticResource TailMarginConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                    </MultiBinding>
+                                                </Border.Margin>
                                                 <StackPanel Orientation="Horizontal" Spacing="5">
                                                     
                                                     <Image Source="avares://uchat/Resources/images/DeletedMsg.png" Width="16" Height="16"
@@ -197,8 +213,14 @@
                                             
                                             <Polygon Grid.Column="2" Width="10" Height="10" Points="-10,-5 14,7 -15,11" Margin="-4,0,0,0" 
                                                      ZIndex="0" Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
-                                                     VerticalAlignment="Bottom" IsVisible="{Binding IsMine}">
-                                            <Polygon.RenderTransform>
+                                                     VerticalAlignment="Bottom">
+                                                <Polygon.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource TailRightVisibilityConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                    </MultiBinding>
+                                                </Polygon.IsVisible>
+                                                <Polygon.RenderTransform>
                                                 <TranslateTransform Y="-1"/>
                                             </Polygon.RenderTransform>
                                             </Polygon>
