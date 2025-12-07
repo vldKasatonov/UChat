@@ -5,13 +5,18 @@ using System.Text;
 using System.Text.Json;
 using System.Net.Sockets;
 
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Authentication;
+
 public class Client
 {
     private string _ip;
     private int _port;
     private TcpClient? _client;
     private int? _id;
-    private NetworkStream? _stream;
+    private NetworkStream? _networkStream;
+    private SslStream? _sslStream;
     private StreamReader? _reader;
     private StreamWriter? _writer;
     private bool _connected;
@@ -36,9 +41,16 @@ public class Client
                 _client = new TcpClient();
                 await _client.ConnectAsync(_ip, _port);
 
-                _stream = _client.GetStream();
-                _reader = new StreamReader(_stream, Encoding.UTF8);
-                _writer = new StreamWriter(_stream, Encoding.UTF8) { AutoFlush = true };
+                _networkStream = _client.GetStream();
+                _sslStream = new SslStream(
+                    _networkStream,
+                    false,
+                    (sender, certificate, chain, sslPolicyErrors) => true
+                ); 
+                await _sslStream.AuthenticateAsClientAsync(_ip);
+                
+                _reader = new StreamReader(_sslStream, Encoding.UTF8);
+                _writer = new StreamWriter(_sslStream, Encoding.UTF8) { AutoFlush = true };
                 _connected = true;
 
                 _ = Task.Run(ListenServer);
