@@ -23,6 +23,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private bool _isUpdatingFilteredChats = false;
     private ChatItem? _currentChat = null;
     private static long _pinSequence = 0;
+    private bool _isLight = true;
     private bool _isMembersPanelOpen = false;
     private bool _showToggleMembersButton;
     
@@ -951,6 +952,12 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             e.Handled = true;
         }
     }
+
+    private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
+    {
+        _isLight = !_isLight;
+
+        (Application.Current as App)?.SetTheme(_isLight ? "Light" : "Dark");
     
     //message grouping
 

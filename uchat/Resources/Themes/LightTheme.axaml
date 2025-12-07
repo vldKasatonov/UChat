@@ -1,0 +1,18 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Color x:Key="MainBackground">#F1EFF5</Color>
+    <Color x:Key="LeftSideBarBackground">#F1EFF5</Color>
+    <Color x:Key="ChatListBackground">#45335D</Color>
+    <Color x:Key="ProfileBackground">#705595</Color>
+    <Color x:Key="SelectedChatBackground">#705595</Color>
+    <Color x:Key="NamesTextColour">Black</Color>
+
+    <SolidColorBrush x:Key="MainBackgroundBrush" Color="{StaticResource MainBackground}"/>  
+    <SolidColorBrush x:Key="LeftSideBarBackgroundBrush" Color="{StaticResource LeftSideBarBackground}"/>
+    <SolidColorBrush x:Key="ChatListBackgroundBrush" Color="{StaticResource ChatListBackground}"/>
+    <SolidColorBrush x:Key="ProfileBackgroundBrush" Color="{StaticResource ProfileBackground}"/>
+    <SolidColorBrush x:Key="SelectedChatBackgroundBrush" Color="{StaticResource SelectedChatBackground}"/>
+    <SolidColorBrush x:Key="NamesTextColourBrush" Color="{StaticResource NamesTextColour}"/>
+    
+</ResourceDictionary>
