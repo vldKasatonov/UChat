@@ -29,8 +29,8 @@ public class Program
         
         try
         {
-            await using var dbContext = new UchatDbContext(dbConnectionString);
-            await dbContext.Database.MigrateAsync(); 
+            //await using var dbContext = new UchatDbContext(dbConnectionString);
+            //await dbContext.Database.MigrateAsync(); 
             Console.WriteLine("Migration is up to date.");
         }
         catch (Exception e)

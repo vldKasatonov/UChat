@@ -28,9 +28,9 @@
                 <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Center" Orientation="Vertical"
                             Spacing="15">
                     <TextBlock Text="Welcome!" HorizontalAlignment="Center"
-                               FontSize="22" Foreground="rgba(0,0,0,0.8)"/>
+                               FontSize="22" FontWeight="DemiBold" Foreground="rgba(0,0,0,0.8)"/>
                     <TextBlock Text="Please login to your account." HorizontalAlignment="Center"
-                               FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,20"/>
+                               FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,0"/>
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="Username" FontSize="17" Margin="10,0,0,5"/>
                         <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"/>
@@ -47,7 +47,7 @@
                     <TextBlock HorizontalAlignment="Center" FontWeight="Medium" FontSize="17">
                         <Run Text="Don't have an account?" Foreground="rgba(0,0,0,0.8)"/>
                         <InlineUIContainer BaselineAlignment="Bottom">
-                            <TextBlock Text=" Register" Foreground="{StaticResource prColor}" Cursor="Hand" PointerPressed="SignUpText_PointerPressed"/>
+                            <TextBlock Text=" Register" Foreground="#9155B0" Cursor="Hand" PointerPressed="SignUpText_PointerPressed"/>
                         </InlineUIContainer>
                     </TextBlock>
                 </StackPanel>

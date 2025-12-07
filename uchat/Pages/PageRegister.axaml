@@ -30,38 +30,48 @@
             </Grid>
 
             <Grid Grid.Column="1" Margin="70 0 70 0">
-                <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Center" Orientation="Vertical"
-                            Spacing="5" >
-                    <TextBlock Text="Welcome!" HorizontalAlignment="Center"
-                                       FontSize="22" Foreground="rgba(0,0,0,0.8)"/>
-                    <TextBlock Text="Please create your account." HorizontalAlignment="Center"
-                               FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,20"/>
-                    <StackPanel Orientation="Vertical">
-                        <TextBlock Text="Nickname" FontSize="17" Margin="10,0,0,5"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="590"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="1"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Center" Orientation="Vertical"
+                            Spacing="1" >
+                        <TextBlock Text="Welcome!" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                               Margin="0,10,0,0" FontSize="22" FontWeight="DemiBold" Foreground="rgba(0,0,0,0.8)"/>
+                        <TextBlock Text="Please create your account." HorizontalAlignment="Center"
+                               FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Vertical">
+                        <TextBlock Text="Nickname" FontSize="16" Margin="10,0,0,5"/>
                         <TextBox x:Name="NicknameTextBox" Watermark="Enter nickname" FontSize="20" Margin="0,0,0,5"/>
                         <TextBlock x:Name="NicknameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Username" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBlock Text="Username" FontSize="16" Margin="10,0,0,5"/>
                         <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"/>
                         <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Password" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBlock Text="Password" FontSize="16" Margin="10,0,0,5"/>
                         <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="*" FontSize="25" Margin="0,0,0,5"/>
                         <TextBlock x:Name="PasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Confirm password" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBlock Text="Confirm password" FontSize="16" Margin="10,0,0,5"/>
                         <TextBox x:Name="ConfirmPasswordTextBox" Watermark="Confirm password" PasswordChar="*" FontSize="25" Margin="0,0,0,5"/>
                         <TextBlock x:Name="ConfirmPasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,0"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Vertical">
-                    <Button x:Name="RegisterButton" Click="RegisterButton_Click" Classes="submitBtn" Content="Register" FontSize="23" FontWeight="Bold" Width="250" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="RegisterErrorText" Foreground="Red" Margin="0,5,0,0" HorizontalAlignment="Center"/>
-                    <TextBlock HorizontalAlignment="Center" FontWeight="Medium" FontSize="17">
-                        <Run Text="Already have an account?" Foreground="rgba(0,0,0,0.8)"/>
-                        <InlineUIContainer BaselineAlignment="Bottom">
-                            <TextBlock Text=" Sing In" Foreground="{StaticResource prColor}" Cursor="Hand" PointerPressed="SignInText_PointerPressed"/>
-                        </InlineUIContainer>
-                    </TextBlock>
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Vertical">
+                        <Grid RowDefinitions="20,Auto,Auto">
+                        <Button Grid.Row="1" x:Name="RegisterButton" Click="RegisterButton_Click" Classes="submitBtn" Content="Register" FontSize="23"
+                                FontWeight="Bold" Width="250" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                        <TextBlock Grid.Row="1" x:Name="RegisterErrorText" Foreground="Red" Margin="0,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                        <TextBlock Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,0,0,0" FontWeight="Medium" FontSize="16" >
+                            <Run Text="Already have an account?" Foreground="rgba(0,0,0,0.8)"/>
+                            <InlineUIContainer BaselineAlignment="Bottom">
+                                <TextBlock Text=" Sing In" Foreground="{StaticResource prColor}" Cursor="Hand" PointerPressed="SignInText_PointerPressed"/>
+                            </InlineUIContainer>
+                        </TextBlock>
+                        </Grid>
                     </StackPanel>
                 </StackPanel>
             </Grid>

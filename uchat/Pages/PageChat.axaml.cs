@@ -23,6 +23,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private bool _isUpdatingFilteredChats = false;
     private ChatItem? _currentChat = null;
     private static long _pinSequence = 0;
+    private bool _isLight = true;
     
     private bool _isReconnecting;
     public bool IsReconnecting
@@ -890,5 +891,12 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             SendMessage_Click(null!, null!);
             e.Handled = true;
         }
+    }
+
+    private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
+    {
+        _isLight = !_isLight;
+
+        (Application.Current as App)?.SetTheme(_isLight ? "Light" : "Dark");
     }
 }
