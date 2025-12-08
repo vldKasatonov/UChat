@@ -11,6 +11,7 @@ public class Message : INotifyPropertyChanged
 
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Sender { get; set; } = "";
+    public DateTime SentTime { get; set; } = DateTime.Now;
     public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
     public string Text
     {
@@ -26,6 +27,7 @@ public class Message : INotifyPropertyChanged
         }
     }
     public bool IsMine { get; set; }
+    public bool ShowEdited => IsEdited && !IsDeleted;
     public bool IsDeleted
     {
         get => _isDeleted;
@@ -36,10 +38,25 @@ public class Message : INotifyPropertyChanged
                 _isDeleted = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDeleted)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayText)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowEdited)));
             }
         }
     }
     public string DisplayText => IsDeleted ? "Message deleted" : Text;
+    private bool _isEdited;
+    public bool IsEdited
+    {
+        get => _isEdited;
+        set
+        {
+            if (_isEdited != value)
+            {
+                _isEdited = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEdited)));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowEdited)));
+            }
+        }
+    }
     public bool IsGroup { get; set; }
     private bool _showAvatar;
 

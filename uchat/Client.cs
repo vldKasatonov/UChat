@@ -256,5 +256,13 @@ public class Client
         var request = CreateRequest(CommandType.DeleteForAll, payload);
         var response = await ExecuteRequest(request);
         return response?.Status == Status.Success;
+    } 
+    
+    public async Task<bool> EditMessageAsync(string chatId, string messageId, string newText)
+    {
+        var payload = new { ChatId = chatId, MessageId = messageId, NewText = newText };
+        var request = CreateRequest(CommandType.EditMessage, payload);
+        var response = await ExecuteRequest(request);
+        return response?.Status == Status.Success;
     } */
 }
