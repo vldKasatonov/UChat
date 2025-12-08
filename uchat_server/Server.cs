@@ -4,13 +4,9 @@ using System.Text.Json;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Concurrent;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using uchat_server.Data;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using BCrypt.Net;
-using ChatMember = dto.ChatMember;
 
 namespace uchat_server;
 
@@ -20,12 +16,12 @@ public class Server
     private readonly X509Certificate2 _serverCertificate;
     private ConcurrentDictionary<string, int> _userIds = new();
     private ConcurrentDictionary<int, SslStream> _clients = new();
-    private string _dbConnection;
+    private readonly DbProvider _dbProvider;
     
     public Server(int port, string dbConnection)
     {
         _listener = new TcpListener(IPAddress.Any, port);
-        _dbConnection = dbConnection;
+        _dbProvider = new DbProvider(dbConnection);
         _serverCertificate = GetServerCertificate();
     }
 
@@ -52,11 +48,6 @@ public class Server
             _listener.Stop();
         }
     }
-    
-    private UchatDbContext CreateDbContext()
-    {
-        return new UchatDbContext(_dbConnection); 
-    }
 
     private async Task HandleClientAsync(TcpClient client)
     {
@@ -72,9 +63,9 @@ public class Server
             Console.WriteLine("SSL authentication completed.");
 
             using StreamReader reader = new(sslStream, Encoding.UTF8);
-            using StreamWriter writer = new(sslStream, Encoding.UTF8);
+            await using StreamWriter writer = new(sslStream, Encoding.UTF8);
             writer.AutoFlush = true;
-            
+
             while (client.Connected)
             {
                 string? jsonRequest = await reader.ReadLineAsync();
@@ -219,7 +210,7 @@ public class Server
             string hashedPassword = BCrypt.Net.BCrypt.EnhancedHashPassword(registerReqPayload.Password, workFactor: 12);
             registerReqPayload.Password = hashedPassword;
 
-            User newUser = RegisterUserAsync(registerReqPayload)
+            User newUser = _dbProvider.RegisterUserAsync(registerReqPayload)
                 .GetAwaiter()
                 .GetResult();
             
@@ -251,10 +242,6 @@ public class Server
                 Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
             });
         }
-        catch (Exception)
-        {
-            throw;
-        }
     }
     
     private Task<Response> HandleLogin(LoginRequestPayload? loginReqPayload)
@@ -270,7 +257,7 @@ public class Server
 
         try 
         {
-            User loggedUser = AuthenticateUserAsync(loginReqPayload.Username, loginReqPayload.Password)
+            User loggedUser = _dbProvider.AuthenticateUserAsync(loginReqPayload.Username, loginReqPayload.Password)
                 .GetAwaiter()
                 .GetResult();
 
@@ -301,10 +288,6 @@ public class Server
                 Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
             });
         }
-        catch (Exception)
-        {
-            throw;
-        }
 
         // if (loginReqPayload is { Username: "1", Password: "password" })
         // {
@@ -334,75 +317,55 @@ public class Server
         //     Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
         // });
     }
-    
-    private async Task<User> RegisterUserAsync(RegisterRequestPayload payload)
-    {
-        var newUser = new User
-        {
-            Username = payload.Username,
-            Nickname = payload.Nickname,
-            HashPassword = payload.Password,
-            IsOnline = false,
-            Avatar = null
-        };
 
-        await using (var dbContext = CreateDbContext())
-        {
-            try
-            {
-                dbContext.Users.Add(newUser);
-                await dbContext.SaveChangesAsync();
-            }
-            catch(DbUpdateException e) when ((e.InnerException as PostgresException)?.SqlState == "23505")
-            {
-                throw new InvalidOperationException("Username already exists");
-            }
-        }
-        
-        return newUser;
-    }
-
-    private async Task<User> AuthenticateUserAsync(string username, string password)
-    {
-        await using (var dbContext = CreateDbContext())
-        {
-            var user = await dbContext.Users
-                .FirstOrDefaultAsync(u => u.Username == username);
-
-            if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(password, user.HashPassword))
-            {
-                throw new InvalidOperationException("Invalid username or password.");
-            }
-
-            return user;
-        }
-    }
-
-    private Task<Response> HandleReconnect(ReconnectRequestPayload? requestPayload)
+    private async Task<Response> HandleReconnect(ReconnectRequestPayload? requestPayload)
     {
         if (requestPayload is null)
         {
-            return Task.FromResult(new Response
+            return new Response
             {
                 Status = Status.Error,
                 Type = CommandType.Reconnect
-            });
+            };
         }
-        
-        // TODO: check ID in DB
-        
-        var responsePayload = new ReconnectResponsePayload
+
+        try
         {
-            UserId = requestPayload.UserId,
-            Username = requestPayload.Username
-        };
+            bool userIsValid =
+                await _dbProvider.CheckUserExistenceAsync(requestPayload.UserId, requestPayload.Username); 
         
-        return Task.FromResult(new Response
+            if (!userIsValid)
+            {
+                var errorPayload = new ErrorPayload
+                {
+                    Message = "Invalid User ID or Username provided for reconnect."
+                };
+
+                return new Response
+                {
+                    Status = Status.Error,
+                    Type = CommandType.Reconnect,
+                    Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+                };
+            }
+        
+            var responsePayload = new ReconnectResponsePayload
+            {
+                UserId = requestPayload.UserId,
+                Username = requestPayload.Username
+            };
+        
+            return new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.Reconnect,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            };
+        }
+        catch (Exception)
         {
-            Status = Status.Success,
-            Type = CommandType.Reconnect,
-            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-        });
+            return new Response { Status = Status.Error, Type = CommandType.Reconnect };
+        }
     }
     
     private async Task<Response> HandleCreateChat(CreateChatRequestPayload? requestPayload) 
@@ -423,7 +386,7 @@ public class Server
                 var user1 = requestPayload.Members[0].Username;
                 var user2 = requestPayload.Members[1].Username;
                 
-                var chatId = await FindExistingPrivateChatAsync(user1, user2);
+                var chatId = await _dbProvider.FindExistingPrivateChatAsync(user1, user2);
 
                 if (chatId.HasValue)
                 {
@@ -440,7 +403,7 @@ public class Server
                 }
             }
             
-            var newChat = await CreateChatAsync(requestPayload);
+            var newChat = await _dbProvider.CreateChatAsync(requestPayload);
             
             var responsePayload = new CreateChatResponsePayload
             {
@@ -477,7 +440,65 @@ public class Server
         }
     }
 
-    private async Task BroadcastCreateChat(List<ChatMember> members, Response response)
+    private async Task<Response> HandleSendTextMessage(SendTextMessageRequestPayload? requestPayload) 
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.SendMessage
+            };
+        }
+        
+        try
+        {
+            var savedMessage = await _dbProvider.SaveTextMessageAsync(requestPayload);
+        
+            string messageContent = requestPayload.Content; 
+        
+            var responsePayload = new TextMessageResponsePayload
+            {
+                ChatId = savedMessage.ChatId,
+                MessageId = savedMessage.Id,
+                SenderId = savedMessage.SenderId,
+                SenderNickname = await _dbProvider.GetUserNicknameByIdAsync(savedMessage.SenderId),
+                Content = messageContent,
+                SentAt = savedMessage.SentAt,
+                IsEdited = savedMessage.IsEdited,
+                IsDeleted = savedMessage.IsDeleted
+            };
+        
+            var response = new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.SendMessage,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            };
+
+            var memberIds = await _dbProvider.GetChatMemberIdsAsync(requestPayload.ChatId);
+        
+            await BroadcastMessage(requestPayload.SenderId, memberIds, response);
+        
+            return response;
+        }
+        catch (InvalidOperationException e)
+        {
+            var errorPayload = new ErrorPayload { Message = e.Message };
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.SendMessage,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            return new Response { Status = Status.Error, Type = CommandType.SendMessage };
+        }
+    }
+    
+    private async Task BroadcastCreateChat(List<dto.ChatMember> members, Response response)
     {
         string jsonResponse = JsonSerializer.Serialize(response);
         string creatorUsername = members[0].Username;
@@ -519,141 +540,6 @@ public class Server
         }
     }
     
-    private async Task<int?> FindExistingPrivateChatAsync(string username1, string username2)
-    {
-        await using var dbContext = CreateDbContext();
-
-        var userIds = await dbContext.Users
-            .Where(u => u.Username == username1 || u.Username == username2)
-            .Select(u => u.Id)
-            .ToListAsync();
-
-        if (userIds.Count < 2)
-        {
-            throw new InvalidOperationException("One or both users not found in the system.");
-        }
-    
-        int id1 = userIds[0];
-        int id2 = userIds.Count > 1 ? userIds[1] : 0;
-
-        var chatId = await dbContext.Chats
-            .Where(c => c.IsGroup == false)
-            .Where(c => c.Members.Count == 2)
-            .Where(c => c.Members.Any(cm => cm.UserId == id1) && c.Members.Any(cm => cm.UserId == id2))
-            .Select(c => c.Id)
-            .FirstOrDefaultAsync();
-
-        if (chatId != 0)
-        {
-            return chatId;
-        }
-
-        return null;
-    }
-    
-    private async Task<Chat> CreateChatAsync(CreateChatRequestPayload payload)
-    {
-        await using var dbContext = CreateDbContext();
-    
-        var newChat = new Chat
-        {
-            IsGroup = payload.IsGroup,
-            Name = payload.IsGroup ? payload.Name : null
-        };
-    
-        dbContext.Chats.Add(newChat);
-
-        var chatMembers = new List<Data.ChatMember>();
-    
-        var usernames = payload.Members.Select(m => m.Username).ToList();
-    
-        var dbUsers = await dbContext.Users
-            .Where(u => usernames.Contains(u.Username))
-            .ToDictionaryAsync(u => u.Username, u => u.Id);
-
-        if (dbUsers.Count != payload.Members.Count)
-        {
-            throw new InvalidOperationException("One or more chat members were not found.");
-        }
-
-        foreach (var member in payload.Members)
-        {
-            if (dbUsers.TryGetValue(member.Username, out var userId))
-            {
-                chatMembers.Add(new Data.ChatMember
-                {
-                    Chat = newChat, 
-                    UserId = userId,
-                    HasPrivileges = member.HasPrivileges
-                });
-            }
-        }
-
-        dbContext.ChatMembers.AddRange(chatMembers);
-    
-        await dbContext.SaveChangesAsync();
-    
-        return newChat;
-    }
-    
-    private async Task<Response> HandleSendTextMessage(SendTextMessageRequestPayload? requestPayload) 
-    {
-        if (requestPayload is null)
-        {
-            return new Response
-            {
-                Status = Status.Error,
-                Type = CommandType.SendMessage
-            };
-        }
-        
-        try
-        {
-            var savedMessage = await SaveTextMessageAsync(requestPayload);
-        
-            string messageContent = requestPayload.Content; 
-        
-            var responsePayload = new TextMessageResponsePayload
-            {
-                ChatId = savedMessage.ChatId,
-                MessageId = savedMessage.Id,
-                SenderId = savedMessage.SenderId,
-                SenderNickname = await GetUserNicknameByIdAsync(savedMessage.SenderId),
-                Content = messageContent,
-                SentAt = savedMessage.SentAt,
-                IsEdited = savedMessage.IsEdited,
-                IsDeleted = savedMessage.IsDeleted
-            };
-        
-            var response = new Response
-            {
-                Status = Status.Success,
-                Type = CommandType.SendMessage,
-                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-            };
-
-            var memberIds = await GetChatMemberIdsAsync(requestPayload.ChatId);
-        
-            await BroadcastMessage(requestPayload.SenderId, memberIds, response);
-        
-            return response;
-        }
-        catch (InvalidOperationException e)
-        {
-            var errorPayload = new ErrorPayload { Message = e.Message };
-            return new Response
-            {
-                Status = Status.Error,
-                Type = CommandType.SendMessage,
-                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
-            };
-        }
-        catch (Exception)
-        {
-            return new Response { Status = Status.Error, Type = CommandType.SendMessage };
-        }
-    }
-    
     private async Task BroadcastMessage(int senderId, List<int> chatMemberIds, Response response)
     {
         string jsonResponse = JsonSerializer.Serialize(response);
@@ -679,70 +565,6 @@ public class Server
                 }
             }
         }
-    }
-    
-    private async Task<Data.Message> SaveTextMessageAsync(SendTextMessageRequestPayload payload)
-    {
-        var newMessage = new Data.Message
-        {
-            ChatId = payload.ChatId,
-            SenderId = payload.SenderId,
-            IsText = true,
-            IsEdited = false,
-            IsDeleted = false
-        };
-
-        var newTextMessage = new TextMessage
-        {
-            Message = newMessage,
-            Content = payload.Content
-        };
-
-        await using (var dbContext = CreateDbContext())
-        {
-            var chatExists = await dbContext.Chats.AnyAsync(c => c.Id == payload.ChatId);
-            if (!chatExists)
-            {
-                throw new InvalidOperationException($"Chat with ID {payload.ChatId} not found.");
-            }
-
-            dbContext.Messages.Add(newMessage);
-            dbContext.TextMessages.Add(newTextMessage);
-        
-            await dbContext.SaveChangesAsync();
-        }
-    
-        return newMessage;
-    }
-    
-    private async Task<List<int>> GetChatMemberIdsAsync(int chatId)
-    {
-        await using (var dbContext = CreateDbContext())
-        {
-            var memberIds = await dbContext.ChatMembers
-                .Where(cm => cm.ChatId == chatId)
-                .Select(cm => cm.UserId)
-                .ToListAsync();
-
-            if (memberIds.Count == 0)
-            {
-                throw new InvalidOperationException($"Chat with ID {chatId} not found or has no members.");
-            }
-
-            return memberIds;
-        }
-    }
-
-    private async Task<string> GetUserNicknameByIdAsync(int userId)
-    {
-        await using var dbContext = CreateDbContext();
-
-        var nickname = await dbContext.Users
-            .Where(u => u.Id == userId)
-            .Select(u => u.Nickname)
-            .FirstOrDefaultAsync();
-
-        return nickname;
     }
 
     private X509Certificate2 GetServerCertificate()
