@@ -7,6 +7,7 @@ public enum CommandType
     SendMessage,
     DeleteForMe,
     DeleteForAll,
+    EditMessage,
     Reconnect
 }
 

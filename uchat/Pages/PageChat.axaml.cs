@@ -26,6 +26,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private bool _isLight = true;
     private bool _isMembersPanelOpen = false;
     private bool _showToggleMembersButton;
+    private Message? _editingMessage;
     
     private bool _isReconnecting;
     public bool IsReconnecting
@@ -74,7 +75,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         Chats.Add(new ChatItem
         {
-            Name = "Vlad", Username = "online", Messages = new ObservableCollection<Message>
+            Name = "Vlad", Username = "@vlad", Messages = new ObservableCollection<Message>
             {
                 new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
                 new Message { Sender = "Me", Text = "fgnf", IsMine = true },
@@ -118,6 +119,15 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             new User { Name = "Mariia 2", Username = "@7" },
             new User { Name = "Roma", Username = "@4" }
         };
+        
+        foreach (var chat in Chats)
+        {
+            if (chat.Messages.Any())
+            {
+                var lastMessage = chat.Messages.Last();
+                chat.NotifyLastMessageChanged(lastMessage.Text, lastMessage.SentTime);
+            }
+        }
         
         foreach (var chat in Chats)
             FilteredChats.Add(chat);
@@ -166,7 +176,40 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         public string Username { get; set; } = "";
         public bool IsGroup { get; set; } = false;
         public ObservableCollection<User> Members { get; set; } = new();
-        public string LastMessage => Messages.LastOrDefault()?.Text ?? "";
+        private string _lastMessage = "";
+        public string LastMessage
+        {
+            get => _lastMessage;
+            private set
+            {
+                if (_lastMessage != value)
+                {
+                    _lastMessage = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessage)));
+                }
+            }
+        }
+        private DateTime _lastMessageTime;
+        public DateTime LastMessageTime
+        {
+            get => _lastMessageTime;
+            private set
+            {
+                if (_lastMessageTime != value)
+                {
+                    _lastMessageTime = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageTime)));
+                }
+            }
+        }
+        public void NotifyLastMessageChanged(string messageText, DateTime sentTime)
+        {
+            LastMessage = messageText;
+            LastMessageTime = sentTime;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessage)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageTime)));
+        }
+        
         private string _draft = "";
         private bool _isPinned = false;
         public long PinOrder { get; set; }
@@ -199,8 +242,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
         }
 
-        public void NotifyLastMessageChanged() =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessage)));
     }
 
     public ObservableCollection<Message> SelectedChatMessages
@@ -511,7 +552,15 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         {
             return;
         }
-        var msg = new Message { Id = Guid.NewGuid().ToString(), Sender = "Me", Text = text, IsMine = true };
+        if (_editingMessage != null)
+        {
+            _editingMessage.Text = text;
+            _editingMessage.IsEdited = true;
+            _editingMessage = null;
+            MessageTextBox.Text = "";
+            return;
+        }
+        var msg = new Message { Id = Guid.NewGuid().ToString(), Sender = "Me", Text = text, IsMine = true, SentTime = DateTime.Now };
         // bool success = await _client.SendMessageAsync(contact.Name, msg);
         // if (success)
         // {
@@ -529,7 +578,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
             contact.Draft = "";
             MessageTextBox.Text = "";
-            contact.NotifyLastMessageChanged();
+            contact.NotifyLastMessageChanged(msg.Text, msg.SentTime);
         // }
     }
     
@@ -1001,6 +1050,24 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 await clipboard.SetTextAsync(msg.Text);
             }
         }
+    }
+    
+    private async void EditMessage_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menu || menu.DataContext is not Message msg)
+        {
+            return;
+        }
+
+        MessageTextBox.Text = msg.Text;
+        MessageTextBox.Focus();
+        MessageTextBox.CaretIndex = MessageTextBox.Text.Length;
+        _editingMessage = msg;
+        
+        // if (ChatList.SelectedItem is ChatItem chat)
+        // {
+        //     await _client.EditMessageAsync(chat.Name, msg.Id, msg.Text);
+        // }
     }
     
     private async void DeleteMessageForMe_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
