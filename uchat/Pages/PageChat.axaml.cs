@@ -512,21 +512,46 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         {
             return;
         }
+
         string text = MessageTextBox.Text?.Trim() ?? "";
+
         if (string.IsNullOrEmpty(text))
         {
             return;
         }
-        var msg = new Message { Id = Guid.NewGuid().ToString(), Sender = "Me", Text = text, IsMine = true };
-        // bool success = await _client.SendMessageAsync(contact.Name, msg);
-        // if (success)
-        // {
-            contact.Messages.Add(msg);
-            SelectedChatMessages.Add(msg);
-            contact.Draft = "";
-            MessageTextBox.Text = "";
-            contact.NotifyLastMessageChanged();
-        // }
+
+        var msgToSend = new Message { Text = text };
+
+        var msgToDisplay = new Message
+        {
+            Sender = "Me",
+            Text = text,
+            IsMine = true,
+            IsGroup = contact.IsGroup
+        };
+
+        var response = await _client.SendTextMessage(contact.ChatId, msgToSend);
+        
+        if (response != null && response.Status == Status.Success)
+        {
+            var msgPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+        
+            if (msgPayload != null)
+            {
+                msgToDisplay.Id = msgPayload.MessageId;
+                msgToDisplay.IsDeleted = msgPayload.IsDeleted;
+            
+                contact.Messages.Add(msgToDisplay);
+                SelectedChatMessages.Add(msgToDisplay);
+                contact.Draft = "";
+                MessageTextBox.Text = "";
+                contact.NotifyLastMessageChanged();
+            }
+        }
+        else
+        {
+            // make error message maybe
+        }
     }
     
     private void MessageTextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
@@ -978,7 +1003,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
     }
     
-    public void UpdateChatsWithResponse(Response response)
+    public async void UpdateChatsWithResponse(Response response)
     {
         switch (response.Type)
         {
@@ -1016,6 +1041,42 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     if (!_isApplyingFilter)
                     {
                         FilteredChats.Add(chat);
+                    }
+                }
+
+                break;
+            }
+            case CommandType.SendMessage:
+            {
+                var msgPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+                
+                if (msgPayload is null) 
+                {
+                    break;
+                }
+                
+                var chat = Chats.FirstOrDefault(c => c.ChatId == msgPayload.ChatId);
+                
+                if (chat != null)
+                {
+                    var newMessage = new Message
+                    {
+                        Id = msgPayload.MessageId,
+                        Sender = msgPayload.SenderNickname,
+                        //SentTime = msgPayload.SentAt,
+                        Text = msgPayload.Content,
+                        IsMine = false,
+                        IsDeleted = msgPayload.IsDeleted,
+                        //IsEdited = msgPayload.IsEdited,
+                        IsGroup = chat.IsGroup
+                    };
+        
+                    chat.Messages.Add(newMessage);
+                    chat.NotifyLastMessageChanged();
+
+                    if (_currentChat == chat)
+                    {
+                        SelectedChatMessages.Add(newMessage);
                     }
                 }
 

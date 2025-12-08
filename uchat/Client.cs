@@ -311,7 +311,7 @@ public class Client
         return response;
     }
     
-    public async Task<Response?> SendMessage(int chatId, Message msg)
+    public async Task<Response?> SendTextMessage(int chatId, Message msg)
     {
         if (_clientId is null)
         {
