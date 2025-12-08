@@ -245,29 +245,30 @@ public class Server
             });
         }
 
-        // TODO: realise login to DB
-        
-        // get hashedPassword from DB
-        // if (!BCrypt.Net.BCrypt.EnhancedVerify(loginReqPayload.Password, hashedPassword))
-        // {
-        //     var errorPayload = new ErrorPayload
-        //     {
-        //         Message = "Invalid username or password."
-        //     };
+        try 
+        {
+            User loggedUser = AuthenticateUserAsync(loginReqPayload.Username, loginReqPayload.Password)
+                .GetAwaiter()
+                .GetResult();
 
-        //     return new Response
-        //     {
-        //         Status = Status.Error,
-        //         Type = CommandType.Login,
-        //         Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
-        //     };
-        // }
+            var responsePayload = new LoginResponsePayload
+            {
+                UserId = loggedUser.Id,
+                Username = loggedUser.Username
+            };
 
-        if (loginReqPayload is { Username: "1", Password: "password" })
+            return Task.FromResult(new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.Login,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            });
+        }
+        catch (InvalidOperationException e)
         {
             var errorPayload = new ErrorPayload
             {
-                Message = "Invalid username or password."
+                Message = e.Message
             };
 
             return Task.FromResult(new Response
@@ -277,19 +278,38 @@ public class Server
                 Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
             });
         }
+        catch (Exception)
+        {
+            throw;
+        }
 
-        var responsePayload = new LoginResponsePayload
-        {
-            UserId = 1,
-            Username = loginReqPayload.Username
-        };
+        // if (loginReqPayload is { Username: "1", Password: "password" })
+        // {
+        //     var errorPayload = new ErrorPayload
+        //     {
+        //         Message = "Invalid username or password."
+        //     };
+
+        //     return Task.FromResult(new Response
+        //     {
+        //         Status = Status.Error,
+        //         Type = CommandType.Login,
+        //         Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+        //     });
+        // }
+
+        // var responsePayload = new LoginResponsePayload
+        // {
+        //     UserId = 1,
+        //     Username = loginReqPayload.Username
+        // };
         
-        return Task.FromResult(new Response
-        {
-            Status = Status.Success,
-            Type = CommandType.Login,
-            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-        });
+        // return Task.FromResult(new Response
+        // {
+        //     Status = Status.Success,
+        //     Type = CommandType.Login,
+        //     Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+        // });
     }
     
     private async Task<User> RegisterUserAsync(RegisterRequestPayload payload)
@@ -317,6 +337,22 @@ public class Server
         }
         
         return newUser;
+    }
+
+    private async Task<User> AuthenticateUserAsync(string username, string password)
+    {
+        await using (var dbContext = CreateDbContext())
+        {
+            var user = await dbContext.Users
+                .FirstOrDefaultAsync(u => u.Username == username);
+
+            if (user == null || !BCrypt.Net.BCrypt.EnhancedVerify(password, user.HashPassword))
+            {
+                throw new InvalidOperationException("Invalid username or password.");
+            }
+
+            return user;
+        }
     }
 
     private Task<Response> HandleReconnect(ReconnectRequestPayload? requestPayload)
