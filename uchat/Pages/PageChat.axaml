@@ -16,6 +16,7 @@
         <local:TailLeftVisibilityConverter x:Key="TailLeftVisibilityConverter"/>
         <local:TailRightVisibilityConverter x:Key="TailRightVisibilityConverter"/>
         <local:TailMarginConverter x:Key="TailMarginConverter"/>
+        <local:BoolToMarginConverter x:Key="BoolToMarginConverter"/>
     </UserControl.Resources>
 
     <Grid>
@@ -150,7 +151,9 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="{Binding IsMine, 
-                                        Converter={StaticResource BoolToAlignment}}" Margin="3,5" VerticalAlignment="Bottom">
+                                            Converter={StaticResource BoolToAlignment}}" 
+                                            Margin="{Binding IsMine, Converter={StaticResource BoolToMarginConverter}}"
+                                            VerticalAlignment="Bottom">
                                     <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom" >
                                         <Ellipse.Fill>
                                             <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
@@ -296,9 +299,9 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18" Padding="10" 
+                            <TextBox Grid.Column="0" x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18"
                                      HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="SearchUserBox_OnTextChanged"
-                                     GotFocus="SearchUserBox_GotFocus" LostFocus="SearchUserBox_LostFocus"/>
+                                     GotFocus="SearchUserBox_GotFocus" LostFocus="SearchUserBox_LostFocus" Padding="10,0,30,0"/>
                         <Button Grid.Column="0" x:Name="ClearSearchUserBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
                                 HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
                                 IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
@@ -344,7 +347,7 @@
                                <ColumnDefinition Width="*"/>
                                <ColumnDefinition Width="50"/>
                            </Grid.ColumnDefinitions>
-                           <TextBox Grid.Column="0" x:Name="GroupSearchBox" Watermark="Search for user..." FontSize="18" Padding="10" 
+                           <TextBox Grid.Column="0" x:Name="GroupSearchBox" Watermark="Search for user..." FontSize="18" Padding="10,0,30,0"
                                                    HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" 
                                                    TextChanged="GroupSearchBox_OnTextChanged" GotFocus="GroupSearchBox_GotFocus" 
                                                    LostFocus="GroupSearchBox_LostFocus"/>
@@ -394,17 +397,21 @@
                             </ListBox.ItemTemplate>
                         </ListBox>
                     </ScrollViewer>
-                    
-                    <TextBox Grid.Row="5" x:Name="GroupNameBox" Watermark="Enter chat name" FontSize="18" Padding="10"
+                    <Grid Grid.Row ="5">
+                    <TextBox x:Name="GroupNameBox" Watermark="Enter chat name" FontSize="18" Padding="10,0,30,0"
                              HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="GroupNameBox_OnTextChanged"/>
-                    
+                    <Button x:Name="ClearGroupNameBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                            HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
+                            IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
+                            Click="ClearGroupNameBoxButton_Click" GotFocus="GroupNameBox_GotFocus" 
+                            LostFocus="GroupNameBox_LostFocus"/>
+                    </Grid>
                     <TextBlock Grid.Row="6" x:Name="GroupNameErrorText" Text="Name cannot be empty" FontSize="14" Foreground="Red" Margin="10,2,0,0" IsVisible="False"/>
                     
                     <Button Grid.Row="7" Content="Create group chat" x:Name="CreateGroupButton" Classes="submitBtn" Width="200" VerticalAlignment="Bottom"
                             HorizontalAlignment="Center" FontSize="18" Click="CreateGroupChat_Click"/>
                 </Grid>
             </Border>
-            
         </Grid>
         </Grid>
         

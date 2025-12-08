@@ -64,12 +64,37 @@ namespace uchat
             
             if (!isMine)
             {
-                return new Avalonia.Thickness(8, 0, 0, 0);
+                return new Avalonia.Thickness(6.5, 0, 0, 0);
             }
             else
             {
-                return new Avalonia.Thickness(0, 0, 9, 0);
+                return new Avalonia.Thickness(0, 0, 6.5, 0);
             }
         }
     }
+    
+    public class BoolToMarginConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isMine)
+            {
+                if (!isMine)
+                {
+                    return new Avalonia.Thickness(8, 5, 3, 5); 
+                }
+                else
+                {
+                    return new Avalonia.Thickness(3, 5, 3, 5);
+                }
+            }
+            return new Avalonia.Thickness(3, 5, 3, 5);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+    }
+    
 }
