@@ -1352,6 +1352,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     {
                         chat.Name = chatPayload.Name ?? "";
                         chat.Username = $"{chatPayload.Members.Count} members";
+                        //chat.Members = ;
                     }
                     else
                     {
@@ -1399,7 +1400,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     };
         
                     chat.Messages.Add(newMessage);
-                    chat.NotifyLastMessageChanged();
+                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime);
 
                     if (_currentChat == chat)
                     {
