@@ -7,7 +7,8 @@ public enum CommandType
     SendMessage,
     DeleteForMe,
     DeleteForAll,
-    Reconnect
+    Reconnect,
+    CreateChat
 }
 
 public enum Status

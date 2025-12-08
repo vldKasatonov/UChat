@@ -46,4 +46,46 @@ public class ReconnectResponsePayload
 {
     [JsonPropertyName("user_id")]
     public int UserId { get; set; }
+    
+    [JsonPropertyName("username")]
+    public string Username { get; set; } = string.Empty;
+}
+
+public class CreateChatResponsePayload
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+    
+    [JsonPropertyName("is_group")]
+    public bool IsGroup { get; set; }
+    
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+    
+    [JsonPropertyName("members")]
+    public List<ChatMember> Members { get; set; } = new();
+    
+    // [JsonPropertyName("created_at")]
+    // public DateTime CreatedAt { get; set; }
+}
+
+public class TextMessageResponsePayload
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+    
+    [JsonPropertyName("sender_id")]
+    public int SenderId { get; set; }
+    
+    [JsonPropertyName("content")]
+    public string Content { get; set; } = string.Empty;
+    
+    [JsonPropertyName("sent_at")]
+    public DateTime SentAt { get; set; }
+    
+    [JsonPropertyName("is_edited")]
+    public bool IsEdited { get; set; }
+    
+    [JsonPropertyName("is_deleted")]
+    public bool IsDeleted { get; set; }
 }
