@@ -184,6 +184,9 @@ public class Server
                 case CommandType.SendMessage:
                     var sendReqPayload = request.Payload.Deserialize<SendTextMessageRequestPayload>();
                     return await HandleSendTextMessage(sendReqPayload);
+                case CommandType.SearchUser:
+                    var searchReqPayload = request.Payload.Deserialize<SearchUserRequestPayload>();
+                    return await HandleSearchUsers(searchReqPayload);
             }
         }
         catch (Exception)
@@ -264,7 +267,8 @@ public class Server
             var responsePayload = new LoginResponsePayload
             {
                 UserId = loggedUser.Id,
-                Username = loggedUser.Username
+                Username = loggedUser.Username,
+                Nickname = loggedUser.Nickname
             };
 
             return Task.FromResult(new Response
@@ -368,7 +372,7 @@ public class Server
         }
     }
     
-    private async Task<Response> HandleCreateChat(CreateChatRequestPayload? requestPayload) 
+    private async Task<Response> HandleCreateChat(CreateChatRequestPayload? requestPayload)
     {
         if (requestPayload is null)
         {
@@ -390,9 +394,10 @@ public class Server
 
                 if (chatId.HasValue)
                 {
-                    var errorPayload = new ErrorPayload 
-                    { 
-                        Message = $"Private chat with {user2} already exists with ID {chatId.Value}." 
+                    var errorPayload = new ChatErrorPayload 
+                    {
+                        ChatId = (int)chatId,
+                        Message = $"Private chat with {user2} already exists." 
                     };
                     return new Response
                     {
@@ -403,14 +408,16 @@ public class Server
                 }
             }
             
-            var newChat = await _dbProvider.CreateChatAsync(requestPayload);
+            var creationResult = await _dbProvider.CreateChatAsync(requestPayload);
+            var newChat = creationResult.Chat;
+            var members = creationResult.Members;
             
             var responsePayload = new CreateChatResponsePayload
             {
                 ChatId = newChat.Id,
                 IsGroup = newChat.IsGroup,
                 Name = newChat.Name,
-                Members = requestPayload.Members
+                Members = members
             };
 
             var response = new Response
@@ -440,7 +447,7 @@ public class Server
         }
     }
 
-    private async Task<Response> HandleSendTextMessage(SendTextMessageRequestPayload? requestPayload) 
+    private async Task<Response> HandleSendTextMessage(SendTextMessageRequestPayload? requestPayload)
     {
         if (requestPayload is null)
         {
@@ -498,7 +505,63 @@ public class Server
         }
     }
     
-    private async Task BroadcastCreateChat(List<dto.ChatMember> members, Response response)
+    private async Task<Response> HandleSearchUsers(SearchUserRequestPayload? requestPayload)
+    {
+        if (requestPayload is null || string.IsNullOrWhiteSpace(requestPayload.Username))
+        {
+            var errorPayload = new ErrorPayload { Message = "Username query cannot be empty." };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.SearchUser,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+
+        try
+        {
+            var foundUser =
+                await _dbProvider.FindUserByUsernameAsync(requestPayload.Username);
+
+            if (foundUser is null)
+            {
+                return new Response
+                {
+                    Status = Status.Success,
+                    Type = CommandType.SearchUser,
+                    Payload = JsonSerializer.SerializeToNode(new SearchUserResponsePayload())?.AsObject()
+                };
+            }
+
+            var responsePayload = new SearchUserResponsePayload
+            {
+                UserId = foundUser.Id,
+                Username = foundUser.Username,
+                Nickname = foundUser.Nickname
+            };
+
+            return new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.SearchUser,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            var errorPayload = new ErrorPayload { Message = "Server error during user search." };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.SearchUser,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+    }
+    
+    private async Task BroadcastCreateChat(List<ChatMemberRequest> members, Response response)
     {
         string jsonResponse = JsonSerializer.Serialize(response);
         string creatorUsername = members[0].Username;

@@ -51,13 +51,14 @@ public class CreateChatRequestPayload
     public string? Name { get; set; }
     
     [JsonPropertyName("members")]
-    public List<ChatMember> Members { get; set; } = new();
+    public List<ChatMemberRequest> Members { get; set; } = new();
 }
 
-public class ChatMember
+public class ChatMemberRequest
 {
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
+
     [JsonPropertyName("has_privileges")]
     public bool HasPrivileges { get; set; }
 }
@@ -72,4 +73,10 @@ public class SendTextMessageRequestPayload
     
     [JsonPropertyName("content")]
     public string Content { get; set; } = string.Empty;
+}
+
+public class SearchUserRequestPayload
+{
+    [JsonPropertyName("username")]
+    public string Username { get; set; } = string.Empty;
 }
