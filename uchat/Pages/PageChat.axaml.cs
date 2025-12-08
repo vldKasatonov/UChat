@@ -60,6 +60,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     {
         InitializeComponent();
         UpdateExitThemeIcon();
+        UpdateSingleChatThemeIcon();
+        UpdateGroupChatThemeIcon();
+        UpdateModeThemeIcon();
     }
     
     public PageChat(Client client) : this()
@@ -752,6 +755,17 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
     }
     
+    private void RemoveMemberButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is User user)
+        {
+            _selectedGroupMembers.Remove(user);
+            SelectedMembersList.ItemsSource = null;
+            SelectedMembersList.ItemsSource = _selectedGroupMembers;
+        }
+    }
+
+    
     private void GroupNameBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (GroupNameBox == null || GroupNameErrorText == null)
@@ -958,6 +972,24 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         ExitLight.IsVisible = !_isLight;
         ExitDark.IsVisible = _isLight;
     }
+    
+    private void UpdateSingleChatThemeIcon()
+    {
+        SingleChatLight.IsVisible = !_isLight;
+        SingleChatDark.IsVisible = _isLight;
+    }
+    
+    private void UpdateGroupChatThemeIcon()
+    {
+        GroupChatLight.IsVisible = !_isLight;
+        GroupChatDark.IsVisible = _isLight;
+    }
+    
+    private void UpdateModeThemeIcon()
+    {
+        ModeLight.IsVisible = !_isLight;
+        ModeDark.IsVisible = _isLight;
+    }
 
     private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
     {
@@ -966,6 +998,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         (Application.Current as App)?.SetTheme(_isLight ? "Light" : "Dark");
         
         UpdateExitThemeIcon();
+        UpdateSingleChatThemeIcon();
+        UpdateGroupChatThemeIcon();
+        UpdateModeThemeIcon();
     }
 
     //message grouping
