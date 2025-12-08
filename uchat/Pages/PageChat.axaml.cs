@@ -55,8 +55,33 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
         }
     }
-    public string CurrentUserName { get; set; } = string.Empty;
-    public string CurrentUserUsername { get; set; } = string.Empty;
+    private string _currentUserName = string.Empty;
+    public string CurrentUserName
+    {
+        get => _currentUserName;
+        set
+        {
+            if (_currentUserName != value)
+            {
+                _currentUserName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentUserName)));
+            }
+        }
+    }
+    
+    private string _currentUserUsername = string.Empty;
+    public string CurrentUserUsername
+    {
+        get => _currentUserUsername;
+        set
+        {
+            if (_currentUserUsername != value)
+            {
+                _currentUserUsername = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentUserUsername)));
+            }
+        }
+    }
     
     public PageChat()
     {
@@ -76,7 +101,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         ChatList.SelectionChanged += ChatList_SelectionChanged;
         SelectedChatMessages.CollectionChanged += MessagesPanel_CollectionChanged;
         ChatAvatar.IsVisible = false;
-        CurrentUserUsername = "@" + _client.GetUsername();
+        CurrentUserUsername = ToHandleFormat(_client.GetUsername());
         CurrentUserName = _client.GetNickname();
         Chats.Add(new ChatItem
         {
@@ -738,7 +763,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     {
                         Id = searchPayload.UserId,
                         Name = searchPayload.Nickname,
-                        Username = "@" + searchPayload.Username
+                        Username = ToHandleFormat(searchPayload.Username)
                     };
 
                     SearchResultBorder.IsVisible = true;
@@ -1030,7 +1055,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     {
                         Id = searchPayload.UserId,
                         Name = searchPayload.Nickname,
-                        Username = "@" + searchPayload.Username
+                        Username = ToHandleFormat(searchPayload.Username)
                     };
                     
                     GroupSearchResultBorder.DataContext = user;
@@ -1250,20 +1275,10 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (_isMembersPanelOpen)
         {
-            var members = new ObservableCollection<User>
-            {
-                new User
-                {
-                    Name = CurrentUserName,
-                    Username = CurrentUserUsername
-                }
-            };
+            var members = new ObservableCollection<User>();
             foreach (var member in _currentChat.Members)
             {
-                if (member.Username != CurrentUserUsername)
-                {
-                    members.Add(member);
-                }
+                members.Add(member);
             }
             GroupMembersList.ItemsSource = members;
         }
@@ -1443,8 +1458,13 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         cur.ShowAvatar = isLast;
         cur.ShowTail = isLast;
     }
+
+    private string ToHandleFormat(string username)
+    {
+        return "@" + username;
+    }
     
-    public void UpdateChatsWithResponse(Response response)
+    private void UpdateChatsWithResponse(Response response)
     {
         switch (response.Type)
         {
@@ -1469,7 +1489,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                         {
                             Id = member.UserId,
                             Name = member.Nickname,
-                            Username = member.Username
+                            Username = ToHandleFormat(member.Username)
                         });
                     }
 
@@ -1483,15 +1503,18 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                         var firstMember = chatPayload.Members[0];
                         var secondMember = chatPayload.Members[1];
 
-                        if (firstMember.Username == CurrentUserUsername)
+                        var firstUsername = ToHandleFormat(firstMember.Username);
+                        var secondUsername = ToHandleFormat(secondMember.Username);
+
+                        if (firstUsername == CurrentUserUsername)
                         {
                             chat.Name = secondMember.Nickname;
-                            chat.Username = secondMember.Username;
+                            chat.Username = secondUsername;
                         }
                         else
                         {
                             chat.Name = firstMember.Nickname;
-                            chat.Username = firstMember.Username;
+                            chat.Username = firstUsername;
                         }
                     }
 
