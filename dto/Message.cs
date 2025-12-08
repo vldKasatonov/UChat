@@ -9,7 +9,7 @@ public class Message : INotifyPropertyChanged
     private string _text = "";
     private bool _isDeleted;
 
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public int Id { get; set; }
     public string Sender { get; set; } = "";
     public DateTime SentTime { get; set; } = DateTime.Now;
     public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
