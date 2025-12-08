@@ -275,6 +275,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         if (_isApplyingFilter) return;
 
         _isUpdatingFilteredChats = true;
+        
+        var currentlySelectedChat = ChatList.SelectedItem as ChatItem;
 
         var pinnedChats = Chats
             .Where(chat => chat.IsPinned)
@@ -293,6 +295,12 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             FilteredChats.Add(chat);
 
         _isUpdatingFilteredChats = false;
+        
+        if (currentlySelectedChat != null && FilteredChats.Contains(currentlySelectedChat))
+        {
+            ChatList.SelectedItem = currentlySelectedChat;
+            _currentChat = currentlySelectedChat;
+        }
     }
 
     private void UpdateChatView(ChatItem contact)
@@ -346,6 +354,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         text = text.Trim().ToLower();
         _isApplyingFilter = true;
         _isUpdatingFilteredChats = true;
+        
+        var currentlySelectedChat = ChatList.SelectedItem as ChatItem;
 
         if (!string.IsNullOrEmpty(text))
             ChatList.SelectedIndex = -1;
@@ -371,6 +381,20 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         _isUpdatingFilteredChats = false;
         _isApplyingFilter = false;
+        
+        if (currentlySelectedChat != null && FilteredChats.Contains(currentlySelectedChat))
+        {
+            ChatList.SelectedItem = currentlySelectedChat;
+        }
+        else
+        {
+            ChatList.SelectedIndex = -1;
+            if (currentlySelectedChat != null)
+            {
+                ClearChatView();
+                _currentChat = null;
+            }
+        }
     }
 
     private void SelectChatAfterFilterUpdate(ChatItem chatToSelect)
@@ -470,6 +494,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (!string.IsNullOrEmpty(SearchTextBox.Text))
             ApplyFilter(SearchTextBox.Text);
+        
     }
     
     
@@ -548,8 +573,11 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
         else
         {
-            _currentChat = null;
-            ClearChatView();
+            if (!_isUpdatingFilteredChats)
+            {
+                _currentChat = null;
+                ClearChatView();
+            }
         }
     }
 
@@ -989,6 +1017,13 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     }
 
     
+    private void ClearGroupNameBoxButton_Click(object? sender, RoutedEventArgs e)
+    {
+        GroupNameBox.Text = "";
+        ClearGroupNameBoxButton.IsVisible = false;
+        GroupNameBox.Focus();
+    }
+    
     private void GroupNameBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (GroupNameBox == null || GroupNameErrorText == null)
@@ -1001,6 +1036,21 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             GroupSearchErrorText.IsVisible = false;
             GroupSearchBox.Classes.Remove("error");
         }
+        
+        if (ClearGroupNameBoxButton != null)
+            ClearGroupNameBoxButton.IsVisible = !string.IsNullOrEmpty(GroupNameBox.Text);
+    }
+    
+    private void GroupNameBox_GotFocus(object? sender, RoutedEventArgs e)
+    {
+        if (ClearGroupNameBoxButton != null)
+            ClearGroupNameBoxButton.IsVisible = !string.IsNullOrEmpty(GroupNameBox.Text);
+    }
+
+    private void GroupNameBox_LostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (ClearGroupNameBoxButton != null)
+            ClearGroupNameBoxButton.IsVisible = !string.IsNullOrEmpty(GroupNameBox.Text);
     }
     
     private async void CreateGroupChat_Click(object? sender, RoutedEventArgs e)

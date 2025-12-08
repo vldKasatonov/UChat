@@ -4,12 +4,17 @@ using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 using Avalonia;
 using dto;
+using System.Reactive.Linq;
 
 namespace uchat;
 
 public partial class PageLogin : UserControl
 {
     private Client _client = null!;
+    private Button? _usernameClearButton;
+    private Button? _passwordClearButton;
+    private TextBox? _usernameTextBox;
+    private TextBox? _passwordTextBox;
 
     public PageLogin()
     {
@@ -20,6 +25,7 @@ public partial class PageLogin : UserControl
     {
         _client = client;
         AttachTextChangedHandlers();
+        InitializeClearButtons();
     }
 
     private void InitializeComponent()
@@ -53,6 +59,44 @@ public partial class PageLogin : UserControl
 
         AttachHandler(this.FindControl<TextBox>("UsernameTextBox"), this.FindControl<TextBlock>("UsernameErrorText"), loginButton, loginErrorText);
         AttachHandler(this.FindControl<TextBox>("PasswordTextBox"), this.FindControl<TextBlock>("PasswordErrorText"), loginButton, loginErrorText);
+    }
+    
+    private void InitializeClearButtons()
+    {
+        _usernameTextBox = this.FindControl<TextBox>("UsernameTextBox");
+        _passwordTextBox = this.FindControl<TextBox>("PasswordTextBox");
+        _usernameClearButton = this.FindControl<Button>("UsernameClearButton");
+        _passwordClearButton = this.FindControl<Button>("PasswordClearButton");
+        
+        if (_usernameTextBox != null && _usernameClearButton != null)
+        {
+            _usernameClearButton.Click += (s, e) =>
+            {
+                _usernameTextBox.Text = string.Empty;
+                _usernameTextBox.Focus();
+            };
+            
+            _usernameTextBox.GetObservable(TextBox.TextProperty)
+                .Subscribe(text =>
+                {
+                    _usernameClearButton.IsVisible = !string.IsNullOrEmpty(text);
+                });
+        }
+        
+        if (_passwordTextBox != null && _passwordClearButton != null)
+        {
+            _passwordClearButton.Click += (s, e) =>
+            {
+                _passwordTextBox.Text = string.Empty;
+                _passwordTextBox.Focus();
+            };
+            
+            _passwordTextBox.GetObservable(TextBox.TextProperty)
+                .Subscribe(text =>
+                {
+                    _passwordClearButton.IsVisible = !string.IsNullOrEmpty(text);
+                });
+        }
     }
     
     private bool ShowError(TextBox box, TextBlock errorBlock, string? message)
