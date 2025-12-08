@@ -10,6 +10,7 @@ using uchat_server.Data;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using BCrypt.Net;
+using ChatMember = dto.ChatMember;
 
 namespace uchat_server;
 
@@ -17,7 +18,8 @@ public class Server
 {
     private TcpListener _listener;
     private readonly X509Certificate2 _serverCertificate;
-    private ConcurrentDictionary<int, TcpClient> _clients = new();
+    private ConcurrentDictionary<string, int> _userIds = new();
+    private ConcurrentDictionary<int, SslStream> _clients = new();
     private string _dbConnection;
     
     public Server(int port, string dbConnection)
@@ -37,7 +39,7 @@ public class Server
             while (true)
             {
                 TcpClient client = await _listener.AcceptTcpClientAsync();
-                Console.WriteLine("New client connected."); //TODO: delete message
+                Console.WriteLine("New client connected.");
                 _ = HandleClientAsync(client);
             }
         }
@@ -59,6 +61,7 @@ public class Server
     private async Task HandleClientAsync(TcpClient client)
     {
         int? userId = null;
+        string? username = null;
         NetworkStream networkStream = client.GetStream();
         
         SslStream sslStream = new SslStream(networkStream, false);
@@ -80,10 +83,7 @@ public class Server
                 {
                     continue;
                 }
-                
-                //TODO: delete logs
-                
-                Console.WriteLine($"Received from client: {jsonRequest}");
+
                 Request? request;
 
                 try
@@ -106,8 +106,6 @@ public class Server
                 }
 
                 Response response = await ProcessRequest(request);
-                
-                Console.WriteLine($"Response for client: {JsonSerializer.Serialize(response)}");
 
                 string jsonResponse = JsonSerializer.Serialize(response);
                 await writer.WriteLineAsync(jsonResponse);
@@ -122,38 +120,55 @@ public class Server
                         _ => null
                     };
                     
-                    if (userId != null)
+                    username = response.Type switch
                     {
-                        _clients.TryAdd((int)userId, client);
-                        Console.WriteLine($"User '{userId}' is active.");
+                        CommandType.Login => response.Payload.Deserialize<LoginResponsePayload>()?.Username,
+                        CommandType.Register => response.Payload.Deserialize<RegisterResponsePayload>()?.Username,
+                        CommandType.Reconnect => response.Payload.Deserialize<ReconnectResponsePayload>()?.Username,
+                        _ => null
+                    };
+                    
+                    if (userId != null && username != null)
+                    {
+                        _clients.TryAdd((int)userId, sslStream);
+                        _userIds.TryAdd(username, (int)userId);
+                        Console.WriteLine($"User '{username}' with ID {userId} is active.");
                     }
                 }
+                
+                Console.WriteLine("Usernames and IDs:");
+                foreach (var kvp in _userIds)
+                {
+                    Console.WriteLine($"Username: {kvp.Key}, UserId: {kvp.Value}");
+                }
+
+                Console.WriteLine("UserIds and TcpClients:");
+                foreach (var kvp in _clients)
+                {
+                    Console.WriteLine($"UserId: {kvp.Key}, SSLStream RemoteEndPoint: {kvp.Value}");
+                }
+
+                Console.WriteLine($"Received from '{username}' with ID {userId} :\n{jsonRequest}");
+                Console.WriteLine($"Response for '{username}' with ID {userId} :\n{JsonSerializer.Serialize(response)}");
             }
         }
         catch (System.Security.Authentication.AuthenticationException ex)
         {
-            // Error during SSL/TLS authentication
             Console.WriteLine($"TLS Authentication Error: {ex.Message}");
         }
-        catch (IOException ex) when (ex.InnerException is SocketException sockEx)
+        catch (IOException ex) when (ex.InnerException is SocketException)
         {
-            // Client disconnected 
-            Console.WriteLine($"Client disconnected unexpectedly or reset connection. Message: {sockEx.Message}");
-        }
-        catch (Exception)
-        {
-            //Console.WriteLine($"Error handling client: {ex.Message}");
+            Console.WriteLine($"User '{username}' with ID {userId} disconnected.");
         }
         finally
         {
-            if (userId != null)
+            if (userId != null && username != null)
             {
                 _clients.TryRemove((int)userId, out _);
-                Console.WriteLine($"User '{userId}' disconnected.");
+                _userIds.TryRemove(username, out _);
             }
             
             client.Close();
-            Console.WriteLine("Client disconnected.");
         }
     }
     
@@ -172,6 +187,9 @@ public class Server
                 case CommandType.Reconnect:
                     var reconnectReqPayload = request.Payload.Deserialize<ReconnectRequestPayload>();
                     return await HandleReconnect(reconnectReqPayload);
+                case CommandType.CreateChat:
+                    var createChatReqPayload = request.Payload.Deserialize<CreateChatRequestPayload>();
+                    return await HandleCreateChat(createChatReqPayload);
             }
         }
         catch (Exception)
@@ -280,7 +298,7 @@ public class Server
 
         var responsePayload = new LoginResponsePayload
         {
-            UserId = 1,
+            UserId = int.Parse(loginReqPayload.Username),
             Username = loginReqPayload.Username
         };
         
@@ -332,15 +350,111 @@ public class Server
         
         // TODO: check ID in DB
         
-        var responsePayload = new ReconnectResponsePayload()
+        var responsePayload = new ReconnectResponsePayload
         {
-            UserId = requestPayload.UserId
+            UserId = requestPayload.UserId,
+            Username = requestPayload.Username
         };
         
         return Task.FromResult(new Response
         {
             Status = Status.Success,
             Type = CommandType.Reconnect,
+            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+        });
+    }
+    
+    private async Task<Response> HandleCreateChat(CreateChatRequestPayload? requestPayload) 
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.CreateChat
+            };
+        }
+
+        var responsePayload = new CreateChatResponsePayload
+        {
+            ChatId = 1, //get from db
+            IsGroup = requestPayload.IsGroup,
+            Name = requestPayload.Name,
+            Members = requestPayload.Members
+        };
+
+        var response = new Response
+        {
+            Status = Status.Success,
+            Type = CommandType.CreateChat,
+            Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+        };
+
+        await Broadcast(requestPayload.Members, response);
+        
+        return response;
+    }
+
+    private async Task Broadcast(List<ChatMember> members, Response response)
+    {
+        Console.WriteLine("Broadcast");
+        string jsonResponse = JsonSerializer.Serialize(response);
+        
+        foreach (var member in members)
+        {
+            if (members.Count > 2 && member.HasPrivileges)
+            {
+                continue;
+            }
+
+            if (members.Count == 2)
+            {
+                var privatePayload = response.Payload.Deserialize<CreateChatResponsePayload>();
+                if (privatePayload != null && privatePayload.Members[0].Username == member.Username)
+                {
+                    continue;
+                }
+            }
+
+            if (_userIds.TryGetValue(member.Username, out var userId))
+            {
+                if (_clients.TryGetValue(userId, out var sslStream))
+                {
+                    var writer = new StreamWriter(sslStream) { AutoFlush = true };
+                    await writer.WriteLineAsync(jsonResponse);
+                    Console.WriteLine($"Broadcast for '{member.Username}' with ID {userId}:\n{jsonResponse}");
+                }
+            }
+        }
+    }
+    
+    private Task<Response> HandleSendTextMessage(SendTextMessageRequestPayload? requestPayload) 
+    {
+        if (requestPayload is null)
+        {
+            return Task.FromResult(new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.SendMessage
+            });
+        }
+        
+        //check if chat_id exists
+
+        var responsePayload = new TextMessageResponsePayload
+        {
+            ChatId = requestPayload.ChatId,
+            SenderId = requestPayload.SenderId,
+            Content = requestPayload.Content,
+            SentAt = new DateTime(), //get from db
+            IsEdited = false,
+            IsDeleted = false
+        };
+        
+        return Task.FromResult(new Response
+        {
+            Status = Status.Success,
+            Type = CommandType.SendMessage,
             Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
         });
     }
