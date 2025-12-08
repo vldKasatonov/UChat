@@ -74,8 +74,14 @@ public class TextMessageResponsePayload
     [JsonPropertyName("chat_id")]
     public int ChatId { get; set; }
     
+    [JsonPropertyName("message_id")]
+    public int MessageId { get; set; }
+    
     [JsonPropertyName("sender_id")]
     public int SenderId { get; set; }
+    
+    [JsonPropertyName("sender_nickname")]
+    public string SenderNickname { get; set; } = string.Empty;
     
     [JsonPropertyName("content")]
     public string Content { get; set; } = string.Empty;
