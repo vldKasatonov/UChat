@@ -15,6 +15,7 @@ public class Client
     private TcpClient? _client;
     private int? _clientId;
     private string? _clientUsername;
+    private string? _clientNickname;
     private NetworkStream? _networkStream;
     private SslStream? _sslStream;
     private StreamReader? _reader;
@@ -36,6 +37,11 @@ public class Client
     public string GetUsername()
     {
         return _clientUsername ?? "";
+    }
+    
+    public string GetNickname()
+    {
+        return _clientNickname ?? "";
     }
 
     public async Task ConnectToServer()
@@ -195,17 +201,20 @@ public class Client
         if (response != null)
         {
             if (response.Payload != null
-                && response.Payload.TryGetPropertyValue("user_id", out var id))
+                && response.Payload.TryGetPropertyValue("user_id", out var id)
+                && response.Payload.TryGetPropertyValue("nickname", out var nickname))
             {
                 if (int.TryParse(id?.ToString(), out var parsed))
                 {
                     _clientId = parsed;
                     _clientUsername = username;
+                    _clientNickname = nickname?.ToString();
                 }
                 else
                 {
                     _clientId = null;
                     _clientUsername = null;
+                    _clientNickname = null;
                 }
             }
             
@@ -261,10 +270,10 @@ public class Client
         {
             IsGroup = false,
             Name = null,
-            Members = new List<ChatMember>
+            Members = new List<ChatMemberRequest>
             {
-                new ChatMember{Username = _clientUsername, HasPrivileges = true},
-                new ChatMember{Username = memberUsername, HasPrivileges = true}
+                new ChatMemberRequest{Username = _clientUsername, HasPrivileges = true},
+                new ChatMemberRequest{Username = memberUsername, HasPrivileges = true}
             }
         };
 
@@ -281,9 +290,9 @@ public class Client
             return null;
         }
         
-        var members = new List<ChatMember>();
+        var members = new List<ChatMemberRequest>();
 
-        members.Add(new ChatMember
+        members.Add(new ChatMemberRequest
         {
             Username = _clientUsername,
             HasPrivileges = true
@@ -291,7 +300,7 @@ public class Client
 
         foreach (var username in membersUsername)
         {
-            members.Add(new ChatMember
+            members.Add(new ChatMemberRequest
             {
                 Username = username,
                 HasPrivileges = false
@@ -326,6 +335,24 @@ public class Client
         };
 
         var request = CreateRequest(CommandType.SendMessage, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
+    }
+    
+    public async Task<Response?> SearchUsers(string username)
+    {
+        if (string.IsNullOrEmpty(username))
+        {
+            return null;
+        }
+
+        var requestPayload = new SearchUserRequestPayload
+        {
+            Username = username
+        };
+
+        var request = CreateRequest(CommandType.SearchUser, requestPayload);
         var response = await ExecuteRequest(request);
 
         return response;

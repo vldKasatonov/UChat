@@ -6,6 +6,9 @@ namespace uchat_server.Data;
 
 public class DbProvider
 {
+    public record UserSearchResult(int Id, string Username, string Nickname);
+    public record CreateChatResult(Chat Chat, List<ChatMemberResponse> Members);
+
     private readonly string _dbConnection;
 
     public DbProvider(string dbConnection)
@@ -59,7 +62,7 @@ public class DbProvider
         return user;
     }
     
-    public async Task<Chat> CreateChatAsync(CreateChatRequestPayload payload)
+    public async Task<CreateChatResult> CreateChatAsync(CreateChatRequestPayload payload)
     {
         await using var dbContext = CreateDbContext();
     
@@ -70,29 +73,44 @@ public class DbProvider
         };
     
         dbContext.Chats.Add(newChat);
-
-        var chatMembers = new List<ChatMember>();
     
         var usernames = payload.Members.Select(m => m.Username).ToList();
     
         var dbUsers = await dbContext.Users
             .Where(u => usernames.Contains(u.Username))
-            .ToDictionaryAsync(u => u.Username, u => u.Id);
+            .Select(u => new 
+            {
+                u.Id,
+                u.Username,
+                u.Nickname
+            })
+            .ToDictionaryAsync(u => u.Username, u => u);
 
         if (dbUsers.Count != payload.Members.Count)
         {
             throw new InvalidOperationException("One or more chat members were not found.");
         }
 
-        foreach (var member in payload.Members)
+        var chatMembers = new List<ChatMember>();
+        var responseMembers = new List<ChatMemberResponse>();
+
+        foreach (var memberRequest in payload.Members)
         {
-            if (dbUsers.TryGetValue(member.Username, out var userId))
+            if (dbUsers.TryGetValue(memberRequest.Username, out var dbUser))
             {
                 chatMembers.Add(new ChatMember
                 {
                     Chat = newChat, 
-                    UserId = userId,
-                    HasPrivileges = member.HasPrivileges
+                    UserId = dbUser.Id,
+                    HasPrivileges = memberRequest.HasPrivileges
+                });
+
+                responseMembers.Add(new ChatMemberResponse
+                {
+                    UserId = dbUser.Id,
+                    Username = dbUser.Username,
+                    Nickname = dbUser.Nickname,
+                    HasPrivileges = memberRequest.HasPrivileges
                 });
             }
         }
@@ -101,7 +119,7 @@ public class DbProvider
     
         await dbContext.SaveChangesAsync();
     
-        return newChat;
+        return new CreateChatResult(newChat, responseMembers);
     }
     
     public async Task<int?> FindExistingPrivateChatAsync(string username1, string username2)
@@ -204,5 +222,21 @@ public class DbProvider
 
         return await dbContext.Users
             .AnyAsync(u => u.Id == userId && u.Username == username);
+    }
+    
+    public async Task<UserSearchResult?> FindUserByUsernameAsync(string username)
+    {
+        await using var dbContext = CreateDbContext();
+
+        var result = await dbContext.Users
+            .Where(u => u.Username.ToLower() == username.ToLower())
+            .Select(u => new UserSearchResult(
+                u.Id,
+                u.Username,
+                u.Nickname
+            ))
+            .FirstOrDefaultAsync(); 
+
+        return result;
     }
 }

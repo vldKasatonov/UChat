@@ -21,6 +21,15 @@ public class ErrorPayload
     public string Message { get; set; } = string.Empty;
 }
 
+public class ChatErrorPayload
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+
+    [JsonPropertyName("message")]
+    public string Message { get; set; } = string.Empty; 
+}
+
 public class LoginResponsePayload
 {
     [JsonPropertyName("user_id")]
@@ -28,6 +37,9 @@ public class LoginResponsePayload
 
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
+    
+    [JsonPropertyName("nickname")]
+    public string Nickname { get; set; } = string.Empty;
 }
 
 public class RegisterResponsePayload
@@ -35,11 +47,11 @@ public class RegisterResponsePayload
     [JsonPropertyName("user_id")]
     public int UserId { get; set; }
     
-    [JsonPropertyName("nickname")]
-    public string Nickname { get; set; } = string.Empty;
-    
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
+    
+    [JsonPropertyName("nickname")]
+    public string Nickname { get; set; } = string.Empty;
 }
 
 public class ReconnectResponsePayload
@@ -63,10 +75,25 @@ public class CreateChatResponsePayload
     public string? Name { get; set; }
     
     [JsonPropertyName("members")]
-    public List<ChatMember> Members { get; set; } = new();
+    public List<ChatMemberResponse> Members { get; set; } = new();
     
     // [JsonPropertyName("created_at")]
     // public DateTime CreatedAt { get; set; }
+}
+
+public class ChatMemberResponse
+{
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+
+    [JsonPropertyName("username")]
+    public string Username { get; set; } = string.Empty;
+
+    [JsonPropertyName("nickname")]
+    public string Nickname { get; set; } = string.Empty;
+
+    [JsonPropertyName("has_privileges")]
+    public bool HasPrivileges { get; set; }
 }
 
 public class TextMessageResponsePayload
@@ -94,4 +121,16 @@ public class TextMessageResponsePayload
     
     [JsonPropertyName("is_deleted")]
     public bool IsDeleted { get; set; }
+}
+
+public class SearchUserResponsePayload
+{
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+    
+    [JsonPropertyName("username")]
+    public string Username { get; set; } = string.Empty;
+    
+    [JsonPropertyName("nickname")]
+    public string Nickname { get; set; } = string.Empty;
 }

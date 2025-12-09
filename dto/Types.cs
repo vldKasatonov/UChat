@@ -9,7 +9,8 @@ public enum CommandType
     DeleteForAll,
     Reconnect,
     EditMessage,
-    CreateChat
+    CreateChat,
+    SearchUser
 }
 
 public enum Status
