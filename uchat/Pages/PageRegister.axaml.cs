@@ -200,7 +200,7 @@ public partial class PageRegister : UserControl
         {
             ShowError(usernameBox, usernameError, "Username must be 3–20 characters.");
         }
-        else if (username.Contains(' '))
+        else if (username!.Contains(' '))
         {
             ShowError(usernameBox, usernameError, "Username cannot contain spaces.");
         }
@@ -291,7 +291,7 @@ public partial class PageRegister : UserControl
             var main = this.GetVisualRoot() as MainWindow;
             if (main != null)
             {
-                main.Navigate(new PageChat(_client));
+                main.Navigate(new PageLogin(_client));
             }
         }
         else

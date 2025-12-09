@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using System.ComponentModel;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Styling;
 using dto;
 
 namespace uchat;
@@ -23,7 +24,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private bool _isUpdatingFilteredChats;
     private ChatItem? _currentChat;
     private static long _pinSequence;
-    private bool _isLight = true;
+    private bool _isLight;
     private bool _isMembersPanelOpen;
     private bool _showToggleMembersButton;
     private Message? _editingMessage;
@@ -85,6 +86,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     public PageChat()
     {
         InitializeComponent();
+        _isLight = Application.Current?.ActualThemeVariant != ThemeVariant.Dark;
         UpdateExitThemeIcon();
         UpdateSingleChatThemeIcon();
         UpdateGroupChatThemeIcon();
@@ -1334,24 +1336,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         //     await _client.EditMessageAsync(chat.Name, msg.Id, msg.Text);
         // }
     }
-    
-    private async void DeleteMessageForMe_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menu || menu.DataContext is not Message msg)
-        {
-            return;
-        }
-        if (ChatList.SelectedItem is not ChatItem chat)
-        {
-            return;
-        }
-        // bool success = await _client.DeleteMessageForMeAsync(chat.Name, msg.Id.ToString());
-        // if (success)
-        // {
-            SelectedChatMessages.Remove(msg);
-            chat.Messages.Remove(msg);
-        // }
-    }
 
     private async void DeleteMessageForAll_Click(object? sender, RoutedEventArgs e)
     {
@@ -1412,9 +1396,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
     {
         _isLight = !_isLight;
-
-        (Application.Current as App)?.SetTheme(_isLight ? "Light" : "Dark");
-        
+        App.SetTheme(_isLight ? "Light" : "Dark");
         UpdateExitThemeIcon();
         UpdateSingleChatThemeIcon();
         UpdateGroupChatThemeIcon();
