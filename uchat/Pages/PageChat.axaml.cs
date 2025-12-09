@@ -110,6 +110,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         Task.Run(LoadAllUserChats);
 
         ChatList.ItemsSource = FilteredChats;
+
+        ChatScrollViewer.ScrollChanged += ChatScrollViewer_ScrollChanged;
         
         _client.Disconnected += async () =>
         {
@@ -277,8 +279,12 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         foreach (var chat in pinnedChats)
             FilteredChats.Add(chat);
+
         foreach (var chat in unpinnedChats)
             FilteredChats.Add(chat);
+        
+        // foreach (var chat in unpinnedChats.OrderByDescending(c => c.LastMessageTime))
+        //         FilteredChats.Add(chat);
 
         _isUpdatingFilteredChats = false;
         
@@ -470,6 +476,33 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             return;
         
         chat.IsPinned = !chat.IsPinned;
+        //bool newStatus = !chat.IsPinned;
+        
+        // var response = await _client.UpdateChatPinStatus(chat.ChatId, newPinStatus); 
+        //
+        // if (response != null && response.Status == Status.Success)
+        // {
+        //     var payload = response.Payload.Deserialize<UpdatePinStatusPayload>();
+        //
+        //     await Dispatcher.UIThread.InvokeAsync(() =>
+        //     {
+        //         chat.IsPinned = newStatus;
+        //
+        //         if (payload.PinOrder.HasValue) 
+        //         {
+        //             chat.PinOrder = payload.PinOrder.Value;
+        //         }
+        //         else
+        //         {
+        //             chat.PinOrder = 0;
+        //         }
+        //
+        //         SortChats();
+        //
+        //         if (!string.IsNullOrEmpty(SearchTextBox.Text))
+        //             ApplyFilter(SearchTextBox.Text);
+        //     });
+        // }
 
         if (chat.IsPinned)
             chat.PinOrder = ++_pinSequence;  
@@ -1552,7 +1585,20 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             return;
         }
 
-        _isLoadingHistory = true; 
+        _isLoadingHistory = true;
+        
+        var chat = Chats.FirstOrDefault(c => c.ChatId == chatId);
+        if (chat == null)
+        {
+            _isLoadingHistory = false;
+            return;
+        }
+        
+        if (beforeMessageId != 0 && !chat.HasMoreHistory)
+        {
+            _isLoadingHistory = false;
+            return;
+        }
         
         try
         {
@@ -1566,14 +1612,15 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 {
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        var chat = Chats.FirstOrDefault(c => c.ChatId == chatId);
-                        if (chat == null)
+                        var newMessages = historyPayload.Messages;
+                        
+                        if (!newMessages.Any() && beforeMessageId != 0)
                         {
+                            chat.HasMoreHistory = false;
                             return;
                         }
                         
-                        var newMessages = historyPayload.Messages;
-
+                        int addedCount = newMessages.Count;
                         foreach (var msg in newMessages)
                         {
                             msg.SentTime = msg.SentTime.ToLocalTime(); 
@@ -1587,7 +1634,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                         }
 
                         chat.HasMoreHistory = historyPayload.HasMore;
-
                         ComputeGroupingFlags(chat.Messages);
 
                         if (_currentChat == chat)
@@ -1605,12 +1651,14 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                                 }
                                 else 
                                 {
-                                    int addedCount = newMessages.Count;
-
                                     if (chat.Messages.Count > addedCount)
                                     {
                                         var anchorMessage = chat.Messages[addedCount]; 
-                                        itemsControl.ScrollIntoView(anchorMessage); 
+
+                                        Dispatcher.UIThread.Post(() =>
+                                        {
+                                            itemsControl.ScrollIntoView(anchorMessage); 
+                                        }, Avalonia.Threading.DispatcherPriority.Render);
                                     }
                                 }
                             }
@@ -1639,6 +1687,21 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         int beforeMessageId = chat.Messages.Any() ? chat.Messages.First().Id : 0;
 
         await LoadChatHistory(chat.ChatId, beforeMessageId); 
+    }
+    
+    private async void ChatScrollViewer_ScrollChanged(object? sender, ScrollChangedEventArgs e)
+    {
+        if (sender is not ScrollViewer scrollViewer)
+        {
+            return;
+        }
+
+        double currentOffset = scrollViewer.Offset.Y;
+
+        if (currentOffset < 50 && _currentChat != null && _currentChat.HasMoreHistory && !_isLoadingHistory)
+        {
+            await Task.Run(() => CheckAndLoadHistory(_currentChat));
+        }
     }
     
     private void UpdateChatsWithResponse(Response response)

@@ -177,7 +177,7 @@
             </Border>
             
             <Grid Grid.Row="1">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,5,0" ZIndex="0">
+                <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0,0,5,0" ZIndex="0">
                     <ItemsControl x:Name="MessagesPanel" ItemsSource="{Binding SelectedChatMessages}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
