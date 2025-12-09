@@ -17,10 +17,15 @@
         <local:TailRightVisibilityConverter x:Key="TailRightVisibilityConverter"/>
         <local:TailMarginConverter x:Key="TailMarginConverter"/>
         <local:SentTimeConverter x:Key="SentTimeConverter"/>
+        <local:DynamicMaxWidthConverter x:Key="MaxWidthConv"/>
     </UserControl.Resources>
 
     <Grid>
-        <Grid ColumnDefinitions="50,230,*">
+        <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="50"/>
+        <ColumnDefinition Width="1*" MinWidth="260" MaxWidth="400"/>
+        <ColumnDefinition Width="2*"/>
+    </Grid.ColumnDefinitions>
         
         <Grid Grid.Column="0" Background="{DynamicResource LeftSideBarBackgroundBrush}">
             <Grid.RowDefinitions>
@@ -74,10 +79,9 @@
 
             <Border Grid.Row="1" Padding="10">
                  <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Grid Width = "210">
-                        <TextBox x:Name="SearchTextBox" Width="210" FontSize="15" Watermark="Search in chat..." 
-                               Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged"
-                               CaretBrush = "White" Padding="10,0,30,0" 
+                    <Grid Width="240">
+                        <TextBox x:Name="SearchTextBox" FontSize="16" Watermark="Search in chats..." Classes="staticBg" 
+                               Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged" Padding="10,0,30,0" 
                                GotFocus="SearchTextBox_GotFocus" LostFocus="SearchTextBox_LostFocus"/>
                         <Button x:Name="ClearSearchButton" Content="✖" FontSize="13" Width="20" Height="20" 
                                 HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
@@ -124,7 +128,8 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" Foreground="White" />
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" Foreground="White" TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis" Margin="0,0,5,0"/>
                                     
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastMessageTime, Converter={StaticResource SentTimeConverter}}" FontSize="12" 
                                                            Foreground="LightGray" HorizontalAlignment="Right"  VerticalAlignment="Center"/>
@@ -230,7 +235,8 @@
                                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                                         <Image Source="avares://uchat/Resources/images/DeletedMsg.png" Width="16" Height="16"
                                                                IsVisible="{Binding IsDeleted}"/>
-                                                        <Grid MaxWidth="350">
+                                                        <Grid MaxWidth="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, 
+                                                            Path=Bounds.Width, Converter={StaticResource MaxWidthConv}}">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
@@ -247,11 +253,8 @@
                                                 <Border.ContextMenu>
                                                     <ContextMenu>
                                                         <MenuItem Header="Copy" Click="CopyMessage_Click"/>
-                                                        <MenuItem Header="Edit" Click="EditMessage_Click" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}"/>
-                                                        <MenuItem Header="Delete">
-                                                            <MenuItem Header="Delete for me" Click="DeleteMessageForMe_Click"/>
-                                                            <MenuItem Header="Delete for everyone" Click="DeleteMessageForAll_Click"/>
-                                                        </MenuItem>
+                                                        <MenuItem Header="Edit" Click="EditMessage_Click" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}" IsVisible="{Binding IsMine}"/>
+                                                        <MenuItem Header="Delete" Click="DeleteMessageForAll_Click"/>
                                                     </ContextMenu>
                                                 </Border.ContextMenu>
                                             </Border>
@@ -304,7 +307,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="MessageTextBox" FontSize="18" Watermark="Type a message..." Padding="10,5,60,5" 
+                <TextBox x:Name="MessageTextBox" FontSize="18" Watermark="Type a message..." Padding="10,5,60,5" Classes="staticBg" Background="White"
                          TextWrapping="Wrap" Text="{Binding ChatList.SelectedItem.Draft, Mode=TwoWay}" AcceptsReturn="False"
                          VerticalContentAlignment="Center" MinHeight="50" MaxHeight="120" TextChanged="MessageTextBox_OnTextChanged" KeyDown="MessageTextBox_SendWithEnter"/>
                 <Image Source="avares://uchat/Resources/images/send.png"
@@ -330,7 +333,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18" Padding="10" 
+                            <TextBox Grid.Column="0" x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18" Padding="10" Classes="staticBg" 
                                      HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="SearchUserBox_OnTextChanged"
                                      GotFocus="SearchUserBox_GotFocus" LostFocus="SearchUserBox_LostFocus"/>
                             <Button Grid.Column="0" x:Name="ClearSearchUserBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
@@ -382,7 +385,7 @@
                                 <ColumnDefinition Width="50"/>
                             </Grid.ColumnDefinitions>
                             <TextBox Grid.Column="0" x:Name="GroupSearchBox" Watermark="Search for user..." FontSize="18" Padding="10" 
-                                     HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" 
+                                     HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" Classes="staticBg"
                                      TextChanged="GroupSearchBox_OnTextChanged" GotFocus="GroupSearchBox_GotFocus" 
                                      LostFocus="GroupSearchBox_LostFocus"/>
                             <Button Grid.Column="0" x:Name="ClearGroupSearchBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
@@ -442,7 +445,7 @@
                         </ListBox>
                     </ScrollViewer>
                     
-                    <TextBox Grid.Row="5" x:Name="GroupNameBox" Watermark="Enter chat name" FontSize="18" Padding="10"
+                    <TextBox Grid.Row="5" x:Name="GroupNameBox" Watermark="Enter chat name" FontSize="18" Padding="10" Classes="staticBg"
                              HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="GroupNameBox_OnTextChanged"/>
                     
                     <TextBlock Grid.Row="6" x:Name="GroupNameErrorText" Text="Name cannot be empty" FontSize="14" Foreground="Red" Margin="10,2,0,0" IsVisible="False"/>
@@ -451,8 +454,6 @@
                             HorizontalAlignment="Center" FontSize="18" FontWeight="Bold" Click="CreateGroupChat_Click"/>
                 </Grid>
             </Border>
-            
-        </Grid>
         </Grid>
         
         <Border Background="#80000000" IsVisible="{Binding IsReconnecting}" 
