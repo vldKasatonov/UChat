@@ -43,20 +43,51 @@
                         <TextBlock Text="Please create your account." HorizontalAlignment="Center"
                                FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Vertical">
-                        <TextBlock Text="Nickname" FontSize="16" Margin="10,0,0,5"/>
-                        <TextBox x:Name="NicknameTextBox" Watermark="Enter nickname" FontSize="20" Margin="0,0,0,5"/>
+                        
+                            <TextBlock Text="Nickname" FontSize="16" Margin="10,0,0,5"/>
+                        <Grid>
+                            <TextBox x:Name="NicknameTextBox" Watermark="Enter nickname" FontSize="20" Margin="0,0,0,5"
+                                     Padding="10,0,30,0"/>
+                            <Button x:Name="NicknameClearButton" Content="✖" Width="20" Height="20" 
+                                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
+                                    Background="Transparent" BorderThickness="0" Foreground="#9183B0" 
+                                    FontSize="13" IsVisible="False" Cursor="Hand" ZIndex="1" 
+                                    Classes="nohover"/>
+                         </Grid>   
                         <TextBlock x:Name="NicknameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
                         <TextBlock Text="Username" FontSize="16" Margin="10,0,0,5"/>
-                        <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"/>
+                            <Grid>
+                                <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"
+                                         Padding="10,0,30,0"/>
+                                <Button x:Name="UsernameClearButton" Content="✖" Width="20" Height="20" 
+                                        HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
+                                        Background="Transparent" BorderThickness="0" 
+                                        Foreground="#9183B0" FontSize="13" IsVisible="False"
+                                        Cursor="Hand" ZIndex="1" Classes="nohover"/>
+                            </Grid>
                         <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
                         <TextBlock Text="Password" FontSize="16" Margin="10,0,0,5"/>
-                        <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="*" FontSize="25" Margin="0,0,0,5"/>
+                            <Grid>
+                                <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="•" FontSize="30" Margin="0,0,0,5"
+                                         Padding="10,0,30,0" VerticalContentAlignment="Center"/>
+                                <Button x:Name="PasswordClearButton" Content="✖" Width="20" Height="20" 
+                                        HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
+                                        Background="Transparent" BorderThickness="0" Foreground="#9183B0" 
+                                        FontSize="13" IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover"/>
+                            </Grid>
                         <TextBlock x:Name="PasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
                         <TextBlock Text="Confirm password" FontSize="16" Margin="10,0,0,5"/>
-                        <TextBox x:Name="ConfirmPasswordTextBox" Watermark="Confirm password" PasswordChar="*" FontSize="25" Margin="0,0,0,5"/>
+                            <Grid>
+                                <TextBox x:Name="ConfirmPasswordTextBox" Watermark="Confirm password" PasswordChar="•" FontSize="30" Margin="0,0,0,5"
+                                         Padding="10,0,30,0" VerticalContentAlignment="Center"/>
+                                <Button x:Name="ConfirmPasswordClearButton" Content="✖" Width="20" Height="20" 
+                                        HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
+                                        Background="Transparent" BorderThickness="0" Foreground="#9183B0" 
+                                        FontSize="13" IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover"/>
+                            </Grid>
                         <TextBlock x:Name="ConfirmPasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,0"/>
                         </StackPanel>
                         

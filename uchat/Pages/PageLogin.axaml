@@ -33,12 +33,30 @@
                                FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,0"/>
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="Username" FontSize="17" Margin="10,0,0,5"/>
-                        <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"/>
+                        
+                        
+                        <Grid>
+                            <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"
+                                     Padding="10,0,30,0"/>
+                            <Button x:Name="UsernameClearButton" Content="✖" Width="20" Height="20" HorizontalAlignment="Right"
+                                    VerticalAlignment="Center" Margin="0,0,10,5" Background="Transparent"
+                                    BorderThickness="0" Foreground="#9183B0" FontSize="13" IsVisible="False"
+                                    Cursor="Hand" ZIndex="1" Classes="nohover"/>
+                        </Grid>
                         <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
                         
                         <TextBlock Text="Password" FontSize="17" Margin="10,0,0,5"/>
-                        <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="*" FontSize="25" Margin="0,0,0,5"/>
+                        
+                        <Grid>
+                            <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="•" FontSize="30" Margin="0,0,0,5"
+                                     Padding="10,0,30,0"/>
+                            <Button x:Name="PasswordClearButton" Content="✖" Width="20" Height="20" HorizontalAlignment="Right"
+                                    VerticalAlignment="Center" Margin="0,0,10,5" Background="Transparent"
+                                    BorderThickness="0" Foreground="#9183B0" FontSize="13" IsVisible="False" Cursor="Hand"
+                                    ZIndex="1" Classes="nohover"/>
+                        </Grid>
                         <TextBlock x:Name="PasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
+                        
                     </StackPanel>
                     <StackPanel Orientation="Vertical">
                     <Button x:Name="LoginButton" Click="LogInButton_Click" Classes="submitBtn" Content="Login" FontSize="23" FontWeight="Bold" Width="250" HorizontalAlignment="Center"/>

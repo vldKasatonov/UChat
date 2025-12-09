@@ -1,20 +1,21 @@
-﻿namespace uchat;
-
-using dto;
+﻿using dto;
 using System.Text;
 using System.Text.Json;
 using System.Net.Sockets;
-
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
+
+namespace uchat;
 
 public class Client
 {
     private string _ip;
     private int _port;
     private TcpClient? _client;
-    private int? _id;
+    private int? _clientId;
+    private string? _clientUsername;
+    private string? _clientNickname;
     private NetworkStream? _networkStream;
     private SslStream? _sslStream;
     private StreamReader? _reader;
@@ -25,11 +26,22 @@ public class Client
     public event Action? Disconnected;
     public event Action? Reconnected;
     public event Action? Shutdown;
+    public event Action<Response>? ResponseReceived;
     
     public Client(string ip, int port)
     {
         _ip = ip;
         _port = port;
+    }
+
+    public string GetUsername()
+    {
+        return _clientUsername ?? "";
+    }
+    
+    public string GetNickname()
+    {
+        return _clientNickname ?? "";
     }
 
     public async Task ConnectToServer()
@@ -90,7 +102,12 @@ public class Client
                     continue;
                 }
 
-                //receive info from server (new, edit, delete message)
+                var response = JsonSerializer.Deserialize<Response>(jsonResponse);
+
+                if (response != null)
+                {
+                    ResponseReceived?.Invoke(response);
+                }
             }
         }
         catch (Exception)
@@ -111,11 +128,12 @@ public class Client
         Disconnected?.Invoke();
         await ConnectToServer();
 
-        if (_id != null)
+        if (_clientId != null && _clientUsername != null)
         {
             var payload = new ReconnectRequestPayload
             {
-                UserId = (int)_id
+                UserId = (int)_clientId,
+                Username = _clientUsername
             };
     
             var request = CreateRequest(CommandType.Reconnect, payload);
@@ -171,27 +189,32 @@ public class Client
 
     public async Task<Response?> Login(string username, string password)
     {
-        var loginReqPayload = new LoginRequestPayload
+        var requestPayload = new LoginRequestPayload
         {
             Username = username,
             Password = password
         };
 
-        var loginReq = CreateRequest(CommandType.Login, loginReqPayload);
-        var response = await ExecuteRequest(loginReq);
+        var request = CreateRequest(CommandType.Login, requestPayload);
+        var response = await ExecuteRequest(request);
 
         if (response != null)
         {
             if (response.Payload != null
-                && response.Payload.TryGetPropertyValue("user_id", out var id))
+                && response.Payload.TryGetPropertyValue("user_id", out var id)
+                && response.Payload.TryGetPropertyValue("nickname", out var nickname))
             {
                 if (int.TryParse(id?.ToString(), out var parsed))
                 {
-                    _id = parsed;
+                    _clientId = parsed;
+                    _clientUsername = username;
+                    _clientNickname = nickname?.ToString();
                 }
                 else
                 {
-                    _id = null;
+                    _clientId = null;
+                    _clientUsername = null;
+                    _clientNickname = null;
                 }
             }
             
@@ -203,46 +226,179 @@ public class Client
 
     public async Task<Response?> Register(string username, string password, string nickname)
     {
-        var registerReqPayload = new RegisterRequestPayload
+        var requestPayload = new RegisterRequestPayload
         {
             Username = username,
             Password = password,
             Nickname = nickname
         };
 
-        var registerReq = CreateRequest(CommandType.Register, registerReqPayload);
-        var response = await ExecuteRequest(registerReq);
+        var request = CreateRequest(CommandType.Register, requestPayload);
+        var response = await ExecuteRequest(request);
 
         if (response != null)
         {
-            if (response.Payload != null
-                && response.Payload.TryGetPropertyValue("user_id", out var id))
-            {
-                if (int.TryParse(id?.ToString(), out var parsed))
-                {
-                    _id = parsed;
-                }
-                else
-                {
-                    _id = null;
-                }
-            }
-            
             return response;
         }
         
         return null;
     }
     
-    /* public async Task<bool> SendMessageAsync(string chatId, Message msg)
+    public async Task<Response?> CreatePrivateChat(string memberUsername)
     {
-        var payload = new { ChatId = chatId, Message = msg };
-        var request = CreateRequest(CommandType.SendMessage, payload);
+        if (_clientId is null || _clientUsername is null)
+        {
+            return null;
+        }
+
+        var requestPayload = new CreateChatRequestPayload
+        {
+            IsGroup = false,
+            Name = null,
+            Members = new List<ChatMemberRequest>
+            {
+                new ChatMemberRequest{Username = _clientUsername, HasPrivileges = true},
+                new ChatMemberRequest{Username = memberUsername, HasPrivileges = true}
+            }
+        };
+
+        var request = CreateRequest(CommandType.CreateChat, requestPayload);
         var response = await ExecuteRequest(request);
-        return response?.Status == Status.Success;
+
+        return response;
+    }
+    
+    public async Task<Response?> CreateGroupChat(List<string> membersUsername, string chatName)
+    {
+        if (_clientId is null || _clientUsername is null)
+        {
+            return null;
+        }
+        
+        var members = new List<ChatMemberRequest>();
+
+        members.Add(new ChatMemberRequest
+        {
+            Username = _clientUsername,
+            HasPrivileges = true
+        });
+
+        foreach (var username in membersUsername)
+        {
+            members.Add(new ChatMemberRequest
+            {
+                Username = username,
+                HasPrivileges = false
+            });
+        }
+
+        var requestPayload = new CreateChatRequestPayload
+        {
+            IsGroup = true,
+            Name = chatName,
+            Members = members
+        };
+
+        var request = CreateRequest(CommandType.CreateChat, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
+    }
+    
+    public async Task<Response?> SendTextMessage(int chatId, Message msg)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+
+        var requestPayload = new SendTextMessageRequestPayload
+        {
+            ChatId = chatId,
+            SenderId = (int)_clientId,
+            Content = msg.Text
+        };
+
+        var request = CreateRequest(CommandType.SendMessage, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
+    }
+    
+    public async Task<Response?> SearchUsers(string username)
+    {
+        if (string.IsNullOrEmpty(username))
+        {
+            return null;
+        }
+
+        var requestPayload = new SearchUserRequestPayload
+        {
+            Username = username
+        };
+
+        var request = CreateRequest(CommandType.SearchUser, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
+    }
+    
+    public async Task<Response?> GetUserChats()
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+        
+        var requestPayload = new GetUserChatsRequestPayload { UserId = (int)_clientId };
+
+        var request = CreateRequest(CommandType.GetChats, requestPayload);
+        return await ExecuteRequest(request);
+    }
+    
+    public async Task<Response?> GetChatHistory(int chatId, int firstLoadedMessageId, int limit = 50)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+        
+        var requestPayload = new ChatHistoryRequestPayload
+        {
+            ChatId = chatId,
+            UserId = (int)_clientId,
+            FirstLoadedMessageId = firstLoadedMessageId,
+            Limit = limit
+        };
+
+        var request = CreateRequest(CommandType.GetHistory, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
     }
 
-    public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
+    public async Task<Response?> EditMessage(int chatId, int messageId, string newContent)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+
+        var requestPayload = new EditMessageRequestPayload
+        {
+            ChatId = chatId,
+            UserId = (int)_clientId,
+            MessageId = messageId,
+            NewContent = newContent
+        };
+        
+        var request = CreateRequest(CommandType.EditMessage, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
+    }
+
+    /*public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
     {
         var payload = new { ChatId = chatId, MessageId = messageId };
         var request = CreateRequest(CommandType.DeleteForMe, payload);

@@ -4,7 +4,9 @@ using System.Collections.ObjectModel;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using System.ComponentModel;
+using System.Text.Json;
 using Avalonia;
+using Avalonia.Styling;
 using dto;
 
 namespace uchat;
@@ -12,19 +14,18 @@ namespace uchat;
 public partial class PageChat : UserControl, INotifyPropertyChanged
 {
     private readonly Client _client = null!;
-    private List<User> _allUsers = new();
     public ObservableCollection<ChatItem> Chats { get; } = new();
     public ObservableCollection<ChatItem> FilteredChats { get; } = new();
     private ObservableCollection<User> _selectedGroupMembers = new();
     public new event PropertyChangedEventHandler? PropertyChanged;
     private ObservableCollection<Message> _selectedChatMessages = new();
-    private bool _isApplyingFilter = false;
-    private ChatItem? _selectedChatBeforeSearch = null;
-    private bool _isUpdatingFilteredChats = false;
-    private ChatItem? _currentChat = null;
-    private static long _pinSequence = 0;
-    private bool _isLight = true;
-    private bool _isMembersPanelOpen = false;
+    private bool _isApplyingFilter;
+    private ChatItem? _selectedChatBeforeSearch;
+    private bool _isUpdatingFilteredChats;
+    private ChatItem? _currentChat;
+    private static long _pinSequence;
+    private bool _isLight;
+    private bool _isMembersPanelOpen;
     private bool _showToggleMembersButton;
     private Message? _editingMessage;
     
@@ -54,12 +55,38 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
         }
     }
-    public string CurrentUserName { get; set; } = "Mister Crabs";
-    public string CurrentUserUsername { get; set; } = "@crabs";
+    private string _currentUserName = string.Empty;
+    public string CurrentUserName
+    {
+        get => _currentUserName;
+        set
+        {
+            if (_currentUserName != value)
+            {
+                _currentUserName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentUserName)));
+            }
+        }
+    }
+    
+    private string _currentUserUsername = string.Empty;
+    public string CurrentUserUsername
+    {
+        get => _currentUserUsername;
+        set
+        {
+            if (_currentUserUsername != value)
+            {
+                _currentUserUsername = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentUserUsername)));
+            }
+        }
+    }
     
     public PageChat()
     {
         InitializeComponent();
+        _isLight = Application.Current?.ActualThemeVariant != ThemeVariant.Dark;
         UpdateExitThemeIcon();
         UpdateSingleChatThemeIcon();
         UpdateGroupChatThemeIcon();
@@ -75,67 +102,12 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         ChatList.SelectionChanged += ChatList_SelectionChanged;
         SelectedChatMessages.CollectionChanged += MessagesPanel_CollectionChanged;
         ChatAvatar.IsVisible = false;
-
-        Chats.Add(new ChatItem
-        {
-            Name = "Vlad", Username = "@vlad", Messages = new ObservableCollection<Message>
-            {
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true }
-            }
-        });
-
-        Chats.Add(new ChatItem
-        {
-            Name = "Vika",
-            Username = "@1",
-            Messages = new ObservableCollection<Message>
-            {
-                new Message { Sender = "Vika", Text = "fngngnbdgngfn ndfg nfgnfg n f nf gng ffg g nf g n dfv df ed  dfdfhggdfhgbfjhbdhfgjdfhgdfbhjbhjfg", IsMine = false },
-                new Message { Sender = "Me", Text = "hvjhyvkv", IsMine = true },
-                new Message { Sender = "Vika", Text = "dggzhgjyr", IsMine = false }
-            }
-        });
+        CurrentUserUsername = ToHandleFormat(_client.GetUsername());
+        CurrentUserName = _client.GetNickname();
+        Chats.Clear();
+        FilteredChats.Clear();
         
-        _allUsers = new List<User>
-        {
-            new User { Name = "Vlad", Username = "@vlad" },
-            new User { Name = "Vika", Username = "@1" },
-            new User { Name = "Masha", Username = "@2" },
-            new User { Name = "Mariia", Username = "@3" },
-            new User { Name = "Vika 2", Username = "@5" },
-            new User { Name = "Masha 2", Username = "@6" },
-            new User { Name = "Mariia 2", Username = "@7" },
-            new User { Name = "Roma", Username = "@4" }
-        };
-        
-        foreach (var chat in Chats)
-        {
-            if (chat.Messages.Any())
-            {
-                var lastMessage = chat.Messages.Last();
-                chat.NotifyLastMessageChanged(lastMessage.Text, lastMessage.SentTime);
-            }
-        }
-        
-        foreach (var chat in Chats)
-            FilteredChats.Add(chat);
-        
-        SortChats();
+        Task.Run(LoadAllUserChats);
 
         ChatList.ItemsSource = FilteredChats;
         
@@ -154,11 +126,20 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 IsReconnecting = false;
             });
         };
+
         _client.Shutdown += async () =>
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 NeedToShutdown = true;
+            });
+        };
+
+        _client.ResponseReceived += async (response) =>
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                UpdateChatsWithResponse(response);
             });
         };
         
@@ -167,6 +148,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     
     public class User
     {
+        public int Id { get; set; }
         public string Name { get; set; } = "";
         public string Username { get; set; } = "";
     }
@@ -174,6 +156,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     public class ChatItem : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
+        public int ChatId { get; set; }
         public string Name { get; set; } = "";
         public ObservableCollection<Message> Messages { get; set; } = new();
         public string Username { get; set; } = "";
@@ -244,7 +227,20 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 }
             }
         }
-
+        
+        private bool _hasMoreHistory = true; 
+        public bool HasMoreHistory
+        {
+            get => _hasMoreHistory;
+            set
+            {
+                if (_hasMoreHistory != value)
+                {
+                    _hasMoreHistory = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasMoreHistory)));
+                }
+            }
+        }
     }
 
     public ObservableCollection<Message> SelectedChatMessages
@@ -265,6 +261,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         if (_isApplyingFilter) return;
 
         _isUpdatingFilteredChats = true;
+        
+        var currentlySelectedChat = ChatList.SelectedItem as ChatItem;
 
         var pinnedChats = Chats
             .Where(chat => chat.IsPinned)
@@ -283,6 +281,12 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             FilteredChats.Add(chat);
 
         _isUpdatingFilteredChats = false;
+        
+        if (currentlySelectedChat != null && FilteredChats.Contains(currentlySelectedChat))
+        {
+            ChatList.SelectedItem = currentlySelectedChat;
+            _currentChat = currentlySelectedChat;
+        }
     }
 
     private void UpdateChatView(ChatItem contact)
@@ -333,9 +337,11 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     {
         if (_isApplyingFilter) return;
 
-        text = text?.Trim().ToLower() ?? "";
+        text = text.Trim().ToLower();
         _isApplyingFilter = true;
         _isUpdatingFilteredChats = true;
+        
+        var currentlySelectedChat = ChatList.SelectedItem as ChatItem;
 
         if (!string.IsNullOrEmpty(text))
             ChatList.SelectedIndex = -1;
@@ -361,6 +367,20 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         _isUpdatingFilteredChats = false;
         _isApplyingFilter = false;
+        
+        if (currentlySelectedChat != null && FilteredChats.Contains(currentlySelectedChat))
+        {
+            ChatList.SelectedItem = currentlySelectedChat;
+        }
+        else
+        {
+            ChatList.SelectedIndex = -1;
+            if (currentlySelectedChat != null)
+            {
+                ClearChatView();
+                _currentChat = null;
+            }
+        }
     }
 
     private void SelectChatAfterFilterUpdate(ChatItem chatToSelect)
@@ -411,7 +431,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
     }
 
-    private void SearchTextBox_GotFocus(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void SearchTextBox_GotFocus(object? sender, RoutedEventArgs e)
     {
         ClearSearchButton.IsVisible = !string.IsNullOrEmpty(SearchTextBox.Text);
 
@@ -460,6 +480,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (!string.IsNullOrEmpty(SearchTextBox.Text))
             ApplyFilter(SearchTextBox.Text);
+        
     }
     
     
@@ -513,7 +534,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             ApplyFilter("");
             SelectChatAfterFilterUpdate(pressedChat);
             MessageTextBox.Focus();
-            return;
         }
     }
 
@@ -536,53 +556,114 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             UpdateChatView(contact);
             
             _selectedChatBeforeSearch = contact;
+            
+            Task.Run(() => CheckAndLoadHistory(contact));
         }
         else
         {
-            _currentChat = null;
-            ClearChatView();
+            if (!_isUpdatingFilteredChats)
+            {
+                _currentChat = null;
+                ClearChatView();
+            }
         }
     }
 
-    private async void SendMessage_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void SendMessage_Click(object? sender, RoutedEventArgs e)
     {
         if (ChatList.SelectedItem is not ChatItem contact)
         {
             return;
         }
+
         string text = MessageTextBox.Text?.Trim() ?? "";
+
         if (string.IsNullOrEmpty(text))
         {
             return;
         }
+        
         if (_editingMessage != null)
         {
-            _editingMessage.Text = text;
-            _editingMessage.IsEdited = true;
-            _editingMessage = null;
-            MessageTextBox.Text = "";
-            return;
-        }
-        var msg = new Message { Id = Guid.NewGuid().ToString(), Sender = "Me", Text = text, IsMine = true, SentTime = DateTime.Now };
-        // bool success = await _client.SendMessageAsync(contact.Name, msg);
-        // if (success)
-        // {
-            contact.Messages.Add(msg);
-            SelectedChatMessages.Add(msg);
-            int count = contact.Messages.Count;
-            if (count > 2)
+            var editedMessage = _editingMessage;
+            var newText = text;
+
+            var editResponse = await _client.EditMessage(contact.ChatId, editedMessage.Id, newText);
+
+            if (editResponse != null && editResponse.Status == Status.Success)
             {
-                ComputeFlagsAtIndex(contact.Messages, count - 1);
-                ComputeFlagsAtIndex(contact.Messages, count - 2);
-            }
-            else
-            {
-                ComputeGroupingFlags(contact.Messages);
-            }
+                editedMessage.Text = newText;
+                editedMessage.IsEdited = true;
+                editedMessage.IsDeleted = false;
+                
+                int index = contact.Messages.IndexOf(editedMessage);
+                if (index >= 0)
+                {
+                    ComputeFlagsAtIndex(contact.Messages, index);
+                    if (index > 0) ComputeFlagsAtIndex(contact.Messages, index - 1);
+                    if (index < contact.Messages.Count - 1) ComputeFlagsAtIndex(contact.Messages, index + 1);
+                }
+
+                if (contact.Messages.LastOrDefault() == editedMessage)
+                {
+                    contact.NotifyLastMessageChanged(editedMessage.DisplayText, editedMessage.SentTime);
+                }
+            } 
+
             contact.Draft = "";
             MessageTextBox.Text = "";
-            contact.NotifyLastMessageChanged(msg.Text, msg.SentTime);
-        // }
+            _editingMessage = null; 
+
+            return;
+        }
+
+        var msgToSend = new Message { Text = text };
+
+        var msgToDisplay = new Message
+        {
+            Sender = "Me",
+            Text = text,
+            IsMine = true,
+            IsGroup = contact.IsGroup
+        };
+
+        var response = await _client.SendTextMessage(contact.ChatId, msgToSend);
+        
+        if (response != null && response.Status == Status.Success)
+        {
+            var msgPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+        
+            if (msgPayload != null)
+            {
+                msgToDisplay.Id = msgPayload.MessageId;
+                msgToDisplay.IsDeleted = msgPayload.IsDeleted;
+                msgToDisplay.IsEdited = msgPayload.IsEdited;
+                msgToDisplay.SentTime = msgPayload.SentAt.ToLocalTime();
+            
+                contact.Messages.Add(msgToDisplay);
+                SelectedChatMessages.Add(msgToDisplay);
+                
+                int count = contact.Messages.Count;
+                if (count > 2)
+                {
+                    ComputeFlagsAtIndex(contact.Messages, count - 1);
+                    ComputeFlagsAtIndex(contact.Messages, count - 2);
+                }
+                else
+                {
+                    ComputeGroupingFlags(contact.Messages);
+                }
+                
+                contact.Draft = "";
+                MessageTextBox.Text = "";
+                contact.NotifyLastMessageChanged(msgToDisplay.Text, msgToDisplay.SentTime);
+                ComputeGroupingFlags(contact.Messages);
+            }
+        }
+        else
+        {
+            // make error message maybe
+        }
     }
     
     private void MessageTextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
@@ -647,20 +728,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         return username.StartsWith("@") ? username[1..] : username;
     }
     
-    private User? FindUserByUsername(string username)
+    private async void SearchButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            return null;
-        }
-        var normalized = NormalizeUsername(username);
-        return _allUsers.FirstOrDefault(u =>
-            NormalizeUsername(u.Username) == normalized);
-    }
-    
-    private void SearchButton_Click(object? sender, RoutedEventArgs e)
-    {
-        string username = SearchUserBox.Text.Trim();
+        string username = SearchUserBox.Text!.Trim();
         if (string.IsNullOrEmpty(username))
         {
             SearchErrorText.Text = "Enter a username";
@@ -672,26 +742,76 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             return;
         }
 
-        var user = FindUserByUsername(username);
-        if (user != null)
+        if (ToHandleFormat(username) == CurrentUserUsername)
         {
-            SearchResultBorder.IsVisible = true;
-            SearchErrorText.IsVisible = false;
-            ResultUserName.Text = user.Name;
-            ResultUserUsername.Text = user.Username;
-            SearchUserBox.Classes.Remove("error");
-            SearchResultBorder.DataContext = user;
+            return;
         }
-        else
+        
+        var response = await _client.SearchUsers(NormalizeUsername(username));
+        
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            SearchResultBorder.IsVisible = false;
-            SearchErrorText.Text = "User not found";
-            SearchErrorText.IsVisible = true;
-            if (!SearchUserBox.Classes.Contains("error"))
+            if (response is null)
             {
-                SearchUserBox.Classes.Add("error");
+                SearchResultBorder.IsVisible = false;
+                SearchErrorText.Text = "Error connecting to server.";
+                SearchErrorText.IsVisible = true;
+                if (!SearchUserBox.Classes.Contains("error"))
+                {
+                    SearchUserBox.Classes.Add("error");
+                }
+                return;
             }
-        }
+
+            if (response.Status == Status.Success)
+            {
+                var searchPayload = response.Payload.Deserialize<SearchUserResponsePayload>();
+
+                if (searchPayload != null && searchPayload.UserId > 0)
+                {
+                    var user = new User
+                    {
+                        Id = searchPayload.UserId,
+                        Name = searchPayload.Nickname,
+                        Username = ToHandleFormat(searchPayload.Username)
+                    };
+
+                    SearchResultBorder.IsVisible = true;
+                    SearchErrorText.IsVisible = false;
+                    ResultUserName.Text = user.Name; 
+                    ResultUserUsername.Text = user.Username;
+                    SearchUserBox.Classes.Remove("error");
+                    SearchResultBorder.DataContext = user;
+                }
+                else
+                {
+                    SearchResultBorder.IsVisible = false;
+                    SearchErrorText.Text = "User not found";
+                    SearchErrorText.IsVisible = true;
+                    if (!SearchUserBox.Classes.Contains("error"))
+                    {
+                        SearchUserBox.Classes.Add("error");
+                    }
+                }
+            }
+            else
+            {
+                string errorMessage = "Unknown server error.";
+                if (response.Payload != null
+                    && response.Payload.TryGetPropertyValue("message", out var message))
+                {
+                    errorMessage = message?.ToString() ?? errorMessage;
+                }
+                
+                SearchResultBorder.IsVisible = false;
+                SearchErrorText.Text = errorMessage;
+                SearchErrorText.IsVisible = true;
+                if (!SearchUserBox.Classes.Contains("error"))
+                {
+                    SearchUserBox.Classes.Add("error");
+                }
+            }
+        });
     }
     //search user box
     private void SearchUserBox_OnTextChanged(object? sender, TextChangedEventArgs e)
@@ -803,9 +923,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
     }*/
     
-    private void StartChatButton_Click(object? sender, RoutedEventArgs e)
+    private async void StartChatButton_Click(object? sender, RoutedEventArgs e)
     {
-        string username = SearchUserBox.Text.Trim();
+        string username = SearchUserBox.Text!.Trim();
         if (string.IsNullOrEmpty(username))
         {
             SearchErrorText.Text = "Enter a username";
@@ -826,31 +946,86 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
             return;
         }
-        SingleChatOverlay.IsVisible = false;
-        MessageInputPanel.IsVisible = true;
-        MessagesPanel.IsVisible = true;
-        var chat = Chats.FirstOrDefault(c => !c.IsGroup && c.Username == user.Username);
-
-        if (chat == null)
+        
+        var response = await _client.CreatePrivateChat(NormalizeUsername(user.Username));
+        
+        if (response is null)
         {
-            chat = new ChatItem
+            SearchErrorText.Text = "Error connecting to server."; //change
+            SearchErrorText.IsVisible = true;
+            if (!SearchUserBox.Classes.Contains("error"))
             {
-                Name = user.Name,
-                Username = user.Username,
-                Messages = new ObservableCollection<Message>()
-            };
-
-            Chats.Add(chat);
-            FilteredChats.Add(chat);
+                SearchUserBox.Classes.Add("error");
+            }
+            return;
         }
-        _currentChat = chat;
-        ChatList.SelectedItem = chat;
-        UpdateChatView(chat);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (response.Status == Status.Success)
+            {
+                UpdateChatsWithResponse(response);
+
+                var responsePayload = response.Payload.Deserialize<CreateChatResponsePayload>();
+                var chat = Chats.FirstOrDefault(c => c.ChatId == responsePayload?.ChatId);
+                
+                if (chat != null)
+                {
+                    SingleChatOverlay.IsVisible = false;
+                    MessageInputPanel.IsVisible = true;
+                    MessagesPanel.IsVisible = true;
+                    _currentChat = chat;
+                    ChatList.SelectedItem = chat;
+                    UpdateChatView(chat);
+                }
+            }
+            else
+            {
+                var errorPayload = response.Payload.Deserialize<ChatErrorPayload>();
+                
+                if (errorPayload != null && errorPayload.ChatId > 0)
+                {
+                    int existingChatId = errorPayload.ChatId;
+        
+                    var existingChat = Chats.FirstOrDefault(c => c.ChatId == existingChatId);
+
+                    if (existingChat != null)
+                    {
+                        SingleChatOverlay.IsVisible = false;
+                        MessageInputPanel.IsVisible = true;
+                        MessagesPanel.IsVisible = true;
+                        _currentChat = existingChat;
+                        ChatList.SelectedItem = existingChat;
+                        UpdateChatView(existingChat);
+                        return;
+                    }
+                }
+    
+                string errorMessage = "Unknown server error.";
+
+                if (errorPayload != null)
+                {
+                    errorMessage = errorPayload.Message; 
+                }
+                else if (response.Payload != null
+                         && response.Payload.TryGetPropertyValue("message", out var message))
+                {
+                    errorMessage = message?.ToString() ?? errorMessage;
+                }
+
+                SearchErrorText.Text = errorMessage;
+                SearchErrorText.IsVisible = true;
+                if (!SearchUserBox.Classes.Contains("error"))
+                {
+                    SearchUserBox.Classes.Add("error");
+                }
+            }
+        });
     }
     
-    private void GroupSearchButton_Click(object? sender, RoutedEventArgs e)
+    private async void GroupSearchButton_Click(object? sender, RoutedEventArgs e)
     {
-        string username = GroupSearchBox.Text.Trim();
+        string username = GroupSearchBox.Text!.Trim();
         if (string.IsNullOrEmpty(username))
         {
             GroupSearchErrorText.Text = "Enter a username";
@@ -862,24 +1037,73 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             GroupSearchResultBorder.IsVisible = false;
             return;
         }
-        var user = FindUserByUsername(username);
-        if (user != null)
+        
+        if (ToHandleFormat(username) == CurrentUserUsername) 
         {
-            GroupSearchResultBorder.DataContext = user;
-            GroupResultName.Text = user.Name;
-            GroupResultUsername.Text = user.Username;
-            GroupSearchResultBorder.IsVisible = true;
-            GroupSearchErrorText.IsVisible = false;
-            GroupSearchBox.Classes.Remove("error");
+            return;
         }
-        else
+
+        var response = await _client.SearchUsers(NormalizeUsername(username));
+        
+        await Dispatcher.UIThread.InvokeAsync(() => 
         {
-            GroupSearchResultBorder.IsVisible = false;
-            GroupSearchErrorText.Text = "User not found";
-            GroupSearchErrorText.IsVisible = true;
-            if (!GroupSearchBox.Classes.Contains("error"))
-                GroupSearchBox.Classes.Add("error");
-        }
+            if (response is null)
+            {
+                GroupSearchResultBorder.IsVisible = false;
+                GroupSearchErrorText.Text = "Error connecting to server.";
+                GroupSearchErrorText.IsVisible = true;
+                if (!GroupSearchBox.Classes.Contains("error"))
+                {
+                    GroupSearchBox.Classes.Add("error");
+                }
+                return;
+            }
+
+            if (response.Status == Status.Success)
+            {
+                var searchPayload = response.Payload.Deserialize<SearchUserResponsePayload>();
+
+                if (searchPayload != null && searchPayload.UserId > 0)
+                {
+                    var user = new User
+                    {
+                        Id = searchPayload.UserId,
+                        Name = searchPayload.Nickname,
+                        Username = ToHandleFormat(searchPayload.Username)
+                    };
+                    
+                    GroupSearchResultBorder.DataContext = user;
+                    GroupResultName.Text = user.Name;
+                    GroupResultUsername.Text = user.Username;
+                    GroupSearchResultBorder.IsVisible = true;
+                    GroupSearchErrorText.IsVisible = false;
+                    GroupSearchBox.Classes.Remove("error");
+                }
+                else
+                {
+                    GroupSearchResultBorder.IsVisible = false;
+                    GroupSearchErrorText.Text = "User not found";
+                    GroupSearchErrorText.IsVisible = true;
+                    if (!GroupSearchBox.Classes.Contains("error"))
+                        GroupSearchBox.Classes.Add("error");
+                }
+            }
+            else
+            {
+                string errorMessage = "Unknown server error.";
+                if (response.Payload != null
+                    && response.Payload.TryGetPropertyValue("message", out var messageToken))
+                {
+                    errorMessage = messageToken?.ToString() ?? errorMessage;
+                }
+                
+                GroupSearchResultBorder.IsVisible = false;
+                GroupSearchErrorText.Text = errorMessage;
+                GroupSearchErrorText.IsVisible = true;
+                if (!GroupSearchBox.Classes.Contains("error"))
+                    GroupSearchBox.Classes.Add("error");
+            }
+        });
     }
     
     private void AddMemberButton_Click(object? sender, RoutedEventArgs e)
@@ -918,6 +1142,13 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     }
 
     
+    private void ClearGroupNameBoxButton_Click(object? sender, RoutedEventArgs e)
+    {
+        GroupNameBox.Text = "";
+        ClearGroupNameBoxButton.IsVisible = false;
+        GroupNameBox.Focus();
+    }
+    
     private void GroupNameBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (GroupNameBox == null || GroupNameErrorText == null)
@@ -930,9 +1161,24 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             GroupSearchErrorText.IsVisible = false;
             GroupSearchBox.Classes.Remove("error");
         }
+        
+        if (ClearGroupNameBoxButton != null)
+            ClearGroupNameBoxButton.IsVisible = !string.IsNullOrEmpty(GroupNameBox.Text);
     }
     
-    private void CreateGroupChat_Click(object? sender, RoutedEventArgs e)
+    private void GroupNameBox_GotFocus(object? sender, RoutedEventArgs e)
+    {
+        if (ClearGroupNameBoxButton != null)
+            ClearGroupNameBoxButton.IsVisible = !string.IsNullOrEmpty(GroupNameBox.Text);
+    }
+
+    private void GroupNameBox_LostFocus(object? sender, RoutedEventArgs e)
+    {
+        if (ClearGroupNameBoxButton != null)
+            ClearGroupNameBoxButton.IsVisible = !string.IsNullOrEmpty(GroupNameBox.Text);
+    }
+    
+    private async void CreateGroupChat_Click(object? sender, RoutedEventArgs e)
     {
         if (GroupNameBox == null || GroupNameErrorText == null || GroupChatOverlay == null)
         {
@@ -966,26 +1212,69 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         GroupNameErrorText.IsVisible = false;
         GroupNameBox.Classes.Remove("error");
 
-        var group = new ChatItem
-        {
-            Name = groupName,
-            Username = $"{_selectedGroupMembers.Count + 1} members",
-            IsGroup = true,
-            Messages = new ObservableCollection<Message>(),
-            Members = new ObservableCollection<User>(_selectedGroupMembers)
-        };
+        var chatMembers = new List<string>();
 
-        Chats.Add(group);
-        FilteredChats.Add(group);
-        GroupChatOverlay.IsVisible = false;
-        ChatList.SelectedItem = group;
-        _currentChat = group;
-        UpdateChatView(group);
-        _selectedGroupMembers.Clear();
-        SelectedMembersList.ItemsSource = null;
+        foreach (var member in _selectedGroupMembers)
+        {
+            chatMembers.Add(NormalizeUsername(member.Username));
+        }
+        
+        var response = await _client.CreateGroupChat(chatMembers, groupName);
+
+        if (response is null)
+        {
+            GroupSearchErrorText.Text = "Error connecting to server."; //change
+            GroupSearchErrorText.IsVisible = true;
+            if (!GroupSearchBox.Classes.Contains("error"))
+            {
+                GroupSearchBox.Classes.Add("error");
+            }
+            return;
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (response.Status == Status.Success)
+            {
+                UpdateChatsWithResponse(response);
+
+                var responsePayload = response.Payload.Deserialize<CreateChatResponsePayload>();
+                var group = Chats.FirstOrDefault(c => c.ChatId == responsePayload?.ChatId);
+
+                if (group != null)
+                {
+                    GroupChatOverlay.IsVisible = false;
+                    MessageInputPanel.IsVisible = true;
+                    MessagesPanel.IsVisible = true;
+                    ChatList.SelectedItem = group;
+                    _currentChat = group;
+                    UpdateChatView(group);
+                    _selectedGroupMembers.Clear();
+                    SelectedMembersList.ItemsSource = null;
+                }
+            }
+            else
+            {
+                if (response.Payload != null
+                    && response.Payload.TryGetPropertyValue("message", out var message))
+                {
+                    GroupSearchErrorText.Text = message?.ToString();
+                }
+                else
+                {
+                    GroupSearchErrorText.Text = "Unknown server error.";
+                }
+
+                GroupSearchErrorText.IsVisible = true;
+                if (!GroupSearchBox.Classes.Contains("error"))
+                {
+                    GroupSearchBox.Classes.Add("error");
+                }
+            }
+        });
     }
     
-    private void AttachTextChangedHandlers(params (TextBox box, TextBlock errorText)[] pairs)
+    private void AttachTextChangedHandlers(params (TextBox?, TextBlock?)[] pairs)
     {
         foreach (var (box, errorText) in pairs)
         {
@@ -1022,20 +1311,10 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (_isMembersPanelOpen)
         {
-            var members = new ObservableCollection<User>
-            {
-                new User
-                {
-                    Name = CurrentUserName,
-                    Username = CurrentUserUsername
-                }
-            };
+            var members = new ObservableCollection<User>();
             foreach (var member in _currentChat.Members)
             {
-                if (member.Username != CurrentUserUsername)
-                {
-                    members.Add(member);
-                }
+                members.Add(member);
             }
             GroupMembersList.ItemsSource = members;
         }
@@ -1054,7 +1333,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
     }
     
-    private async void CopyMessage_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void CopyMessage_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem menu && menu.DataContext is Message msg)
         {
@@ -1066,7 +1345,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
     }
     
-    private async void EditMessage_Click(object? sender, RoutedEventArgs e)
+    private void EditMessage_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not Message msg)
         {
@@ -1077,32 +1356,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         MessageTextBox.Focus();
         MessageTextBox.CaretIndex = MessageTextBox.Text.Length;
         _editingMessage = msg;
-        
-        // if (ChatList.SelectedItem is ChatItem chat)
-        // {
-        //     await _client.EditMessageAsync(chat.Name, msg.Id, msg.Text);
-        // }
-    }
-    
-    private async void DeleteMessageForMe_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (sender is not MenuItem menu || menu.DataContext is not Message msg)
-        {
-            return;
-        }
-        if (ChatList.SelectedItem is not ChatItem chat)
-        {
-            return;
-        }
-        // bool success = await _client.DeleteMessageForMeAsync(chat.Name, msg.Id.ToString());
-        // if (success)
-        // {
-            SelectedChatMessages.Remove(msg);
-            chat.Messages.Remove(msg);
-        // }
     }
 
-    private async void DeleteMessageForAll_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void DeleteMessageForAll_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not Message msg)
             return;
@@ -1113,7 +1369,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         msg.IsDeleted = true; 
     }
 
-    
     private void MessageTextBox_SendWithEnter(object? sender, KeyEventArgs e)
     {
         if (sender is not TextBox tb)
@@ -1122,7 +1377,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.Shift)
         {
             var pos = tb.CaretIndex;
-            tb.Text = tb.Text.Insert(pos, "\n");
+            tb.Text = tb.Text!.Insert(pos, "\n");
             tb.CaretIndex = pos + 1;
             e.Handled = true;
             return;
@@ -1162,9 +1417,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
     {
         _isLight = !_isLight;
-
-        (Application.Current as App)?.SetTheme(_isLight ? "Light" : "Dark");
-        
+        App.SetTheme(_isLight ? "Light" : "Dark");
         UpdateExitThemeIcon();
         UpdateSingleChatThemeIcon();
         UpdateGroupChatThemeIcon();
@@ -1189,31 +1442,344 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         if (messages.Count == 0 || index < 0 || index >= messages.Count)
             return;
 
-        var cur = messages[index];
-        Message? prev = index > 0 ? messages[index - 1] : null;
+        var current = messages[index];
+        Message? previous = index > 0 ? messages[index - 1] : null;
         Message? next = index < messages.Count - 1 ? messages[index + 1] : null;
 
-        bool isFirst = true;
-        bool isLast = true;
-
-        if (prev != null &&
-            prev.Sender == cur.Sender &&
-            (cur.Timestamp - prev.Timestamp) <= GroupThreshold &&
-            !prev.IsDeleted && !cur.IsDeleted)
+        bool isFirstInGroup = true;
+        if (previous != null &&
+            previous.Sender == current.Sender &&
+            !previous.IsDeleted && !current.IsDeleted &&
+            (current.SentTime - previous.SentTime) <= GroupThreshold)
         {
-            isFirst = false;
+            isFirstInGroup = false;
         }
-
+        
+        bool isLastInGroup = true;
         if (next != null &&
-            next.Sender == cur.Sender &&
-            (next.Timestamp - cur.Timestamp) <= GroupThreshold &&
-            !next.IsDeleted && !cur.IsDeleted)
+            next.Sender == current.Sender &&
+            !next.IsDeleted && !current.IsDeleted &&
+            (next.SentTime - current.SentTime) <= GroupThreshold)
         {
-            isLast = false;
+            isLastInGroup = false;
         }
 
-        cur.IsFirstInGroup = isFirst;
-        cur.ShowAvatar = isLast;
-        cur.ShowTail = isLast;
+        current.IsFirstInGroup = isFirstInGroup;
+        current.ShowSenderName = current.IsGroup && !current.IsMine && isFirstInGroup;
+        current.ShowTail = isLastInGroup;
+        current.ShowAvatar = current.IsGroup && !current.IsMine && isLastInGroup;
+        current.AvatarPlaceholderWidth = current.IsGroup && !current.IsMine ? 40 : 0;
+        if (current.ShowTail)
+        {
+            current.MessageMarginLeft = current.IsGroup && !current.IsMine ? 40 : 0;
+        }
+        else
+        {
+            current.MessageMarginLeft = current.IsGroup && !current.IsMine ? 46.5 : 6.5;
+        }
+    }
+
+    private static string ToHandleFormat(string username)
+    {
+        username = username.Trim().ToLower();
+        return username.StartsWith("@") ? username : "@" + username;
+    }
+    
+    private ChatItem ChatsToChatItem(Chats chat)
+    {
+        var chatItem = new ChatItem
+        {
+            ChatId = chat.ChatId,
+            Name = chat.ChatName,
+            Username = chat.Username,
+            IsGroup = chat.IsGroup,
+            Members = new ObservableCollection<User>(),
+            Messages = new ObservableCollection<Message>() 
+        };
+        
+        foreach (var member in chat.Members)
+        {
+            chatItem.Members.Add(new User 
+            {
+                Id = member.UserId,
+                Name = member.Nickname,
+                Username = ToHandleFormat(member.Username)
+            });
+        }
+        
+        chatItem.NotifyLastMessageChanged(chat.LastMessage, chat.LastMessageTime.ToLocalTime());
+    
+        return chatItem;
+    }
+    
+    private async Task LoadAllUserChats()
+    {
+        if (Chats.Any())
+        {
+            return;
+        } 
+
+        var response = await _client.GetUserChats();
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (response != null && response.Status == Status.Success)
+            {
+                var chatListPayload = response.Payload.Deserialize<GetUserChatsResponsePayload>();
+
+                if (chatListPayload != null)
+                {
+                    foreach (var chat in chatListPayload.Chats)
+                    {
+                        var newChatItem = ChatsToChatItem(chat); 
+                    
+                        Chats.Add(newChatItem);
+                        FilteredChats.Add(newChatItem); 
+                    }
+                
+                    SortChats(); 
+                }
+            }
+        });
+    }
+    
+    private bool _isLoadingHistory;
+
+    private async Task LoadChatHistory(int chatId, int beforeMessageId)
+    {
+        if (_isLoadingHistory)
+        {
+            return;
+        }
+
+        _isLoadingHistory = true; 
+        
+        try
+        {
+            var response = await _client.GetChatHistory(chatId, beforeMessageId);
+            
+            if (response != null && response.Status == Status.Success)
+            {
+                var historyPayload = response.Payload.Deserialize<ChatHistoryResponsePayload>();
+                
+                if (historyPayload != null)
+                {
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        var chat = Chats.FirstOrDefault(c => c.ChatId == chatId);
+                        if (chat == null)
+                        {
+                            return;
+                        }
+                        
+                        var newMessages = historyPayload.Messages;
+
+                        foreach (var msg in newMessages)
+                        {
+                            msg.SentTime = msg.SentTime.ToLocalTime(); 
+                            msg.Timestamp = msg.Timestamp.ToLocalTime();
+                            msg.IsGroup = chat.IsGroup;
+                        }
+
+                        for (int i = 0; i < newMessages.Count; i++)
+                        {
+                            chat.Messages.Insert(0, newMessages[i]);
+                        }
+
+                        chat.HasMoreHistory = historyPayload.HasMore;
+
+                        ComputeGroupingFlags(chat.Messages);
+
+                        if (_currentChat == chat)
+                        {
+                            for (int i = 0; i < newMessages.Count; i++)
+                            {
+                                SelectedChatMessages.Insert(0, newMessages[i]); 
+                            }
+
+                            if (MessagesPanel is { } itemsControl) 
+                            {
+                                if (beforeMessageId == 0)
+                                {
+                                    (MessagesPanel.Parent as ScrollViewer)?.ScrollToEnd();
+                                }
+                                else 
+                                {
+                                    int addedCount = newMessages.Count;
+
+                                    if (chat.Messages.Count > addedCount)
+                                    {
+                                        var anchorMessage = chat.Messages[addedCount]; 
+                                        itemsControl.ScrollIntoView(anchorMessage); 
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            else
+            {
+                // make error message
+            }
+        }
+        finally
+        {
+            _isLoadingHistory = false;
+        }
+    }
+    
+    private async Task CheckAndLoadHistory(ChatItem chat)
+    {
+        if (chat.Messages.Any() && !chat.HasMoreHistory)
+        {
+            return;
+        }
+
+        int beforeMessageId = chat.Messages.Any() ? chat.Messages.First().Id : 0;
+
+        await LoadChatHistory(chat.ChatId, beforeMessageId); 
+    }
+    
+    private void UpdateChatsWithResponse(Response response)
+    {
+        switch (response.Type)
+        {
+            case CommandType.CreateChat:
+            {
+                var chatPayload = response.Payload.Deserialize<CreateChatResponsePayload>();
+                if (chatPayload != null)
+                {
+                    if (Chats.Any(c => c.ChatId == chatPayload.ChatId))
+                    {
+                        return;
+                    }
+
+                    var chat = new ChatItem();
+                    chat.IsGroup = chatPayload.IsGroup;
+                    chat.ChatId = chatPayload.ChatId;
+                    chat.Members = new ObservableCollection<User>();
+
+                    foreach (var member in chatPayload.Members)
+                    {
+                        chat.Members.Add(new User
+                        {
+                            Id = member.UserId,
+                            Name = member.Nickname,
+                            Username = ToHandleFormat(member.Username)
+                        });
+                    }
+
+                    if (chat.IsGroup)
+                    {
+                        chat.Name = chatPayload.Name ?? "";
+                        chat.Username = $"{chatPayload.Members.Count} members";
+                    }
+                    else
+                    {
+                        var firstMember = chatPayload.Members[0];
+                        var secondMember = chatPayload.Members[1];
+
+                        var firstUsername = ToHandleFormat(firstMember.Username);
+                        var secondUsername = ToHandleFormat(secondMember.Username);
+
+                        if (firstUsername == CurrentUserUsername)
+                        {
+                            chat.Name = secondMember.Nickname;
+                            chat.Username = secondUsername;
+                        }
+                        else
+                        {
+                            chat.Name = firstMember.Nickname;
+                            chat.Username = firstUsername;
+                        }
+                    }
+
+                    Chats.Add(chat);
+
+                    if (!_isApplyingFilter)
+                    {
+                        FilteredChats.Add(chat);
+                    }
+                }
+
+                break;
+            }
+            case CommandType.SendMessage:
+            {
+                var msgPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+
+                if (msgPayload is null)
+                {
+                    break;
+                }
+
+                var chat = Chats.FirstOrDefault(c => c.ChatId == msgPayload.ChatId);
+
+                if (chat != null)
+                {
+                    var newMessage = new Message
+                    {
+                        Id = msgPayload.MessageId,
+                        Sender = msgPayload.SenderNickname,
+                        SentTime = msgPayload.SentAt.ToLocalTime(),
+                        Text = msgPayload.Content,
+                        IsMine = false,
+                        IsDeleted = msgPayload.IsDeleted,
+                        IsEdited = msgPayload.IsEdited,
+                        IsGroup = chat.IsGroup
+                    };
+
+                    chat.Messages.Add(newMessage);
+                    ComputeGroupingFlags(chat.Messages);
+                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime);
+
+                    if (_currentChat == chat)
+                    {
+                        SelectedChatMessages.Add(newMessage);
+                    }
+                }
+
+                break;
+            }
+            case CommandType.EditMessage:
+            {
+                var editPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+
+                if (editPayload is null) 
+                {
+                    break;
+                }
+
+                var chat = Chats.FirstOrDefault(c => c.ChatId == editPayload.ChatId);
+                
+                if (chat != null)
+                {
+                    var messageToEdit = chat.Messages.FirstOrDefault(m => m.Id == editPayload.MessageId);
+                    
+                    if (messageToEdit != null)
+                    {
+                        messageToEdit.Text = editPayload.Content;
+                        messageToEdit.IsEdited = editPayload.IsEdited;
+                        messageToEdit.IsDeleted = editPayload.IsDeleted;
+
+                        int index = chat.Messages.IndexOf(messageToEdit);
+                        if (index >= 0)
+                        {
+                            ComputeFlagsAtIndex(chat.Messages, index);
+                            if (index > 0) ComputeFlagsAtIndex(chat.Messages, index - 1);
+                            if (index < chat.Messages.Count - 1) ComputeFlagsAtIndex(chat.Messages, index + 1);
+                        }
+
+                        if (chat.Messages.LastOrDefault() == messageToEdit)
+                        {
+                            chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime);
+                        }
+                    }
+                }
+                
+                break;
+            }
+        }
     }
 }

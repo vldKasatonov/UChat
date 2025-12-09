@@ -2,6 +2,7 @@
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Styling;
 
 namespace uchat;
 
@@ -35,22 +36,14 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
     
-    public void SetTheme(string theme)
+    public static void SetTheme(string theme)
     {
-        Resources.MergedDictionaries.Clear();
-
-        if (theme == "Light")
-            Resources.MergedDictionaries.Add(
-                new ResourceInclude(new Uri("avares://uchat/"))
-                {
-                    Source = new Uri("avares://uchat/Resources/Themes/LightTheme.axaml")
-                });
-        else
-            Resources.MergedDictionaries.Add(
-                new ResourceInclude(new Uri("avares://uchat/"))
-                {
-                    Source = new Uri("avares://uchat/Resources/Themes/DarkTheme.axaml")
-                });
+        Application.Current!.RequestedThemeVariant = theme switch
+        {
+            "Dark" => ThemeVariant.Dark,
+            "Light" => ThemeVariant.Light,
+            _ => ThemeVariant.Default
+        };
     }
 
 }

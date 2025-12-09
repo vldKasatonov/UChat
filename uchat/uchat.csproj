@@ -18,8 +18,10 @@
     </ItemGroup>
 
     <ItemGroup>
-    <AvaloniaResource Include="Resources\images\**" />
-</ItemGroup>
+        <AvaloniaResource Include="Resources\images\**" />
+        <AvaloniaResource Include="Resources\Colors.axaml" />
+        <AvaloniaResource Include="Resources\Styles.axaml" />
+    </ItemGroup>
 
     <ItemGroup>
       <Compile Update="Controls\DialogContent.axaml.cs">
