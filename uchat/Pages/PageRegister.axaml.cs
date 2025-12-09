@@ -5,12 +5,21 @@ using Avalonia.VisualTree;
 using Avalonia;
 using System.Text.RegularExpressions;
 using dto;
+using System.Reactive.Linq;
 
 namespace uchat;
 
 public partial class PageRegister : UserControl
 {
     private Client _client = null!;
+    private Button? _nicknameClearButton;
+    private Button? _usernameClearButton;
+    private Button? _passwordClearButton;
+    private Button? _confirmPasswordClearButton;
+    private TextBox? _nicknameTextBox;
+    private TextBox? _usernameTextBox;
+    private TextBox? _passwordTextBox;
+    private TextBox? _confirmPasswordTextBox;
 
     public PageRegister()
     {
@@ -21,6 +30,7 @@ public partial class PageRegister : UserControl
     {
         _client = client;
         AttachTextChangedHandlers();
+        InitializeClearButtons();
     }
 
     private void InitializeComponent()
@@ -58,6 +68,78 @@ public partial class PageRegister : UserControl
         AttachHandler(this.FindControl<TextBox>("NicknameTextBox"), this.FindControl<TextBlock>("NicknameErrorText"), registerButton, registerErrorText);
         AttachHandler(this.FindControl<TextBox>("PasswordTextBox"), this.FindControl<TextBlock>("PasswordErrorText"), registerButton, registerErrorText);
         AttachHandler(this.FindControl<TextBox>("ConfirmPasswordTextBox"), this.FindControl<TextBlock>("ConfirmPasswordErrorText"), registerButton, registerErrorText);
+    }
+    private void InitializeClearButtons()
+    {
+        _nicknameTextBox = this.FindControl<TextBox>("NicknameTextBox");
+        _usernameTextBox = this.FindControl<TextBox>("UsernameTextBox");
+        _passwordTextBox = this.FindControl<TextBox>("PasswordTextBox");
+        _confirmPasswordTextBox = this.FindControl<TextBox>("ConfirmPasswordTextBox");
+        
+        _nicknameClearButton = this.FindControl<Button>("NicknameClearButton");
+        _usernameClearButton = this.FindControl<Button>("UsernameClearButton");
+        _passwordClearButton = this.FindControl<Button>("PasswordClearButton");
+        _confirmPasswordClearButton = this.FindControl<Button>("ConfirmPasswordClearButton");
+        
+        if (_nicknameTextBox != null && _nicknameClearButton != null)
+        {
+            _nicknameClearButton.Click += (s, e) =>
+            {
+                _nicknameTextBox.Text = string.Empty;
+                _nicknameTextBox.Focus();
+            };
+
+            _nicknameTextBox.GetObservable(TextBox.TextProperty)
+                .Subscribe(text =>
+                {
+                    _nicknameClearButton.IsVisible = !string.IsNullOrEmpty(text);
+                });
+        }
+        
+        if (_usernameTextBox != null && _usernameClearButton != null)
+        {
+            _usernameClearButton.Click += (s, e) =>
+            {
+                _usernameTextBox.Text = string.Empty;
+                _usernameTextBox.Focus();
+            };
+
+            _usernameTextBox.GetObservable(TextBox.TextProperty)
+                .Subscribe(text =>
+                {
+                    _usernameClearButton.IsVisible = !string.IsNullOrEmpty(text);
+                });
+        }
+        
+        if (_passwordTextBox != null && _passwordClearButton != null)
+        {
+            _passwordClearButton.Click += (s, e) =>
+            {
+                _passwordTextBox.Text = string.Empty;
+                _passwordTextBox.Focus();
+            };
+
+            _passwordTextBox.GetObservable(TextBox.TextProperty)
+                .Subscribe(text =>
+                {
+                    _passwordClearButton.IsVisible = !string.IsNullOrEmpty(text);
+                });
+        }
+        
+        if (_confirmPasswordTextBox != null && _confirmPasswordClearButton != null)
+        {
+            _confirmPasswordClearButton.Click += (s, e) =>
+            {
+                _confirmPasswordTextBox.Text = string.Empty;
+                _confirmPasswordTextBox.Focus();
+            };
+
+            _confirmPasswordTextBox.GetObservable(TextBox.TextProperty)
+                .Subscribe(text =>
+                {
+                    _confirmPasswordClearButton.IsVisible = !string.IsNullOrEmpty(text);
+                });
+        }
     }
     
     private void ShowError(TextBox box, TextBlock errorBlock, string? message)
