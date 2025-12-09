@@ -596,7 +596,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 editedMessage.IsEdited = true;
                 editedMessage.IsDeleted = false;
                 
-                int index = contact.Messages.IndexOf(_editingMessage);
+                int index = contact.Messages.IndexOf(editedMessage);
                 if (index >= 0)
                 {
                     ComputeFlagsAtIndex(contact.Messages, index);
@@ -1763,7 +1763,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                         messageToEdit.IsEdited = editPayload.IsEdited;
                         messageToEdit.IsDeleted = editPayload.IsDeleted;
 
-                        int index = chat.Messages.IndexOf(_editingMessage);
+                        int index = chat.Messages.IndexOf(messageToEdit);
                         if (index >= 0)
                         {
                             ComputeFlagsAtIndex(chat.Messages, index);
