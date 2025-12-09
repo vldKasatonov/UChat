@@ -623,6 +623,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             {
                 msgToDisplay.Id = msgPayload.MessageId;
                 msgToDisplay.IsDeleted = msgPayload.IsDeleted;
+                msgToDisplay.IsEdited = msgPayload.IsEdited;
+                msgToDisplay.SentTime = msgPayload.SentAt.ToLocalTime();
             
                 contact.Messages.Add(msgToDisplay);
                 SelectedChatMessages.Add(msgToDisplay);
@@ -735,9 +737,13 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
             return;
         }
+
+        if (ToHandleFormat(username) == CurrentUserUsername)
+        {
+            return;
+        }
         
-        string normalizedUsername = NormalizeUsername(username); 
-        var response = await _client.SearchUsers(normalizedUsername);
+        var response = await _client.SearchUsers(NormalizeUsername(username));
         
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
@@ -1028,8 +1034,12 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             return;
         }
         
-        string normalizedUsername = NormalizeUsername(username); 
-        var response = await _client.SearchUsers(normalizedUsername);
+        if (ToHandleFormat(username) == CurrentUserUsername) 
+        {
+            return;
+        }
+
+        var response = await _client.SearchUsers(NormalizeUsername(username));
         
         await Dispatcher.UIThread.InvokeAsync(() => 
         {
@@ -1459,9 +1469,10 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         cur.ShowTail = isLast;
     }
 
-    private string ToHandleFormat(string username)
+    private static string ToHandleFormat(string username)
     {
-        return "@" + username;
+        username = username.Trim().ToLower();
+        return username.StartsWith("@") ? username : "@" + username;
     }
     
     private void UpdateChatsWithResponse(Response response)
@@ -1545,7 +1556,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     {
                         Id = msgPayload.MessageId,
                         Sender = msgPayload.SenderNickname,
-                        SentTime = msgPayload.SentAt,
+                        SentTime = msgPayload.SentAt.ToLocalTime(),
                         Text = msgPayload.Content,
                         IsMine = false,
                         IsDeleted = msgPayload.IsDeleted,
