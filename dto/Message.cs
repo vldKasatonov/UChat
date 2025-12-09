@@ -102,4 +102,47 @@ public class Message : INotifyPropertyChanged
             }
         }
     }
+    
+    private bool _showSenderName;
+    public bool ShowSenderName
+    {
+        get => _showSenderName;
+        set
+        {
+            if (_showSenderName != value)
+            {
+                _showSenderName = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowSenderName)));
+            }
+        }
+    }
+    
+    private double _avatarPlaceholderWidth = 0;
+    public double AvatarPlaceholderWidth
+    {
+        get => _avatarPlaceholderWidth;
+        set
+        {
+            if (_avatarPlaceholderWidth != value)
+            {
+                _avatarPlaceholderWidth = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AvatarPlaceholderWidth)));
+            }
+        }
+    }
+    
+    private double _messageMarginLeft = 0;
+    public double MessageMarginLeft
+    {
+        get => _messageMarginLeft;
+        set
+        {
+            if (_messageMarginLeft != value)
+            {
+                _messageMarginLeft = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MessageMarginLeft)));
+            }
+        }
+    }
+
 }
