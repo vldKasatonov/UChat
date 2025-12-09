@@ -323,7 +323,7 @@ public class DbProvider
                 displayUsername = $"@{otherMember?.Username}";
             }
 
-            string lastMessageContent = "[No messages]";
+            string lastMessageContent = "";
             DateTime lastMessageTime = DateTime.MinValue;
             
             if (item.LastMessage != null && item.LastMessage.Id > 0)
@@ -414,5 +414,36 @@ public class DbProvider
         }
 
         return messages;
+    }
+    
+    public async Task<TextMessageResponsePayload?> EditMessageAsync(int userId, int messageId, string newContent)
+    {
+        await using var dbContext = CreateDbContext(); 
+
+        var message = await dbContext.Messages
+            .Include(m => m.TextMessage) 
+            .FirstOrDefaultAsync(m => m.Id == messageId);
+
+        if (message == null || message.TextMessage == null
+            || message.SenderId != userId || message.IsDeleted)
+        {
+            return null;
+        }
+
+        message.TextMessage.Content = newContent;
+        message.IsEdited = true;
+    
+        await dbContext.SaveChangesAsync();
+
+        return new TextMessageResponsePayload
+        {
+            ChatId = message.ChatId,
+            MessageId = message.Id,
+            SenderId = message.SenderId,
+            Content = newContent,
+            SentAt = message.SentAt, 
+            IsEdited = message.IsEdited,
+            IsDeleted = message.IsDeleted
+        };
     }
 }
