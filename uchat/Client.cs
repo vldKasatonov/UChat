@@ -238,21 +238,6 @@ public class Client
 
         if (response != null)
         {
-            if (response.Payload != null
-                && response.Payload.TryGetPropertyValue("user_id", out var id))
-            {
-                if (int.TryParse(id?.ToString(), out var parsed))
-                {
-                    _clientId = parsed;
-                    _clientUsername = username;
-                }
-                else
-                {
-                    _clientId = null;
-                    _clientUsername = null;
-                }
-            }
-            
             return response;
         }
         
@@ -358,15 +343,41 @@ public class Client
         return response;
     }
     
-    /* public async Task<bool> SendMessageAsync(string chatId, Message msg)
+    public async Task<Response?> GetUserChats()
     {
-        var payload = new { ChatId = chatId, Message = msg };
-        var request = CreateRequest(CommandType.SendMessage, payload);
+        if (_clientId is null)
+        {
+            return null;
+        }
+        
+        var requestPayload = new GetUserChatsRequestPayload { UserId = (int)_clientId };
+
+        var request = CreateRequest(CommandType.GetChats, requestPayload);
+        return await ExecuteRequest(request);
+    }
+    
+    public async Task<Response?> GetChatHistory(int chatId, int firstLoadedMessageId, int limit = 50)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+        
+        var requestPayload = new ChatHistoryRequestPayload
+        {
+            ChatId = chatId,
+            UserId = (int)_clientId,
+            FirstLoadedMessageId = firstLoadedMessageId,
+            Limit = limit
+        };
+
+        var request = CreateRequest(CommandType.GetHistory, requestPayload);
         var response = await ExecuteRequest(request);
-        return response?.Status == Status.Success;
+
+        return response;
     }
 
-    public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
+    /*public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
     {
         var payload = new { ChatId = chatId, MessageId = messageId };
         var request = CreateRequest(CommandType.DeleteForMe, payload);
