@@ -193,6 +193,9 @@ public class Server
                 case CommandType.GetHistory:
                     var historyReqPayload = request.Payload.Deserialize<ChatHistoryRequestPayload>();
                     return await HandleGetChatHistory(historyReqPayload);
+                case CommandType.EditMessage:
+                    var editReqPayload = request.Payload.Deserialize<EditMessageRequestPayload>();
+                    return await HandleEditMessage(editReqPayload);
             }
         }
         catch (Exception)
@@ -675,6 +678,75 @@ public class Server
             {
                 Status = Status.Error,
                 Type = CommandType.GetHistory
+            };
+        }
+    }
+
+    private async Task<Response> HandleEditMessage(EditMessageRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.EditMessage
+            };
+        }
+        
+        try
+        {
+            var editResult = await _dbProvider.EditMessageAsync(
+                requestPayload.UserId,
+                requestPayload.MessageId,
+                requestPayload.NewContent
+            );
+            
+            if (editResult == null)
+            {
+                var errorPayload = new ErrorPayload
+                {
+                    Message = "Message not found."
+                    
+                };
+
+                return new Response
+                {
+                    Status = Status.Error,
+                    Type = CommandType.EditMessage,
+                    Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+                };
+            }
+
+            var responsePayload = new TextMessageResponsePayload
+            {
+                ChatId = editResult.ChatId,
+                MessageId = editResult.MessageId,
+                SenderId = editResult.SenderId,
+                SenderNickname = await _dbProvider.GetUserNicknameByIdAsync(editResult.SenderId),
+                Content = editResult.Content,
+                SentAt = editResult.SentAt,
+                IsEdited = true,
+                IsDeleted = false
+            };
+
+            var response = new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.EditMessage,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            };
+
+            var memberIds = await _dbProvider.GetChatMemberIdsAsync(editResult.ChatId);
+            await BroadcastMessage(requestPayload.UserId, memberIds, response);
+
+            return response;
+        }
+        catch (Exception)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.EditMessage
             };
         }
     }
