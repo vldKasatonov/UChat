@@ -134,3 +134,42 @@ public class SearchUserResponsePayload
     [JsonPropertyName("nickname")]
     public string Nickname { get; set; } = string.Empty;
 }
+
+public class Chats
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+    
+    [JsonPropertyName("name")]
+    public string ChatName { get; set; } = string.Empty;
+    
+    [JsonPropertyName("username")]
+    public string Username { get; set; } = string.Empty;
+    
+    [JsonPropertyName("is_group")]
+    public bool IsGroup { get; set; }
+    
+    [JsonPropertyName("members")]
+    public List<ChatMemberResponse> Members { get; set; } = new();
+    
+    [JsonPropertyName("last_message")]
+    public string LastMessage { get; set; } = string.Empty;
+    
+    [JsonPropertyName("last_message_time")]
+    public DateTime LastMessageTime { get; set; }
+}
+
+public class GetUserChatsResponsePayload
+{
+    [JsonPropertyName("chats")]
+    public List<Chats> Chats { get; set; } = new();
+}
+
+public class ChatHistoryResponsePayload
+{
+    [JsonPropertyName("messages")]
+    public List<Message> Messages { get; set; } = new();
+    
+    [JsonPropertyName("has_more")]
+    public bool HasMore { get; set; }
+}

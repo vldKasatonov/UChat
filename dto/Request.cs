@@ -80,3 +80,24 @@ public class SearchUserRequestPayload
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
 }
+
+public class GetUserChatsRequestPayload
+{
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+}
+
+public class ChatHistoryRequestPayload
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+    
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+    
+    [JsonPropertyName("first_loaded_message_id")]
+    public int FirstLoadedMessageId { get; set; }
+    
+    [JsonPropertyName("limit")]
+    public int Limit { get; set; }
+}

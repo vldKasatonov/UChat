@@ -187,6 +187,12 @@ public class Server
                 case CommandType.SearchUser:
                     var searchReqPayload = request.Payload.Deserialize<SearchUserRequestPayload>();
                     return await HandleSearchUsers(searchReqPayload);
+                case CommandType.GetChats:
+                    var chatsReqPayload = request.Payload.Deserialize<GetUserChatsRequestPayload>();
+                    return await HandleGetUserChats(chatsReqPayload);
+                case CommandType.GetHistory:
+                    var historyReqPayload = request.Payload.Deserialize<ChatHistoryRequestPayload>();
+                    return await HandleGetChatHistory(historyReqPayload);
             }
         }
         catch (Exception)
@@ -368,7 +374,11 @@ public class Server
         }
         catch (Exception)
         {
-            return new Response { Status = Status.Error, Type = CommandType.Reconnect };
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.Reconnect
+            };
         }
     }
     
@@ -434,6 +444,7 @@ public class Server
         catch (InvalidOperationException e)
         {
             var errorPayload = new ErrorPayload { Message = e.Message };
+
             return new Response
             {
                 Status = Status.Error,
@@ -443,7 +454,11 @@ public class Server
         }
         catch (Exception)
         {
-            return new Response { Status = Status.Error, Type = CommandType.CreateChat };
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.CreateChat
+            };
         }
     }
 
@@ -492,6 +507,7 @@ public class Server
         catch (InvalidOperationException e)
         {
             var errorPayload = new ErrorPayload { Message = e.Message };
+
             return new Response
             {
                 Status = Status.Error,
@@ -501,7 +517,11 @@ public class Server
         }
         catch (Exception)
         {
-            return new Response { Status = Status.Error, Type = CommandType.SendMessage };
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.SendMessage
+            };
         }
     }
     
@@ -557,6 +577,104 @@ public class Server
                 Status = Status.Error,
                 Type = CommandType.SearchUser,
                 Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+    }
+
+    private async Task<Response> HandleGetUserChats(GetUserChatsRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.GetChats
+            };
+        }
+
+        try
+        {
+            var chatsMetadata = await _dbProvider.GetUserChatsAsync(requestPayload.UserId);
+
+            var responsePayload = new GetUserChatsResponsePayload { Chats = chatsMetadata };
+
+            return new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.GetChats,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.GetChats                
+            };
+        }
+    }
+    
+    private async Task<Response> HandleGetChatHistory(ChatHistoryRequestPayload? requestPayload)
+    {
+        if (requestPayload is null || requestPayload.ChatId <= 0)
+        {
+            var errorPayload = new ErrorPayload { Message = "Invalid request payload." };
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.GetHistory,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+
+        try
+        {
+            int fetchLimit = requestPayload.Limit + 1;
+
+            var history = await _dbProvider.GetHistoryAsync(
+                requestPayload.ChatId,
+                requestPayload.UserId,
+                requestPayload.FirstLoadedMessageId,
+                fetchLimit
+            );
+
+            bool hasMore = history.Count > requestPayload.Limit;
+
+            if (hasMore)
+            {
+                history.RemoveAt(history.Count - 1);
+            }
+
+            var responsePayload = new ChatHistoryResponsePayload
+            {
+                Messages = history,
+                HasMore = hasMore
+            };
+
+            return new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.GetHistory,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            };
+        }
+        catch (InvalidOperationException e)
+        {
+            var errorPayload = new ErrorPayload { Message = e.Message };
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.GetHistory,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.GetHistory
             };
         }
     }
