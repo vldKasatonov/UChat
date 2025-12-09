@@ -101,3 +101,16 @@ public class ChatHistoryRequestPayload
     [JsonPropertyName("limit")]
     public int Limit { get; set; }
 }
+
+
+public class DeleteMessageRequestPayload
+{
+    [JsonPropertyName("Id")]
+    public int MessageId { get; set; }
+
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+}

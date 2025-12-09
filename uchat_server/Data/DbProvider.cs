@@ -415,4 +415,28 @@ public class DbProvider
 
         return messages;
     }
+
+    public async Task<DeleteMessageResponsePayload?> DeleteMessageAsync(int messageId, int userId)
+    {
+        await using (var dbContext = CreateDbContext())
+        {
+            var message = await dbContext.Messages
+                .FirstOrDefaultAsync(m => m.Id == messageId);
+
+            if (message == null || message.IsDeleted || message.SenderId != userId)
+            {
+                return null;
+            }
+
+            message.IsDeleted = true;
+            await dbContext.SaveChangesAsync();
+
+            return new DeleteMessageResponsePayload
+            {
+                MessageId = message.Id,
+                UserId = message.SenderId,
+                ChatId = message.ChatId
+            };
+        }
+    }
 }

@@ -173,3 +173,15 @@ public class ChatHistoryResponsePayload
     [JsonPropertyName("has_more")]
     public bool HasMore { get; set; }
 }
+
+public class DeleteMessageResponsePayload
+{
+    [JsonPropertyName("Id")]
+    public int MessageId { get; set; }
+
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+    
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+}

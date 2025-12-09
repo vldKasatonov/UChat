@@ -377,6 +377,25 @@ public class Client
         return response;
     }
 
+    public async Task<Response?> DeleteMessage(int messageId, int chatId)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+        
+        var deleteMessageReqPayload = new DeleteMessageRequestPayload
+        {
+            MessageId = messageId,
+            UserId = (int)_clientId!,  
+            ChatId = chatId
+        };
+
+        var deleteMessageRequest = CreateRequest(CommandType.DeleteForAll, deleteMessageReqPayload);
+        var response = await ExecuteRequest(deleteMessageRequest);
+        return response;
+    }
+
     /*public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
     {
         var payload = new { ChatId = chatId, MessageId = messageId };

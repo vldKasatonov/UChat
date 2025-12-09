@@ -193,6 +193,9 @@ public class Server
                 case CommandType.GetHistory:
                     var historyReqPayload = request.Payload.Deserialize<ChatHistoryRequestPayload>();
                     return await HandleGetChatHistory(historyReqPayload);
+                case CommandType.DeleteForAll:
+                    var deleteForAllPayload = request.Payload.Deserialize<DeleteMessageRequestPayload>();
+                    return await HandleDeleteForAll(deleteForAllPayload);
             }
         }
         catch (Exception)
@@ -745,6 +748,78 @@ public class Server
                     Console.WriteLine($"Error sending broadcast to ID {memberId}: {ex.Message}");
                 }
             }
+        }
+    }
+
+    private async Task<Response> HandleDeleteForAll(DeleteMessageRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.DeleteForAll
+            };
+        }
+
+        try
+        {
+            var deleteMessageResult = await _dbProvider.DeleteMessageAsync(requestPayload.MessageId, requestPayload.UserId);
+
+            if (deleteMessageResult == null)
+            {
+                var errorPayload = new ErrorPayload
+                {
+                    Message = "Message not found or user not authorized to delete this message."
+                };
+
+                return new Response
+                {
+                    Status = Status.Error,
+                    Type = CommandType.DeleteForAll,
+                    Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+                };
+            }
+            
+            var response = new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.DeleteForAll,
+                Payload = JsonSerializer.SerializeToNode(deleteMessageResult)?.AsObject() 
+            };
+
+            var memberIds = await _dbProvider.GetChatMemberIdsAsync(deleteMessageResult.ChatId);            
+            await BroadcastMessage(requestPayload.UserId, memberIds, response);
+
+            return response;
+        }
+        catch (InvalidOperationException e)
+        {
+            var errorPayload = new ErrorPayload
+            {
+                Message = e.Message
+            };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.DeleteForAll, 
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            var errorPayload = new ErrorPayload
+            {
+                Message = "An unexpected server error occurred."
+            };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.DeleteForAll,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
         }
     }
 
