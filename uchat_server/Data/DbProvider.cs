@@ -239,4 +239,180 @@ public class DbProvider
 
         return result;
     }
+    
+    public async Task<List<Chats>> GetUserChatsAsync(int userId)
+    {
+        await using var dbContext = CreateDbContext();
+
+        var userChatsQuery = from cm in dbContext.ChatMembers
+                             where cm.UserId == userId
+                             join chat in dbContext.Chats on cm.ChatId equals chat.Id
+                             select chat.Id;
+
+        var userChatIds = await userChatsQuery.ToListAsync();
+
+        if (!userChatIds.Any())
+        {
+            return new List<Chats>();
+        }
+
+        var chatData = await dbContext.Chats
+            .Where(c => userChatIds.Contains(c.Id))
+            .Select(c => new 
+            {
+                Chat = c,
+                LastMessage = dbContext.Messages
+                    .Where(m => m.ChatId == c.Id)
+                    .OrderByDescending(m => m.SentAt)
+                    .Select(m => new { m.Id, m.SentAt, m.SenderId })
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        var lastMessageIds =
+            chatData.Where(x => x.LastMessage != null)
+                        .Select(x => x.LastMessage!.Id)
+                        .ToList();
+
+        var lastMessagesContent = await dbContext.TextMessages
+            .Where(tm => lastMessageIds.Contains(tm.MessageId))
+            .ToDictionaryAsync(tm => tm.MessageId, tm => tm.Content);
+        
+        var allMembers = await dbContext.ChatMembers
+            .Where(cm => userChatIds.Contains(cm.ChatId))
+            .Join(dbContext.Users, cm => cm.UserId, u => u.Id, (cm, u) => new 
+            {
+                cm.ChatId,
+                Member = new ChatMemberResponse 
+                {
+                    UserId = u.Id,
+                    Nickname = u.Nickname,
+                    Username = u.Username,
+                    HasPrivileges = cm.HasPrivileges
+                }
+            })
+            .ToListAsync();
+
+        var membersByChatId = allMembers.GroupBy(x => x.ChatId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Member).ToList());
+
+        var chatsList = new List<Chats>();
+
+        foreach (var item in chatData)
+        {
+            string displayName;
+            string displayUsername;
+            
+            if (!membersByChatId.TryGetValue(item.Chat.Id, out List<ChatMemberResponse>? chatMembers))
+            {
+                chatMembers = new List<ChatMemberResponse>();
+            }
+            
+            if (item.Chat.IsGroup)
+            {
+                displayName = item.Chat.Name ?? "";
+                
+                int memberCount = await dbContext.ChatMembers.CountAsync(cm => cm.ChatId == item.Chat.Id);
+                displayUsername = $"{memberCount} members";
+            }
+            else
+            {
+                var otherMember = chatMembers.FirstOrDefault(u => u.UserId != userId);
+
+                displayName = otherMember?.Nickname ?? "Unknown User";
+                displayUsername = $"@{otherMember?.Username}";
+            }
+
+            string lastMessageContent = "[No messages]";
+            DateTime lastMessageTime = DateTime.MinValue;
+            
+            if (item.LastMessage != null && item.LastMessage.Id > 0)
+            {
+                lastMessagesContent.TryGetValue(item.LastMessage.Id, out string? content);
+                lastMessageContent = content ?? "[Deleted]";
+                lastMessageTime = item.LastMessage.SentAt.ToLocalTime();
+            }
+
+            chatsList.Add(new Chats
+            {
+                ChatId = item.Chat.Id,
+                ChatName = displayName,
+                Username = displayUsername,
+                IsGroup = item.Chat.IsGroup,
+                Members = chatMembers,
+                LastMessage = lastMessageContent,
+                LastMessageTime = lastMessageTime
+            });
+        }
+
+        return chatsList;
+    }
+    
+    public async Task<List<dto.Message>> GetHistoryAsync(int chatId, int userId, int firstLoadedMessageId, int limit)
+    {
+        await using var dbContext = CreateDbContext();
+        DateTime? referenceMessage = null;
+
+        if (firstLoadedMessageId > 0)
+        {
+            referenceMessage = await dbContext.Messages
+                .Where(m => m.Id == firstLoadedMessageId)
+                .Select(m => m.SentAt)
+                .FirstOrDefaultAsync();
+
+            if (referenceMessage == default)
+            {
+                return new List<dto.Message>();
+            }
+        }
+
+        var query = from message in dbContext.Messages
+                join textMessage in dbContext.TextMessages
+                    on message.Id equals textMessage.MessageId
+                join chat in dbContext.Chats
+                    on message.ChatId equals chat.Id
+                where message.ChatId == chatId
+                where !referenceMessage.HasValue || message.SentAt < referenceMessage.Value
+                select new 
+                {
+                    Message = message,
+                    Content = textMessage.Content,
+                    IsGroup = chat.IsGroup,
+                    message.SenderId
+                };
+
+        var historyData = await query
+            .OrderByDescending(x => x.Message.SentAt)
+            .Take(limit) 
+            .ToListAsync();
+
+
+        var senderIds = historyData.Select(x => x.SenderId).Distinct().ToList();
+        var userNicknames = await dbContext.Users
+            .Where(u => senderIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Nickname);
+
+
+        var messages = new List<dto.Message>();
+
+        foreach (var item in historyData)
+        {
+            userNicknames.TryGetValue(item.SenderId, out string? nickname);
+
+            messages.Add(new dto.Message
+            {
+                Id = item.Message.Id,
+                Sender = nickname ?? $"User {item.SenderId}",
+                IsMine = item.SenderId == userId,
+                Text = item.Message.IsDeleted ? "Message deleted" : item.Content,
+                IsDeleted = item.Message.IsDeleted,
+                IsEdited = item.Message.IsEdited,
+                IsGroup = item.IsGroup,
+                Timestamp = new DateTimeOffset(item.Message.SentAt, TimeSpan.Zero),
+                SentTime = item.Message.SentAt.ToLocalTime()
+            });
+        }
+
+        return messages;
+    }
 }
