@@ -10,7 +10,9 @@ public enum CommandType
     Reconnect,
     EditMessage,
     CreateChat,
-    SearchUser
+    SearchUser,
+    GetChats,
+    GetHistory
 }
 
 public enum Status

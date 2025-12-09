@@ -21,6 +21,8 @@
         <local:DynamicMaxWidthConverter x:Key="MaxWidthConv"/>
         <local:MessageMarginConverter x:Key="MessageMarginConverter"/>
     </UserControl.Resources>
+    
+    <Grid>
 
     <Grid>
         <Grid.ColumnDefinitions>
@@ -480,7 +482,7 @@
                 </Grid>
             </Border>
         </Grid>
-        
+    </Grid>
         <Border Background="#80000000" IsVisible="{Binding IsReconnecting}" 
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
             <Border Width="400" Height="150" BorderBrush="MediumPurple" BorderThickness="3" Padding="20" Background="White">

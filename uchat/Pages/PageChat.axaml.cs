@@ -14,19 +14,18 @@ namespace uchat;
 public partial class PageChat : UserControl, INotifyPropertyChanged
 {
     private readonly Client _client = null!;
-    private List<User> _allUsers = new();
     public ObservableCollection<ChatItem> Chats { get; } = new();
     public ObservableCollection<ChatItem> FilteredChats { get; } = new();
     private ObservableCollection<User> _selectedGroupMembers = new();
     public new event PropertyChangedEventHandler? PropertyChanged;
     private ObservableCollection<Message> _selectedChatMessages = new();
-    private bool _isApplyingFilter = false;
-    private ChatItem? _selectedChatBeforeSearch = null;
-    private bool _isUpdatingFilteredChats = false;
-    private ChatItem? _currentChat = null;
-    private static long _pinSequence = 0;
+    private bool _isApplyingFilter;
+    private ChatItem? _selectedChatBeforeSearch;
+    private bool _isUpdatingFilteredChats;
+    private ChatItem? _currentChat;
+    private static long _pinSequence;
     private bool _isLight;
-    private bool _isMembersPanelOpen = false;
+    private bool _isMembersPanelOpen;
     private bool _showToggleMembersButton;
     private Message? _editingMessage;
     
@@ -105,66 +104,10 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         ChatAvatar.IsVisible = false;
         CurrentUserUsername = ToHandleFormat(_client.GetUsername());
         CurrentUserName = _client.GetNickname();
-        Chats.Add(new ChatItem
-        {
-            Name = "Vlad", Username = "@vlad", Messages = new ObservableCollection<Message>
-            {
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Vlad", Text = "nrgffgn", IsMine = false },
-                new Message { Sender = "Me", Text = "fgnf", IsMine = true }
-            }
-        });
-
-        Chats.Add(new ChatItem
-        {
-            Name = "Vika",
-            Username = "@1",
-            Messages = new ObservableCollection<Message>
-            {
-                new Message { Sender = "Vika", Text = "fngngnbdgngfn ndfg nfgnfg n f nf gng ffg g nf g n dfv df ed  dfdfhggdfhgbfjhbdhfgjdfhgdfbhjbhjfg", IsMine = false },
-                new Message { Sender = "Me", Text = "hvjhyvkv", IsMine = true },
-                new Message { Sender = "Vika", Text = "dggzhgjyr", IsMine = false }
-            }
-        });
+        Chats.Clear();
+        FilteredChats.Clear();
         
-        _allUsers = new List<User>
-        {
-            new User { Name = "Vlad", Username = "@vlad" },
-            new User { Name = "Vika", Username = "@1" },
-            new User { Name = "Masha", Username = "@2" },
-            new User { Name = "Mariia", Username = "@3" },
-            new User { Name = "Vika 2", Username = "@5" },
-            new User { Name = "Masha 2", Username = "@6" },
-            new User { Name = "Mariia 2", Username = "@7" },
-            new User { Name = "Roma", Username = "@4" }
-        };
-        
-        foreach (var chat in Chats)
-        {
-            if (chat.Messages.Any())
-            {
-                var lastMessage = chat.Messages.Last();
-                chat.NotifyLastMessageChanged(lastMessage.Text, lastMessage.SentTime);
-            }
-        }
-        
-        foreach (var chat in Chats)
-            FilteredChats.Add(chat);
-        
-        SortChats();
+        Task.Run(LoadAllUserChats);
 
         ChatList.ItemsSource = FilteredChats;
         
@@ -281,6 +224,20 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 {
                     _draft = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Draft)));
+                }
+            }
+        }
+        
+        private bool _hasMoreHistory = true; 
+        public bool HasMoreHistory
+        {
+            get => _hasMoreHistory;
+            set
+            {
+                if (_hasMoreHistory != value)
+                {
+                    _hasMoreHistory = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasMoreHistory)));
                 }
             }
         }
@@ -599,6 +556,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             UpdateChatView(contact);
             
             _selectedChatBeforeSearch = contact;
+            
+            Task.Run(() => CheckAndLoadHistory(contact));
         }
         else
         {
@@ -751,17 +710,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     {
         username = username.Trim().ToLower();
         return username.StartsWith("@") ? username[1..] : username;
-    }
-    
-    private User? FindUserByUsername(string username)
-    {
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            return null;
-        }
-        var normalized = NormalizeUsername(username);
-        return _allUsers.FirstOrDefault(u =>
-            NormalizeUsername(u.Username) == normalized);
     }
     
     private async void SearchButton_Click(object? sender, RoutedEventArgs e)
@@ -1524,6 +1472,162 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     {
         username = username.Trim().ToLower();
         return username.StartsWith("@") ? username : "@" + username;
+    }
+    
+    private ChatItem ChatsToChatItem(Chats chat)
+    {
+        var chatItem = new ChatItem
+        {
+            ChatId = chat.ChatId,
+            Name = chat.ChatName,
+            Username = chat.Username,
+            IsGroup = chat.IsGroup,
+            Members = new ObservableCollection<User>(),
+            Messages = new ObservableCollection<Message>() 
+        };
+        
+        foreach (var member in chat.Members)
+        {
+            chatItem.Members.Add(new User 
+            {
+                Id = member.UserId,
+                Name = member.Nickname,
+                Username = ToHandleFormat(member.Username)
+            });
+        }
+        
+        chatItem.NotifyLastMessageChanged(chat.LastMessage, chat.LastMessageTime.ToLocalTime());
+    
+        return chatItem;
+    }
+    
+    private async Task LoadAllUserChats()
+    {
+        if (Chats.Any())
+        {
+            return;
+        } 
+
+        var response = await _client.GetUserChats();
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (response != null && response.Status == Status.Success)
+            {
+                var chatListPayload = response.Payload.Deserialize<GetUserChatsResponsePayload>();
+
+                if (chatListPayload != null)
+                {
+                    foreach (var chat in chatListPayload.Chats)
+                    {
+                        var newChatItem = ChatsToChatItem(chat); 
+                    
+                        Chats.Add(newChatItem);
+                        FilteredChats.Add(newChatItem); 
+                    }
+                
+                    SortChats(); 
+                }
+            }
+        });
+    }
+    
+    private bool _isLoadingHistory;
+
+    private async Task LoadChatHistory(int chatId, int beforeMessageId)
+    {
+        if (_isLoadingHistory)
+        {
+            return;
+        }
+
+        _isLoadingHistory = true; 
+        
+        try
+        {
+            var response = await _client.GetChatHistory(chatId, beforeMessageId);
+            
+            if (response != null && response.Status == Status.Success)
+            {
+                var historyPayload = response.Payload.Deserialize<ChatHistoryResponsePayload>();
+                
+                if (historyPayload != null)
+                {
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        var chat = Chats.FirstOrDefault(c => c.ChatId == chatId);
+                        if (chat == null)
+                        {
+                            return;
+                        }
+                        
+                        var newMessages = historyPayload.Messages;
+
+                        foreach (var msg in newMessages)
+                        {
+                            msg.SentTime = msg.SentTime.ToLocalTime(); 
+                            msg.Timestamp = msg.Timestamp.ToLocalTime();
+                            msg.IsGroup = chat.IsGroup;
+                        }
+
+                        for (int i = 0; i < newMessages.Count; i++)
+                        {
+                            chat.Messages.Insert(0, newMessages[i]);
+                        }
+
+                        chat.HasMoreHistory = historyPayload.HasMore;
+
+                        ComputeGroupingFlags(chat.Messages);
+
+                        if (_currentChat == chat)
+                        {
+                            for (int i = 0; i < newMessages.Count; i++)
+                            {
+                                SelectedChatMessages.Insert(0, newMessages[i]); 
+                            }
+
+                            if (MessagesPanel is { } itemsControl) 
+                            {
+                                if (beforeMessageId == 0)
+                                {
+                                    (MessagesPanel.Parent as ScrollViewer)?.ScrollToEnd();
+                                }
+                                else 
+                                {
+                                    int addedCount = newMessages.Count;
+
+                                    if (chat.Messages.Count > addedCount)
+                                    {
+                                        var anchorMessage = chat.Messages[addedCount]; 
+                                        itemsControl.ScrollIntoView(anchorMessage); 
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            else
+            {
+                // make error message
+            }
+        }
+        finally
+        {
+            _isLoadingHistory = false;
+        }
+    }
+    
+    private async Task CheckAndLoadHistory(ChatItem chat)
+    {
+        if (chat.Messages.Any() && !chat.HasMoreHistory)
+        {
+            return;
+        }
+
+        int beforeMessageId = chat.Messages.Any() ? chat.Messages.First().Id : 0;
+
+        await LoadChatHistory(chat.ChatId, beforeMessageId); 
     }
     
     private void UpdateChatsWithResponse(Response response)
