@@ -628,6 +628,15 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         {
             _editingMessage.Text = text;
             _editingMessage.IsEdited = true;
+            
+            int index = contact.Messages.IndexOf(_editingMessage);
+            if (index >= 0)
+            {
+                ComputeFlagsAtIndex(contact.Messages, index);
+                if (index > 0) ComputeFlagsAtIndex(contact.Messages, index - 1);
+                if (index < contact.Messages.Count - 1) ComputeFlagsAtIndex(contact.Messages, index + 1);
+            }
+            
             _editingMessage = null;
             MessageTextBox.Text = "";
             return;
@@ -673,6 +682,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 contact.Draft = "";
                 MessageTextBox.Text = "";
                 contact.NotifyLastMessageChanged(msgToDisplay.Text, msgToDisplay.SentTime);
+                ComputeGroupingFlags(contact.Messages);
             }
         }
         else
@@ -1473,32 +1483,41 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         if (messages.Count == 0 || index < 0 || index >= messages.Count)
             return;
 
-        var cur = messages[index];
-        Message? prev = index > 0 ? messages[index - 1] : null;
+        var current = messages[index];
+        Message? previous = index > 0 ? messages[index - 1] : null;
         Message? next = index < messages.Count - 1 ? messages[index + 1] : null;
 
-        bool isFirst = true;
-        bool isLast = true;
-
-        if (prev != null &&
-            prev.Sender == cur.Sender &&
-            (cur.Timestamp - prev.Timestamp) <= GroupThreshold &&
-            !prev.IsDeleted && !cur.IsDeleted)
+        bool isFirstInGroup = true;
+        if (previous != null &&
+            previous.Sender == current.Sender &&
+            !previous.IsDeleted && !current.IsDeleted &&
+            (current.SentTime - previous.SentTime) <= GroupThreshold)
         {
-            isFirst = false;
+            isFirstInGroup = false;
         }
-
+        
+        bool isLastInGroup = true;
         if (next != null &&
-            next.Sender == cur.Sender &&
-            (next.Timestamp - cur.Timestamp) <= GroupThreshold &&
-            !next.IsDeleted && !cur.IsDeleted)
+            next.Sender == current.Sender &&
+            !next.IsDeleted && !current.IsDeleted &&
+            (next.SentTime - current.SentTime) <= GroupThreshold)
         {
-            isLast = false;
+            isLastInGroup = false;
         }
 
-        cur.IsFirstInGroup = isFirst;
-        cur.ShowAvatar = isLast;
-        cur.ShowTail = isLast;
+        current.IsFirstInGroup = isFirstInGroup;
+        current.ShowSenderName = current.IsGroup && !current.IsMine && isFirstInGroup;
+        current.ShowTail = isLastInGroup;
+        current.ShowAvatar = current.IsGroup && !current.IsMine && isLastInGroup;
+        current.AvatarPlaceholderWidth = current.IsGroup && !current.IsMine ? 40 : 0;
+        if (current.ShowTail)
+        {
+            current.MessageMarginLeft = current.IsGroup && !current.IsMine ? 40 : 0;
+        }
+        else
+        {
+            current.MessageMarginLeft = current.IsGroup && !current.IsMine ? 46.5 : 6.5;
+        }
     }
 
     private static string ToHandleFormat(string username)
@@ -1597,6 +1616,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     };
         
                     chat.Messages.Add(newMessage);
+                    ComputeGroupingFlags(chat.Messages);
                     chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime);
 
                     if (_currentChat == chat)
