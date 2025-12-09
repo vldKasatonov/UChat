@@ -585,10 +585,42 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         
         if (_editingMessage != null)
         {
-            _editingMessage.Text = text;
-            _editingMessage.IsEdited = true;
-            _editingMessage = null;
+            var editedMessage = _editingMessage;
+            var newText = text;
+
+            var editResponse = await _client.EditMessage(contact.ChatId, editedMessage.Id, newText);
+
+            if (editResponse != null && editResponse.Status == Status.Success)
+            {
+                editedMessage.Text = newText;
+                editedMessage.IsEdited = true;
+                editedMessage.IsDeleted = false;
+                
+                int index = contact.Messages.IndexOf(editedMessage);
+                if (index > -1)
+                {
+                    ComputeFlagsAtIndex(contact.Messages, index);
+                    if (index > 0) 
+                    {
+                        ComputeFlagsAtIndex(contact.Messages, index - 1);
+                    }
+
+                    if (index < contact.Messages.Count - 1) 
+                    {
+                        ComputeFlagsAtIndex(contact.Messages, index + 1);
+                    }
+                }
+
+                if (contact.Messages.LastOrDefault() == editedMessage)
+                {
+                    contact.NotifyLastMessageChanged(editedMessage.DisplayText, editedMessage.SentTime);
+                }
+            } 
+
+            contact.Draft = "";
             MessageTextBox.Text = "";
+            _editingMessage = null; 
+
             return;
         }
 
@@ -1319,7 +1351,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
     }
     
-    private async void EditMessage_Click(object? sender, RoutedEventArgs e)
+    private void EditMessage_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not Message msg)
         {
@@ -1330,11 +1362,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         MessageTextBox.Focus();
         MessageTextBox.CaretIndex = MessageTextBox.Text.Length;
         _editingMessage = msg;
-        
-        // if (ChatList.SelectedItem is ChatItem chat)
-        // {
-        //     await _client.EditMessageAsync(chat.Name, msg.Id, msg.Text);
-        // }
     }
 
     private async void DeleteMessageForAll_Click(object? sender, RoutedEventArgs e)
@@ -1611,106 +1638,154 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         await LoadChatHistory(chat.ChatId, beforeMessageId); 
     }
     
-    private void UpdateChatsWithResponse(Response response)
+    private async void UpdateChatsWithResponse(Response response)
     {
-        switch (response.Type)
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            case CommandType.CreateChat:
+            switch (response.Type)
             {
-                var chatPayload = response.Payload.Deserialize<CreateChatResponsePayload>();
-                if (chatPayload != null)
+                case CommandType.CreateChat:
                 {
-                    if (Chats.Any(c => c.ChatId == chatPayload.ChatId))
+                    var chatPayload = response.Payload.Deserialize<CreateChatResponsePayload>();
+                    if (chatPayload != null)
                     {
-                        return;
-                    }
-                    
-                    var chat = new ChatItem();
-                    chat.IsGroup = chatPayload.IsGroup;
-                    chat.ChatId = chatPayload.ChatId;
-                    chat.Members = new ObservableCollection<User>();
-                    
-                    foreach (var member in chatPayload.Members)
-                    {
-                        chat.Members.Add(new User 
+                        if (Chats.Any(c => c.ChatId == chatPayload.ChatId))
                         {
-                            Id = member.UserId,
-                            Name = member.Nickname,
-                            Username = ToHandleFormat(member.Username)
-                        });
-                    }
+                            return;
+                        }
 
-                    if (chat.IsGroup)
-                    {
-                        chat.Name = chatPayload.Name ?? "";
-                        chat.Username = $"{chatPayload.Members.Count} members";
-                    }
-                    else
-                    {
-                        var firstMember = chatPayload.Members[0];
-                        var secondMember = chatPayload.Members[1];
+                        var chat = new ChatItem();
+                        chat.IsGroup = chatPayload.IsGroup;
+                        chat.ChatId = chatPayload.ChatId;
+                        chat.Members = new ObservableCollection<User>();
 
-                        var firstUsername = ToHandleFormat(firstMember.Username);
-                        var secondUsername = ToHandleFormat(secondMember.Username);
-
-                        if (firstUsername == CurrentUserUsername)
+                        foreach (var member in chatPayload.Members)
                         {
-                            chat.Name = secondMember.Nickname;
-                            chat.Username = secondUsername;
+                            chat.Members.Add(new User
+                            {
+                                Id = member.UserId,
+                                Name = member.Nickname,
+                                Username = ToHandleFormat(member.Username)
+                            });
+                        }
+
+                        if (chat.IsGroup)
+                        {
+                            chat.Name = chatPayload.Name ?? "";
+                            chat.Username = $"{chatPayload.Members.Count} members";
                         }
                         else
                         {
-                            chat.Name = firstMember.Nickname;
-                            chat.Username = firstUsername;
+                            var firstMember = chatPayload.Members[0];
+                            var secondMember = chatPayload.Members[1];
+
+                            var firstUsername = ToHandleFormat(firstMember.Username);
+                            var secondUsername = ToHandleFormat(secondMember.Username);
+
+                            if (firstUsername == CurrentUserUsername)
+                            {
+                                chat.Name = secondMember.Nickname;
+                                chat.Username = secondUsername;
+                            }
+                            else
+                            {
+                                chat.Name = firstMember.Nickname;
+                                chat.Username = firstUsername;
+                            }
+                        }
+
+                        Chats.Add(chat);
+
+                        if (!_isApplyingFilter)
+                        {
+                            FilteredChats.Add(chat);
                         }
                     }
 
-                    Chats.Add(chat);
-                    
-                    if (!_isApplyingFilter)
-                    {
-                        FilteredChats.Add(chat);
-                    }
-                }
-
-                break;
-            }
-            case CommandType.SendMessage:
-            {
-                var msgPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
-                
-                if (msgPayload is null) 
-                {
                     break;
                 }
-                
-                var chat = Chats.FirstOrDefault(c => c.ChatId == msgPayload.ChatId);
-                
-                if (chat != null)
+                case CommandType.SendMessage:
                 {
-                    var newMessage = new Message
-                    {
-                        Id = msgPayload.MessageId,
-                        Sender = msgPayload.SenderNickname,
-                        SentTime = msgPayload.SentAt.ToLocalTime(),
-                        Text = msgPayload.Content,
-                        IsMine = false,
-                        IsDeleted = msgPayload.IsDeleted,
-                        IsEdited = msgPayload.IsEdited,
-                        IsGroup = chat.IsGroup
-                    };
-        
-                    chat.Messages.Add(newMessage);
-                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime);
+                    var msgPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
 
-                    if (_currentChat == chat)
+                    if (msgPayload is null)
                     {
-                        SelectedChatMessages.Add(newMessage);
+                        break;
                     }
-                }
 
-                break;
+                    var chat = Chats.FirstOrDefault(c => c.ChatId == msgPayload.ChatId);
+
+                    if (chat != null)
+                    {
+                        var newMessage = new Message
+                        {
+                            Id = msgPayload.MessageId,
+                            Sender = msgPayload.SenderNickname,
+                            SentTime = msgPayload.SentAt.ToLocalTime(),
+                            Text = msgPayload.Content,
+                            IsMine = false,
+                            IsDeleted = msgPayload.IsDeleted,
+                            IsEdited = msgPayload.IsEdited,
+                            IsGroup = chat.IsGroup
+                        };
+
+                        chat.Messages.Add(newMessage);
+                        chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime);
+
+                        if (_currentChat == chat)
+                        {
+                            SelectedChatMessages.Add(newMessage);
+                        }
+                    }
+
+                    break;
+                }
+                case CommandType.EditMessage:
+                {
+                    var editPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+
+                    if (editPayload is null) 
+                    {
+                        break;
+                    }
+
+                    var chat = Chats.FirstOrDefault(c => c.ChatId == editPayload.ChatId);
+                    
+                    if (chat != null)
+                    {
+                        var messageToEdit = chat.Messages.FirstOrDefault(m => m.Id == editPayload.MessageId);
+                        
+                        if (messageToEdit != null)
+                        {
+                            messageToEdit.Text = editPayload.Content;
+                            messageToEdit.IsEdited = editPayload.IsEdited;
+                            messageToEdit.IsDeleted = editPayload.IsDeleted;
+
+                            int index = chat.Messages.IndexOf(messageToEdit);
+                            if (index > -1)
+                            {
+                                ComputeFlagsAtIndex(chat.Messages, index);
+                                if (index > 0) 
+                                {
+                                    ComputeFlagsAtIndex(chat.Messages, index - 1);
+                                }
+
+                                if (index < chat.Messages.Count - 1) 
+                                {
+                                    ComputeFlagsAtIndex(chat.Messages, index + 1);
+                                }
+                            }
+
+                            if (chat.Messages.LastOrDefault() == messageToEdit)
+                            {
+                                chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime);
+                            }
+                        }
+                    }
+                    
+                    break;
+                }
             }
-        }
+        });
     }
 }
