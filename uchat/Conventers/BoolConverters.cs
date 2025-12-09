@@ -29,51 +29,7 @@ namespace uchat
             => value is bool b ? !b : true;
     }
 
-    public class TailLeftVisibilityConverter : IMultiValueConverter
-    {
-        public object Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
-        {
-            if (values == null || values.Count < 2) return false;
-            bool showTail = values[0] is bool b0 && b0;
-            bool isMine = values[1] is bool b1 && b1;
-            return showTail && !isMine;
-        }
-    }
-    public class TailRightVisibilityConverter : IMultiValueConverter
-    {
-        public object Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
-        {
-            if (values == null || values.Count < 2) return false;
-            bool showTail = values[0] is bool b0 && b0;
-            bool isMine = values[1] is bool b1 && b1;
-            return showTail && isMine;
-        }
-    }
-    public class TailMarginConverter : IMultiValueConverter
-    {
-        public object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
-        {
-            if (values.Count < 2)
-                return new Avalonia.Thickness(0);
-
-            bool showTail = values[0] is bool b0 && b0;
-            bool isMine = values[1] is bool b1 && b1;
-            
-            if (showTail)
-                return new Avalonia.Thickness(0);
-            
-            if (!isMine)
-            {
-                return new Avalonia.Thickness(6.5, 0, 0, 0);
-            }
-            else
-            {
-                return new Avalonia.Thickness(0, 0, 6.5, 0);
-            }
-        }
-    }
-    
-    public class BoolToMarginConverter : IValueConverter
+     public class BoolToMarginConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
@@ -97,4 +53,96 @@ namespace uchat
         }
     }
     
+    public class MessageMarginConverter : IMultiValueConverter
+    {
+        public object Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            bool showTail = values.Count > 0 && values[0] is bool b0 && b0;
+            bool isMine = values.Count > 1 && values[1] is bool b1 && b1;
+            bool isGroup = values.Count > 2 && values[2] is bool b2 && b2;
+            double avatarWidth = 35; 
+            if (values.Count > 3 && values[3] is double d) avatarWidth = d;
+            double tailOffset = 6.5;      
+            double avatarSpacing = 4;    
+            double extraPadding = 4;    
+
+            if (showTail)
+                return new Avalonia.Thickness(0);
+
+            if (!isMine) 
+            {
+                if (isGroup)
+                {
+                    return new Avalonia.Thickness( avatarSpacing + tailOffset, 0, 0, 0);
+                }
+                else
+                {
+                    return new Avalonia.Thickness(tailOffset + extraPadding, 0, 0, 0);
+                }
+            }
+            else 
+            {
+                return new Avalonia.Thickness(0, 0, tailOffset + extraPadding, 0);
+            }
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object? parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
+    public class TailLeftVisibilityConverter : IMultiValueConverter
+    {
+        public object Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (values == null || values.Count < 2) return false;
+            bool showTail = values[0] is bool b0 && b0;
+            bool isMine = values[1] is bool b1 && b1;
+            return showTail && !isMine;
+        }
+    }
+    
+    public class TailRightVisibilityConverter : IMultiValueConverter
+    {
+        public object Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (values == null || values.Count < 2) return false;
+            bool showTail = values[0] is bool b0 && b0;
+            bool isMine = values[1] is bool b1 && b1;
+            return showTail && isMine;
+        }
+    }
+    
+    public class TailMarginConverter : IMultiValueConverter
+    {
+        public object Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            bool showTail = values.Count > 0 && values[0] is bool b0 && b0;
+            bool isMine = values.Count > 1 && values[1] is bool b1 && b1;
+            bool isGroup = values.Count > 2 && values[2] is bool b2 && b2;
+            double avatarWidth = 40;
+            if (values.Count > 3 && values[3] is double d) avatarWidth = d;
+
+            double tailBase = 4.5; 
+
+            if (showTail)
+                return new Avalonia.Thickness(0);
+
+            if (!isMine)
+            {
+                if (isGroup)
+                    return new Avalonia.Thickness(tailBase + avatarWidth, 0, 0, 0);
+                else
+                    return new Avalonia.Thickness(tailBase, 0, 0, 0);
+            }
+            else
+            {
+                return new Avalonia.Thickness(0, 0, tailBase, 0);
+            }
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object? parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
 }
+
+

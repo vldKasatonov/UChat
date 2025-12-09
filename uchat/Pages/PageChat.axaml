@@ -19,6 +19,7 @@
         <local:SentTimeConverter x:Key="SentTimeConverter"/>
         <local:BoolToMarginConverter x:Key="BoolToMarginConverter"/>
         <local:DynamicMaxWidthConverter x:Key="MaxWidthConv"/>
+        <local:MessageMarginConverter x:Key="MessageMarginConverter"/>
     </UserControl.Resources>
     
     <Grid>
@@ -184,28 +185,24 @@
                                             Converter={StaticResource BoolToAlignment}}" 
                                             Margin="{Binding IsMine, Converter={StaticResource BoolToMarginConverter}}"
                                             VerticalAlignment="Bottom">
-                                    <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom" >
-                                        <Ellipse.Fill>
-                                            <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
-                                        </Ellipse.Fill>
-                                        <Ellipse.IsVisible>
-                                            <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
-                                                <Binding Path="IsMine"/>
-                                                <Binding Path="IsGroup"/>
-                                                <Binding Path="ShowAvatar"/>
-                                            </MultiBinding>
-                                        </Ellipse.IsVisible>
-                                    </Ellipse>
-                                    
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Sender}" Margin="10,0,0,2">
-                                            <TextBlock.IsVisible>
-                                                <MultiBinding Converter="{StaticResource GroupSenderVisibilityConverter}">
+                                    <Border Width="{Binding AvatarPlaceholderWidth}" Margin="0,0,5,0">
+                                        <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom" >
+                                            <Ellipse.Fill>
+                                                <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
+                                            </Ellipse.Fill>
+                                            <Ellipse.IsVisible>
+                                                <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
                                                     <Binding Path="IsMine"/>
                                                     <Binding Path="IsGroup"/>
+                                                    <Binding Path="ShowAvatar"/>
                                                 </MultiBinding>
-                                            </TextBlock.IsVisible>
-                                        </TextBlock>
+                                            </Ellipse.IsVisible>
+                                        </Ellipse>
+                                    </Border> 
+                                    
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Sender}" Margin="10,0,0,2" IsVisible="{Binding ShowSenderName}"
+                                                   Foreground="#888888" FontSize="12"/>
                                         
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -216,7 +213,15 @@
                                             
                                             <Polygon Grid.Column="0" Width="10" Height="10" Points="10,0 -5,7 15,10" ZIndex="0" 
                                                      Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
-                                                     VerticalAlignment="Bottom" Margin="0,0,-4,0">
+                                                     VerticalAlignment="Bottom">
+                                                <Polygon.Margin>
+                                                    <MultiBinding Converter="{StaticResource TailMarginConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                        <Binding Path="IsGroup"/>
+                                                        <Binding Path="AvatarSize" FallbackValue="40"/>
+                                                    </MultiBinding>
+                                                </Polygon.Margin>
                                                 <Polygon.IsVisible>
                                                     <MultiBinding Converter="{StaticResource TailLeftVisibilityConverter}">
                                                         <Binding Path="ShowTail"/>
@@ -230,12 +235,16 @@
 
                                             <Border Grid.Column="1" VerticalAlignment="Bottom" Background="{Binding IsMine, Converter={StaticResource BoolToBrush}}" 
                                                     CornerRadius="10" Padding="10,5" ZIndex="1">
+                                                
                                                 <Border.Margin>
-                                                    <MultiBinding Converter="{StaticResource TailMarginConverter}">
+                                                    <MultiBinding Converter="{StaticResource MessageMarginConverter}">
                                                         <Binding Path="ShowTail"/>
                                                         <Binding Path="IsMine"/>
+                                                        <Binding Path="IsGroup"/>
+                                                        <Binding Path="AvatarSize" FallbackValue="40"/>
                                                     </MultiBinding>
                                                 </Border.Margin>
+                                            
                                                 <StackPanel Orientation="Vertical" Spacing="2">
                                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                                         <Image Source="avares://uchat/Resources/images/DeletedMsg.png" Width="16" Height="16"
@@ -264,9 +273,17 @@
                                                 </Border.ContextMenu>
                                             </Border>
                                             
-                                            <Polygon Grid.Column="2" Width="10" Height="10" Points="-10,-5 14,7 -15,11" Margin="-4,0,0,0" 
+                                            <Polygon Grid.Column="2" Width="10" Height="10" Points="-10,-5 14,7 -15,11" 
                                                      ZIndex="0" Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
                                                      VerticalAlignment="Bottom">
+                                                <Polygon.Margin>
+                                                    <MultiBinding Converter="{StaticResource TailMarginConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                        <Binding Path="IsGroup"/>
+                                                        <Binding Path="AvatarSize" FallbackValue="40"/>
+                                                    </MultiBinding>
+                                                </Polygon.Margin>
                                                 <Polygon.IsVisible>
                                                     <MultiBinding Converter="{StaticResource TailRightVisibilityConverter}">
                                                         <Binding Path="ShowTail"/>
