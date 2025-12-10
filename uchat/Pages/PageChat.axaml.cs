@@ -585,10 +585,35 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         
         if (_editingMessage != null)
         {
-            _editingMessage.Text = text;
-            _editingMessage.IsEdited = true;
-            _editingMessage = null;
+            var editedMessage = _editingMessage;
+            var newText = text;
+
+            var editResponse = await _client.EditMessage(contact.ChatId, editedMessage.Id, newText);
+
+            if (editResponse != null && editResponse.Status == Status.Success)
+            {
+                editedMessage.Text = newText;
+                editedMessage.IsEdited = true;
+                editedMessage.IsDeleted = false;
+                
+                int index = contact.Messages.IndexOf(editedMessage);
+                if (index >= 0)
+                {
+                    ComputeFlagsAtIndex(contact.Messages, index);
+                    if (index > 0) ComputeFlagsAtIndex(contact.Messages, index - 1);
+                    if (index < contact.Messages.Count - 1) ComputeFlagsAtIndex(contact.Messages, index + 1);
+                }
+
+                if (contact.Messages.LastOrDefault() == editedMessage)
+                {
+                    contact.NotifyLastMessageChanged(editedMessage.DisplayText, editedMessage.SentTime);
+                }
+            } 
+
+            contact.Draft = "";
             MessageTextBox.Text = "";
+            _editingMessage = null; 
+
             return;
         }
 
@@ -632,6 +657,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 contact.Draft = "";
                 MessageTextBox.Text = "";
                 contact.NotifyLastMessageChanged(msgToDisplay.Text, msgToDisplay.SentTime);
+                ComputeGroupingFlags(contact.Messages);
             }
         }
         else
@@ -1319,7 +1345,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
     }
     
-    private async void EditMessage_Click(object? sender, RoutedEventArgs e)
+    private void EditMessage_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not Message msg)
         {
@@ -1330,11 +1356,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         MessageTextBox.Focus();
         MessageTextBox.CaretIndex = MessageTextBox.Text.Length;
         _editingMessage = msg;
-        
-        // if (ChatList.SelectedItem is ChatItem chat)
-        // {
-        //     await _client.EditMessageAsync(chat.Name, msg.Id, msg.Text);
-        // }
     }
 
     private async void DeleteMessageForAll_Click(object? sender, RoutedEventArgs e)
@@ -1441,32 +1462,41 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         if (messages.Count == 0 || index < 0 || index >= messages.Count)
             return;
 
-        var cur = messages[index];
-        Message? prev = index > 0 ? messages[index - 1] : null;
+        var current = messages[index];
+        Message? previous = index > 0 ? messages[index - 1] : null;
         Message? next = index < messages.Count - 1 ? messages[index + 1] : null;
 
-        bool isFirst = true;
-        bool isLast = true;
-
-        if (prev != null &&
-            prev.Sender == cur.Sender &&
-            (cur.Timestamp - prev.Timestamp) <= GroupThreshold &&
-            !prev.IsDeleted && !cur.IsDeleted)
+        bool isFirstInGroup = true;
+        if (previous != null &&
+            previous.Sender == current.Sender &&
+            !previous.IsDeleted && !current.IsDeleted &&
+            (current.SentTime - previous.SentTime) <= GroupThreshold)
         {
-            isFirst = false;
+            isFirstInGroup = false;
         }
-
+        
+        bool isLastInGroup = true;
         if (next != null &&
-            next.Sender == cur.Sender &&
-            (next.Timestamp - cur.Timestamp) <= GroupThreshold &&
-            !next.IsDeleted && !cur.IsDeleted)
+            next.Sender == current.Sender &&
+            !next.IsDeleted && !current.IsDeleted &&
+            (next.SentTime - current.SentTime) <= GroupThreshold)
         {
-            isLast = false;
+            isLastInGroup = false;
         }
 
-        cur.IsFirstInGroup = isFirst;
-        cur.ShowAvatar = isLast;
-        cur.ShowTail = isLast;
+        current.IsFirstInGroup = isFirstInGroup;
+        current.ShowSenderName = current.IsGroup && !current.IsMine && isFirstInGroup;
+        current.ShowTail = isLastInGroup;
+        current.ShowAvatar = current.IsGroup && !current.IsMine && isLastInGroup;
+        current.AvatarPlaceholderWidth = current.IsGroup && !current.IsMine ? 40 : 0;
+        if (current.ShowTail)
+        {
+            current.MessageMarginLeft = current.IsGroup && !current.IsMine ? 40 : 0;
+        }
+        else
+        {
+            current.MessageMarginLeft = current.IsGroup && !current.IsMine ? 46.5 : 6.5;
+        }
     }
 
     private static string ToHandleFormat(string username)
@@ -1644,15 +1674,15 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     {
                         return;
                     }
-                    
+
                     var chat = new ChatItem();
                     chat.IsGroup = chatPayload.IsGroup;
                     chat.ChatId = chatPayload.ChatId;
                     chat.Members = new ObservableCollection<User>();
-                    
+
                     foreach (var member in chatPayload.Members)
                     {
-                        chat.Members.Add(new User 
+                        chat.Members.Add(new User
                         {
                             Id = member.UserId,
                             Name = member.Nickname,
@@ -1686,7 +1716,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     }
 
                     Chats.Add(chat);
-                    
+
                     if (!_isApplyingFilter)
                     {
                         FilteredChats.Add(chat);
@@ -1698,14 +1728,14 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             case CommandType.SendMessage:
             {
                 var msgPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
-                
-                if (msgPayload is null) 
+
+                if (msgPayload is null)
                 {
                     break;
                 }
-                
+
                 var chat = Chats.FirstOrDefault(c => c.ChatId == msgPayload.ChatId);
-                
+
                 if (chat != null)
                 {
                     var newMessage = new Message
@@ -1719,8 +1749,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                         IsEdited = msgPayload.IsEdited,
                         IsGroup = chat.IsGroup
                     };
-        
+
                     chat.Messages.Add(newMessage);
+                    ComputeGroupingFlags(chat.Messages);
                     chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime);
 
                     if (_currentChat == chat)
@@ -1765,6 +1796,44 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     }
                 }
 
+                break;
+            }
+            case CommandType.EditMessage:
+            {
+                var editPayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+
+                if (editPayload is null) 
+                {
+                    break;
+                }
+
+                var chat = Chats.FirstOrDefault(c => c.ChatId == editPayload.ChatId);
+                
+                if (chat != null)
+                {
+                    var messageToEdit = chat.Messages.FirstOrDefault(m => m.Id == editPayload.MessageId);
+                    
+                    if (messageToEdit != null)
+                    {
+                        messageToEdit.Text = editPayload.Content;
+                        messageToEdit.IsEdited = editPayload.IsEdited;
+                        messageToEdit.IsDeleted = editPayload.IsDeleted;
+
+                        int index = chat.Messages.IndexOf(messageToEdit);
+                        if (index >= 0)
+                        {
+                            ComputeFlagsAtIndex(chat.Messages, index);
+                            if (index > 0) ComputeFlagsAtIndex(chat.Messages, index - 1);
+                            if (index < chat.Messages.Count - 1) ComputeFlagsAtIndex(chat.Messages, index + 1);
+                        }
+
+                        if (chat.Messages.LastOrDefault() == messageToEdit)
+                        {
+                            chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime);
+                        }
+                    }
+                }
+                
                 break;
             }
         }

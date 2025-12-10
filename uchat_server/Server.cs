@@ -196,6 +196,9 @@ public class Server
                 case CommandType.DeleteForAll:
                     var deleteForAllPayload = request.Payload.Deserialize<DeleteMessageRequestPayload>();
                     return await HandleDeleteForAll(deleteForAllPayload);
+                case CommandType.EditMessage:
+                    var editReqPayload = request.Payload.Deserialize<EditMessageRequestPayload>();
+                    return await HandleEditMessage(editReqPayload);
             }
         }
         catch (Exception)
@@ -681,75 +684,6 @@ public class Server
             };
         }
     }
-    
-    private async Task BroadcastCreateChat(List<ChatMemberRequest> members, Response response)
-    {
-        string jsonResponse = JsonSerializer.Serialize(response);
-        string creatorUsername = members[0].Username;
-        
-        foreach (var member in members)
-        {
-            if (members.Count > 2)
-            {
-                if (member.Username == creatorUsername)
-                {
-                    continue;
-                }
-            }
-
-            if (members.Count == 2)
-            {
-                if (member.Username == creatorUsername)
-                {
-                    continue;
-                }
-            }
-
-            if (_userIds.TryGetValue(member.Username, out var userId))
-            {
-                if (_clients.TryGetValue(userId, out var sslStream))
-                {
-                    try
-                    {
-                        var writer = new StreamWriter(sslStream) { AutoFlush = true };
-                        await writer.WriteLineAsync(jsonResponse);
-                        Console.WriteLine($"Broadcast (Create chat) for ID {userId}:\n{jsonResponse}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error sending broadcast to ID {userId}: {ex.Message}");
-                    }
-                }
-            }
-        }
-    }
-    
-    private async Task BroadcastMessage(int senderId, List<int> chatMemberIds, Response response)
-    {
-        string jsonResponse = JsonSerializer.Serialize(response);
-
-        foreach (var memberId in chatMemberIds) 
-        {
-            if (memberId == senderId)
-            {
-                continue;
-            }
-
-            if (_clients.TryGetValue(memberId, out var sslStream))
-            {
-                try
-                {
-                    var writer = new StreamWriter(sslStream) { AutoFlush = true };
-                    await writer.WriteLineAsync(jsonResponse);
-                    Console.WriteLine($"Broadcast (Message) for ID {memberId}:\n{jsonResponse}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error sending broadcast to ID {memberId}: {ex.Message}");
-                }
-            }
-        }
-    }
 
     private async Task<Response> HandleDeleteForAll(DeleteMessageRequestPayload? requestPayload)
     {
@@ -824,6 +758,144 @@ public class Server
                 Type = CommandType.DeleteForAll,
                 Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
             };
+        }
+    }
+
+    private async Task<Response> HandleEditMessage(EditMessageRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.EditMessage
+            };
+        }
+        
+        try
+        {
+            var editResult = await _dbProvider.EditMessageAsync(
+                requestPayload.UserId,
+                requestPayload.MessageId,
+                requestPayload.NewContent
+            );
+            
+            if (editResult == null)
+            {
+                var errorPayload = new ErrorPayload
+                {
+                    Message = "Message not found."
+                    
+                };
+
+                return new Response
+                {
+                    Status = Status.Error,
+                    Type = CommandType.EditMessage,
+                    Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+                };
+            }
+
+            var responsePayload = new TextMessageResponsePayload
+            {
+                ChatId = editResult.ChatId,
+                MessageId = editResult.MessageId,
+                SenderId = editResult.SenderId,
+                SenderNickname = await _dbProvider.GetUserNicknameByIdAsync(editResult.SenderId),
+                Content = editResult.Content,
+                SentAt = editResult.SentAt,
+                IsEdited = true,
+                IsDeleted = false
+            };
+
+            var response = new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.EditMessage,
+                Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
+            };
+
+            var memberIds = await _dbProvider.GetChatMemberIdsAsync(editResult.ChatId);
+            await BroadcastMessage(requestPayload.UserId, memberIds, response);
+
+            return response;
+        }
+        catch (Exception)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.EditMessage
+            };
+        }
+    }
+    
+    private async Task BroadcastCreateChat(List<ChatMemberRequest> members, Response response)
+    {
+        string jsonResponse = JsonSerializer.Serialize(response);
+        string creatorUsername = members[0].Username;
+        
+        foreach (var member in members)
+        {
+            if (members.Count > 2)
+            {
+                if (member.Username == creatorUsername)
+                {
+                    continue;
+                }
+            }
+
+            if (members.Count == 2)
+            {
+                if (member.Username == creatorUsername)
+                {
+                    continue;
+                }
+            }
+
+            if (_userIds.TryGetValue(member.Username, out var userId))
+            {
+                if (_clients.TryGetValue(userId, out var sslStream))
+                {
+                    try
+                    {
+                        var writer = new StreamWriter(sslStream) { AutoFlush = true };
+                        await writer.WriteLineAsync(jsonResponse);
+                        Console.WriteLine($"Broadcast (Create chat) for ID {userId}:\n{jsonResponse}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending broadcast to ID {userId}: {ex.Message}");
+                    }
+                }
+            }
+        }
+    }
+    
+    private async Task BroadcastMessage(int senderId, List<int> chatMemberIds, Response response)
+    {
+        string jsonResponse = JsonSerializer.Serialize(response);
+
+        foreach (var memberId in chatMemberIds) 
+        {
+            if (memberId == senderId)
+            {
+                continue;
+            }
+
+            if (_clients.TryGetValue(memberId, out var sslStream))
+            {
+                try
+                {
+                    var writer = new StreamWriter(sslStream) { AutoFlush = true };
+                    await writer.WriteLineAsync(jsonResponse);
+                    Console.WriteLine($"Broadcast (Message) for ID {memberId}:\n{jsonResponse}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending broadcast to ID {memberId}: {ex.Message}");
+                }
+            }
         }
     }
 

@@ -2,9 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:uchat"
              mc:Ignorable="d"
              x:Class="uchat.PageLogin">
 
+    <UserControl.Resources>
+        <local:PasswordToggleMarginConverter x:Key="PasswordToggleMarginConverter"/>
+    </UserControl.Resources>
+    
     <Border Background="#F1EFF5">
         <Grid ColumnDefinitions="Auto,*">
             <Grid Grid.Column="0" Width="255"> 
@@ -54,6 +59,14 @@
                                     VerticalAlignment="Center" Margin="0,0,10,5" Background="Transparent"
                                     BorderThickness="0" Foreground="#9183B0" FontSize="13" IsVisible="False" Cursor="Hand"
                                     ZIndex="1" Classes="nohover"/>
+                            <Button x:Name="PasswordToggleButton" Width="25" Height="25" HorizontalAlignment="Left" VerticalAlignment="Center" 
+                                    Margin="{Binding ElementName=PasswordTextBox, Path=Bounds.Width, Converter={StaticResource PasswordToggleMarginConverter}}"
+                                    IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover">
+                                <Grid>
+                                    <Image x:Name="VisiblePassword" Source="avares://uchat/Resources/images/eye.png" IsVisible="False" />
+                                    <Image x:Name="InvisiblePassword" Source="avares://uchat/Resources/images/no_eye.png" IsVisible="True"/>
+                                </Grid>
+                            </Button>
                         </Grid>
                         <TextBlock x:Name="PasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
                         

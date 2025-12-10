@@ -397,27 +397,24 @@ public class Client
         return response;
     }
 
-    /*public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
+    public async Task<Response?> EditMessage(int chatId, int messageId, string newContent)
     {
-        var payload = new { ChatId = chatId, MessageId = messageId };
-        var request = CreateRequest(CommandType.DeleteForMe, payload);
-        var response = await ExecuteRequest(request);
-        return response?.Status == Status.Success;
-    }
+        if (_clientId is null)
+        {
+            return null;
+        }
 
-    public async Task<bool> DeleteMessageForAllAsync(string chatId, string messageId)
-    {
-        var payload = new { ChatId = chatId, MessageId = messageId };
-        var request = CreateRequest(CommandType.DeleteForAll, payload);
+        var requestPayload = new EditMessageRequestPayload
+        {
+            ChatId = chatId,
+            UserId = (int)_clientId,
+            MessageId = messageId,
+            NewContent = newContent
+        };
+        
+        var request = CreateRequest(CommandType.EditMessage, requestPayload);
         var response = await ExecuteRequest(request);
-        return response?.Status == Status.Success;
-    } 
-    
-    public async Task<bool> EditMessageAsync(string chatId, string messageId, string newText)
-    {
-        var payload = new { ChatId = chatId, MessageId = messageId, NewText = newText };
-        var request = CreateRequest(CommandType.EditMessage, payload);
-        var response = await ExecuteRequest(request);
-        return response?.Status == Status.Success;
-    } */
+
+        return response;
+    }
 }

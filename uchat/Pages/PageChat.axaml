@@ -19,6 +19,7 @@
         <local:SentTimeConverter x:Key="SentTimeConverter"/>
         <local:BoolToMarginConverter x:Key="BoolToMarginConverter"/>
         <local:DynamicMaxWidthConverter x:Key="MaxWidthConv"/>
+        <local:MessageMarginConverter x:Key="MessageMarginConverter"/>
     </UserControl.Resources>
     
     <Grid>
@@ -72,7 +73,7 @@
             <Border Grid.Row="0" Background="{DynamicResource ProfileBackgroundBrush}" Padding="10">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
                     <Ellipse Width="45" Height="45" Fill="Gray"/>
-                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" Spacing="5">
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
                         <TextBlock Text="{Binding CurrentUserName}" FontSize="17" FontWeight="Bold" Foreground="White"/>
                         <TextBlock Text="{Binding CurrentUserUsername}" 
                                    FontSize="14" Foreground="rgba(255,255,255,0.6)"/>
@@ -81,8 +82,7 @@
             </Border>
 
             <Border Grid.Row="1" Padding="10">
-                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Grid Width="240">
+                    <Grid HorizontalAlignment="Stretch">
                         <TextBox x:Name="SearchTextBox" FontSize="16" Watermark="Search in chats..." Classes="staticBg" 
                                Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged" Padding="10,0,30,0" 
                                GotFocus="SearchTextBox_GotFocus" LostFocus="SearchTextBox_LostFocus"/>
@@ -92,7 +92,6 @@
                                 FontWeight="Bold" Cursor="Hand" Classes = "nohover"
                                 PointerPressed="ClearSearchButton_OnPointerPressed"/>
                     </Grid>
-                </StackPanel> 
             </Border>
             
             <ListBox Grid.Row="2" x:Name="ChatList" Background="{DynamicResource ChatListBackgroundBrush}" SelectionChanged="ChatList_SelectionChanged">
@@ -137,7 +136,7 @@
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastMessageTime, Converter={StaticResource SentTimeConverter}}" FontSize="12" 
                                                            Foreground="LightGray" HorizontalAlignment="Right"  VerticalAlignment="Center"/>
                                     
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding LastMessage}" FontSize="14" Margin="0,5,0,0"
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding LastMessage}" FontSize="14" Margin="0,0,0,0"
                                                Foreground="rgba(255,255,255,0.7)" TextTrimming="CharacterEllipsis"/>
                                 
                                     <Image Grid.Row="1" Grid.Column="1" Source="{Binding IsPinned, Converter={StaticResource PinnedToIconConverter}}"
@@ -157,11 +156,11 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Background="{DynamicResource ChatListBackgroundBrush}" Padding="10">
+            <Border Grid.Row="0" Background="{DynamicResource ChatListBackgroundBrush}" Padding="10, 0">
                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                     <Ellipse Grid.Column="0" x:Name="ChatAvatar" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center" 
                                             IsVisible="False"/>
-                    <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Spacing="2" Margin="10,0,0,0">
+                    <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
                         <TextBlock x:Name="ChatHeader" FontSize="20" FontWeight="Bold" Foreground="White" />
                         <TextBlock x:Name="ChatUsernameTextBlock" FontSize="15" IsVisible="False" Foreground="White" />
                     </StackPanel>
@@ -184,28 +183,24 @@
                                             Converter={StaticResource BoolToAlignment}}" 
                                             Margin="{Binding IsMine, Converter={StaticResource BoolToMarginConverter}}"
                                             VerticalAlignment="Bottom">
-                                    <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom" >
-                                        <Ellipse.Fill>
-                                            <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
-                                        </Ellipse.Fill>
-                                        <Ellipse.IsVisible>
-                                            <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
-                                                <Binding Path="IsMine"/>
-                                                <Binding Path="IsGroup"/>
-                                                <Binding Path="ShowAvatar"/>
-                                            </MultiBinding>
-                                        </Ellipse.IsVisible>
-                                    </Ellipse>
-                                    
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Sender}" Margin="10,0,0,2">
-                                            <TextBlock.IsVisible>
-                                                <MultiBinding Converter="{StaticResource GroupSenderVisibilityConverter}">
+                                    <Border Width="{Binding AvatarPlaceholderWidth}" Margin="0,0,5,0">
+                                        <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom" >
+                                            <Ellipse.Fill>
+                                                <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
+                                            </Ellipse.Fill>
+                                            <Ellipse.IsVisible>
+                                                <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
                                                     <Binding Path="IsMine"/>
                                                     <Binding Path="IsGroup"/>
+                                                    <Binding Path="ShowAvatar"/>
                                                 </MultiBinding>
-                                            </TextBlock.IsVisible>
-                                        </TextBlock>
+                                            </Ellipse.IsVisible>
+                                        </Ellipse>
+                                    </Border> 
+                                    
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Sender}" Margin="10,0,0,2" IsVisible="{Binding ShowSenderName}"
+                                                   Foreground="#888888" FontSize="12"/>
                                         
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -216,7 +211,15 @@
                                             
                                             <Polygon Grid.Column="0" Width="10" Height="10" Points="10,0 -5,7 15,10" ZIndex="0" 
                                                      Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
-                                                     VerticalAlignment="Bottom" Margin="0,0,-4,0">
+                                                     VerticalAlignment="Bottom">
+                                                <Polygon.Margin>
+                                                    <MultiBinding Converter="{StaticResource TailMarginConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                        <Binding Path="IsGroup"/>
+                                                        <Binding Path="AvatarSize" FallbackValue="40"/>
+                                                    </MultiBinding>
+                                                </Polygon.Margin>
                                                 <Polygon.IsVisible>
                                                     <MultiBinding Converter="{StaticResource TailLeftVisibilityConverter}">
                                                         <Binding Path="ShowTail"/>
@@ -230,18 +233,22 @@
 
                                             <Border Grid.Column="1" VerticalAlignment="Bottom" Background="{Binding IsMine, Converter={StaticResource BoolToBrush}}" 
                                                     CornerRadius="10" Padding="10,5" ZIndex="1">
+                                                
                                                 <Border.Margin>
-                                                    <MultiBinding Converter="{StaticResource TailMarginConverter}">
+                                                    <MultiBinding Converter="{StaticResource MessageMarginConverter}">
                                                         <Binding Path="ShowTail"/>
                                                         <Binding Path="IsMine"/>
+                                                        <Binding Path="IsGroup"/>
+                                                        <Binding Path="AvatarSize" FallbackValue="40"/>
                                                     </MultiBinding>
                                                 </Border.Margin>
+                                            
                                                 <StackPanel Orientation="Vertical" Spacing="2">
                                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                                         <Image Source="avares://uchat/Resources/images/DeletedMsg.png" Width="16" Height="16"
                                                                IsVisible="{Binding IsDeleted}"/>
                                                         <Grid MaxWidth="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, 
-                                                            Path=Bounds.Width, Converter={StaticResource MaxWidthConv}}">
+                                                            Path=Bounds.Width, Converter={StaticResource MaxWidthConv}, ConverterParameter={Binding IsMine}}">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
@@ -250,7 +257,7 @@
                                                             <TextBlock Grid.Column="0" Text="{Binding DisplayText}" TextWrapping="Wrap" LineHeight="20" Foreground="White" />
                                                             <TextBlock Grid.Column="1" Text="edited" FontSize="10" VerticalAlignment="Bottom" Foreground="LightGray" Margin="5,0,0,0" IsVisible="{Binding ShowEdited}"/>
                                                             <TextBlock Grid.Column="2" Text="{Binding SentTime, StringFormat='HH:mm'}" FontSize="10" Foreground="LightGray"
-                                                                       VerticalAlignment="Bottom" Margin="5,0,0,0"/>
+                                                                       VerticalAlignment="Bottom" Margin="5,10,0,0"/>
                                                         </Grid>
                                                     </StackPanel>
                                                 </StackPanel>
@@ -264,9 +271,17 @@
                                                 </Border.ContextMenu>
                                             </Border>
                                             
-                                            <Polygon Grid.Column="2" Width="10" Height="10" Points="-10,-5 14,7 -15,11" Margin="-4,0,0,0" 
+                                            <Polygon Grid.Column="2" Width="10" Height="10" Points="-10,-5 14,7 -15,11" 
                                                      ZIndex="0" Fill="{Binding IsMine, Converter={StaticResource BoolToBrush}}"
                                                      VerticalAlignment="Bottom">
+                                                <Polygon.Margin>
+                                                    <MultiBinding Converter="{StaticResource TailMarginConverter}">
+                                                        <Binding Path="ShowTail"/>
+                                                        <Binding Path="IsMine"/>
+                                                        <Binding Path="IsGroup"/>
+                                                        <Binding Path="AvatarSize" FallbackValue="40"/>
+                                                    </MultiBinding>
+                                                </Polygon.Margin>
                                                 <Polygon.IsVisible>
                                                     <MultiBinding Converter="{StaticResource TailRightVisibilityConverter}">
                                                         <Binding Path="ShowTail"/>
@@ -326,7 +341,7 @@
             <Border x:Name="SingleChatOverlay" Background="{DynamicResource MainBackgroundBrush}" Grid.Row="1" Grid.RowSpan="2" IsVisible="False">
                 <Grid Margin="30">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="60"/>
                         <RowDefinition Height="23"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -371,9 +386,9 @@
             </Border>
             
             <Border x:Name="GroupChatOverlay" Background="{DynamicResource MainBackgroundBrush}" Grid.Row="1" Grid.RowSpan="2" IsVisible="False">
-                <Grid Margin="30,20">
+                <Grid Margin="30">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="60"/>
                         <RowDefinition Height="23"/>
                         <RowDefinition Height="60"/>
                         <RowDefinition Height="5"/>
@@ -420,14 +435,13 @@
                                 <TextBlock Grid.Row="0" x:Name="GroupResultName" FontSize="15" Foreground="White"/>
                                 <TextBlock Grid.Row="1" x:Name="GroupResultUsername" VerticalAlignment="Center" FontSize="13" Foreground="LightGray"/>
                             </Grid>
-                            <Button Grid.Column="2" x:Name="AddMemberButton" Classes="nohover" VerticalAlignment="Center" Margin="5,0,0,0" Cursor="Hand" Click="AddMemberButton_Click">
-                                <Image Source="avares://uchat/Resources/images/add1.png" Width="28" Height="28"/>
+                            <Button Grid.Column="2" x:Name="AddMemberButton" Classes="nohover" Content="➕" FontSize="20" VerticalAlignment="Center" Margin="5,0,0,0" Cursor="Hand" Click="AddMemberButton_Click">
                             </Button>
                         </Grid>
                     </Border>
                     
-                    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
-                        <ListBox x:Name="SelectedMembersList" ItemsSource="{Binding SelectedGroupMembers}" Height="280"
+                    
+                        <ListBox x:Name="SelectedMembersList" Grid.Row="4" ItemsSource="{Binding SelectedGroupMembers}" MinHeight="240" Padding="5"
                                  Background="{DynamicResource ChatListBackgroundBrush}" CornerRadius="10" BorderBrush="Transparent" Margin="0,15,0,15">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
@@ -441,15 +455,14 @@
                                             <TextBlock Text="{Binding Name}" Grid.Row="0" FontSize="15" Foreground="White"/>
                                             <TextBlock Text="{Binding Username}" Grid.Row="1" VerticalAlignment="Center" FontSize="13" Foreground="LightGray"/>
                                         </Grid>
-                                        <Button Grid.Column="2" x:Name="RemoveMemberButton" Classes="nohover" VerticalAlignment="Center" Margin="5,0,0,0" Cursor="Hand" Click="RemoveMemberButton_Click">
-                                            <Image Source="avares://uchat/Resources/images/removee.png" Width="23" Height="23"/>
+                                        <Button Grid.Column="2" x:Name="RemoveMemberButton" Classes="nohover" Content="✖" Foreground="DarkSlateBlue" FontSize="17" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0,0,0" Cursor="Hand" Click="RemoveMemberButton_Click">
                                         </Button>
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                    </ScrollViewer>
-                    <Grid Grid.Row ="5">
+
+                  <Grid Grid.Row ="5">
                     <TextBox x:Name="GroupNameBox" Watermark="Enter chat name" FontSize="18" Padding="10,0,30,0" Classes="staticBg"
                              HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="GroupNameBox_OnTextChanged"/>
                     <Button x:Name="ClearGroupNameBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 

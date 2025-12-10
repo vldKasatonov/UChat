@@ -5,11 +5,11 @@ namespace uchat;
 
 public class DynamicMaxWidthConverter : IValueConverter
 {
-    private const double NarrowThreshold = 750;
+    private const double NarrowThreshold = 770;
     private const double MediumThreshold = 1100;
     private const double NarrowMaxWidth = 300;
-    private const double MediumMaxWidth = 600;
-    private const double WideMaxWidth = 700;
+    private const double MediumMaxWidth = 450;
+    private const double WideMaxWidth = 600;
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
