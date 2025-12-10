@@ -15,6 +15,10 @@ public partial class PageLogin : UserControl
     private Button? _passwordClearButton;
     private TextBox? _usernameTextBox;
     private TextBox? _passwordTextBox;
+    private Button? _passwordToggleButton;
+    private Image? _visiblePasswordImage;
+    private Image? _invisiblePasswordImage;
+    private bool _isPasswordVisible = false;
 
     public PageLogin()
     {
@@ -68,6 +72,10 @@ public partial class PageLogin : UserControl
         _usernameClearButton = this.FindControl<Button>("UsernameClearButton");
         _passwordClearButton = this.FindControl<Button>("PasswordClearButton");
         
+        _passwordToggleButton = this.FindControl<Button>("PasswordToggleButton");
+        _visiblePasswordImage = _passwordToggleButton?.FindControl<Image>("VisiblePassword");
+        _invisiblePasswordImage = _passwordToggleButton?.FindControl<Image>("InvisiblePassword");
+        
         if (_usernameTextBox != null && _usernameClearButton != null)
         {
             _usernameClearButton.Click += (s, e) =>
@@ -83,7 +91,7 @@ public partial class PageLogin : UserControl
                 });
         }
         
-        if (_passwordTextBox != null && _passwordClearButton != null)
+        if (_passwordTextBox != null && _passwordClearButton != null && _passwordToggleButton != null)
         {
             _passwordClearButton.Click += (s, e) =>
             {
@@ -96,6 +104,28 @@ public partial class PageLogin : UserControl
                 {
                     _passwordClearButton.IsVisible = !string.IsNullOrEmpty(text);
                 });
+            
+            _passwordToggleButton.Click += (_, _) =>
+            {
+                if (_isPasswordVisible)
+                {
+                    _passwordTextBox.PasswordChar = '•';
+                    _passwordTextBox.FontSize = 30;
+                    _visiblePasswordImage!.IsVisible = false;
+                    _invisiblePasswordImage!.IsVisible = true;
+                }
+                else
+                {
+                    _passwordTextBox.PasswordChar = '\0';
+                    _passwordTextBox.FontSize = 20;
+                    _visiblePasswordImage!.IsVisible = true;
+                    _invisiblePasswordImage!.IsVisible = false;
+                }
+                _isPasswordVisible = !_isPasswordVisible;
+            };
+                
+            _passwordTextBox.GetObservable(TextBox.TextProperty)
+                .Subscribe(text => _passwordToggleButton.IsVisible = !string.IsNullOrEmpty(text));
         }
     }
     

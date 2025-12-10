@@ -82,8 +82,7 @@
             </Border>
 
             <Border Grid.Row="1" Padding="10">
-                 <StackPanel Orientation="Horizontal" Spacing="5">
-                    <Grid Width="240">
+                    <Grid HorizontalAlignment="Stretch">
                         <TextBox x:Name="SearchTextBox" FontSize="16" Watermark="Search in chats..." Classes="staticBg" 
                                Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged" Padding="10,0,30,0" 
                                GotFocus="SearchTextBox_GotFocus" LostFocus="SearchTextBox_LostFocus"/>
@@ -93,7 +92,6 @@
                                 FontWeight="Bold" Cursor="Hand" Classes = "nohover"
                                 PointerPressed="ClearSearchButton_OnPointerPressed"/>
                     </Grid>
-                </StackPanel> 
             </Border>
             
             <ListBox Grid.Row="2" x:Name="ChatList" Background="{DynamicResource ChatListBackgroundBrush}" SelectionChanged="ChatList_SelectionChanged">
@@ -250,7 +248,7 @@
                                                         <Image Source="avares://uchat/Resources/images/DeletedMsg.png" Width="16" Height="16"
                                                                IsVisible="{Binding IsDeleted}"/>
                                                         <Grid MaxWidth="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, 
-                                                            Path=Bounds.Width, Converter={StaticResource MaxWidthConv}}">
+                                                            Path=Bounds.Width, Converter={StaticResource MaxWidthConv}, ConverterParameter={Binding IsMine}}">
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>
                                                                 <ColumnDefinition Width="Auto"/>
