@@ -71,14 +71,6 @@ public class UchatDbContext : DbContext
             entity.Property(c => c.CreatedAt)
                 .HasColumnName("created_at")
                 .HasDefaultValueSql("NOW()");
-            
-            entity.Property(c => c.IsChatPinned)
-                .HasColumnName("is_chat_pinned")
-                .HasDefaultValue(false);
-
-            entity.Property(c => c.PinnedAt)
-                .HasColumnName("pinned_at")
-                .HasDefaultValueSql(null);
         });
 
         modelBuilder.Entity<ChatMember>(entity =>
