@@ -772,6 +772,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 string? senderName = contact.IsGroup ? msgToDisplay.Sender : null;
                 contact.NotifyLastMessageChanged(msgToDisplay.Text, msgToDisplay.SentTime, senderName);
                 ComputeGroupingFlags(contact.Messages);
+                SortChats();
             }
         }
         else
