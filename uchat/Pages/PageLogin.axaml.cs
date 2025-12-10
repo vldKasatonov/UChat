@@ -170,8 +170,12 @@ public partial class PageLogin : UserControl
         {
             return;
         }
-
-        var response = await _client.Login(usernameBox.Text!, passwordBox.Text!);
+        string normalizedUsername = usernameBox.Text!.Trim();
+        if (normalizedUsername.StartsWith("@"))
+        {
+            normalizedUsername = normalizedUsername[1..];
+        }
+        var response = await _client.Login(normalizedUsername, passwordBox.Text!);
 
         if (response is null)
         {
