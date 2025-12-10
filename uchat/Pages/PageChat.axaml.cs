@@ -1344,34 +1344,28 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (ChatList.SelectedItem is not ChatItem chat)
             return;
+        
+        var messageToDelete = msg;
+        
+        var response = await _client.DeleteMessage(messageToDelete.Id, chat.ChatId);
 
-        msg.IsDeleted = true; 
+        if (response != null && response.Status == Status.Success)
+        {
+            messageToDelete.IsDeleted = true;
+            
+            int index = chat.Messages.IndexOf(messageToDelete);
+            if (index >= 0)
+            {
+                ComputeFlagsAtIndex(chat.Messages, index);
+                if (index > 0) ComputeFlagsAtIndex(chat.Messages, index - 1);
+                if (index < chat.Messages.Count - 1) ComputeFlagsAtIndex(chat.Messages, index + 1);
+            }
 
-        // var response = await _client.DeleteMessage(msg.Id, chat.ChatId);
-
-        // if (chat.Messages.LastOrDefault() == msg)
-        // {
-        //     chat.NotifyLastMessageChanged("[message deleted]", DateTime.Now);
-        // }
-
-        // if (response != null && response.Status == Status.Success)
-        // {
-        //     msg.IsDeleted = true; 
-
-        //     int index = chat.Messages.IndexOf(msg);
-        //     if (index >= 0) {
-        //         ComputeFlagsAtIndex(chat.Messages, index);
-
-        //         if (index > 0)
-        //         {
-        //             ComputeFlagsAtIndex(chat.Messages, index - 1);
-        //         }
-        //         if (index < chat.Messages.Count - 1)
-        //         {
-        //             ComputeFlagsAtIndex(chat.Messages, index + 1);
-        //         }
-        //     }
-        // }
+            if (chat.Messages.LastOrDefault() == messageToDelete)
+            {
+                chat.NotifyLastMessageChanged("[Message deleted]", messageToDelete.SentTime);
+            }
+        }
     }
 
     private void MessageTextBox_SendWithEnter(object? sender, KeyEventArgs e)
@@ -1739,7 +1733,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
             case CommandType.DeleteForAll:
             {
-                var deletePayload = response.Payload.Deserialize<DeleteMessageResponsePayload>();
+                var deletePayload = response.Payload.Deserialize<TextMessageResponsePayload>();
                 
                 if (deletePayload is null) 
                 {
@@ -1757,17 +1751,11 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                         msg.IsDeleted = true; 
 
                         int index = chat.Messages.IndexOf(msg);
-                        if (index >= 0) {
+                        if (index >= 0)
+                        {
                             ComputeFlagsAtIndex(chat.Messages, index);
-
-                            if (index > 0)
-                            {
-                                ComputeFlagsAtIndex(chat.Messages, index - 1);
-                            }
-                            if (index < chat.Messages.Count - 1)
-                            {
-                                ComputeFlagsAtIndex(chat.Messages, index + 1);
-                            }
+                            if (index > 0) ComputeFlagsAtIndex(chat.Messages, index - 1);
+                            if (index < chat.Messages.Count - 1) ComputeFlagsAtIndex(chat.Messages, index + 1);
                         }
 
                         if (chat.Messages.LastOrDefault() == msg)

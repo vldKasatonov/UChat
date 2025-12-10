@@ -384,15 +384,16 @@ public class Client
             return null;
         }
         
-        var deleteMessageReqPayload = new DeleteMessageRequestPayload
+        var requestPayload = new DeleteMessageRequestPayload
         {
-            MessageId = messageId,
-            UserId = (int)_clientId!,  
-            ChatId = chatId
+            ChatId = chatId,
+            UserId = (int)_clientId,
+            MessageId = messageId
         };
 
-        var deleteMessageRequest = CreateRequest(CommandType.DeleteForAll, deleteMessageReqPayload);
-        var response = await ExecuteRequest(deleteMessageRequest);
+        var request = CreateRequest(CommandType.DeleteForAll, requestPayload);
+        var response = await ExecuteRequest(request);
+
         return response;
     }
 
