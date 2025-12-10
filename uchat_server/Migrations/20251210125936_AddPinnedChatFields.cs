@@ -6,28 +6,21 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace uchat_server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCreatedAtAndPinnedChatFields : Migration
+    public partial class AddPinnedChatFields : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "created_at",
-                table: "chats",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValueSql: "NOW()");
-
             migrationBuilder.AddColumn<bool>(
                 name: "is_chat_pinned",
-                table: "chats",
+                table: "chat_members",
                 type: "boolean",
                 nullable: false,
                 defaultValue: false);
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "pinned_at",
-                table: "chats",
+                table: "chat_members",
                 type: "timestamp with time zone",
                 nullable: true);
         }
@@ -36,16 +29,12 @@ namespace uchat_server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "created_at",
-                table: "chats");
-
-            migrationBuilder.DropColumn(
                 name: "is_chat_pinned",
-                table: "chats");
+                table: "chat_members");
 
             migrationBuilder.DropColumn(
                 name: "pinned_at",
-                table: "chats");
+                table: "chat_members");
         }
     }
 }
