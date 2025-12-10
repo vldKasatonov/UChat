@@ -1629,6 +1629,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     
     private void LogOutButton_Click(object? sender, RoutedEventArgs e)
     {
+        _client.ClearInfo();
         var main = this.GetVisualRoot() as MainWindow;
         if (main != null)
         {
@@ -1666,7 +1667,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             });
         }
         
-        chatItem.NotifyLastMessageChanged(chat.LastMessage, chat.LastMessageTime.ToLocalTime());
+        string? senderName = chat.IsGroup ? chat.LastMessageUsername : null;
+        chatItem.NotifyLastMessageChanged(chat.LastMessage, chat.LastMessageTime.ToLocalTime(), senderName);
     
         return chatItem;
     }
@@ -1890,7 +1892,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                     chat.Messages.Add(newMessage);
                     ComputeGroupingFlags(chat.Messages);
-                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime, chat.IsGroup ? newMessage.Sender : null);
+                    string? senderName = chat.IsGroup ? newMessage.Sender : null;
+                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime, senderName);
                     SortChats();
 
                     if (_currentChat == chat)
@@ -1930,7 +1933,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                         if (chat.Messages.LastOrDefault() == msg)
                         {
-                            chat.NotifyLastMessageChanged(msg.DisplayText, msg.SentTime);
+                            string? senderName = chat.IsGroup ? msg.Sender : null;
+                            chat.NotifyLastMessageChanged("[Message deleted]", msg.SentTime, senderName);
                         }
                     }
                 }
@@ -1968,7 +1972,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                         if (chat.Messages.LastOrDefault() == messageToEdit)
                         {
-                            chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime, chat.IsGroup ? messageToEdit.Sender : null);
+                            string? senderName = chat.IsGroup ? messageToEdit.Sender : null;
+                            chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime, senderName);
                         }
                     }
                 }

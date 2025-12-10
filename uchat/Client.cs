@@ -42,6 +42,13 @@ public class Client
         return _clientNickname ?? "";
     }
 
+    public void ClearInfo()
+    {
+        _clientId = null;
+        _clientUsername = null;
+        _clientNickname = null;
+    }
+
     public async Task ConnectToServer()
     {
         while (!_connected)
@@ -426,6 +433,7 @@ public class Client
         var requestPayload = new UpdatePinStatusRequestPayload
         {
             ChatId = chatId,
+            UserId = (int)_clientId,
             IsChatPinned = isPinned
         };
 
