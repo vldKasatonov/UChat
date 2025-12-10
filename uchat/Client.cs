@@ -356,7 +356,7 @@ public class Client
         return await ExecuteRequest(request);
     }
     
-    public async Task<Response?> GetChatHistory(int chatId, int firstLoadedMessageId, int limit = 50)
+    public async Task<Response?> GetChatHistory(int chatId, int firstLoadedMessageId, int limit = 150)
     {
         if (_clientId is null)
         {
