@@ -114,6 +114,7 @@
                                 <ContextMenu>
                                     <MenuItem Header="{Binding IsPinned, Converter={StaticResource PinMenuTextConverter}}" 
                                               Click="TogglePinChat_Click"/>
+                                    <MenuItem Header="Delete/Leave chat" Click="LeaveChat_Click"/>
                                 </ContextMenu>
                             </Grid.ContextMenu>
                             

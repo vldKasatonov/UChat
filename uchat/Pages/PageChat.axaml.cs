@@ -24,11 +24,11 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private ChatItem? _selectedChatBeforeSearch;
     private bool _isUpdatingFilteredChats;
     private ChatItem? _currentChat;
-    private static long _pinSequence;
     private bool _isLight;
     private bool _isMembersPanelOpen;
     private bool _showToggleMembersButton;
     private Message? _editingMessage;
+    private Window? _currentModalDialog;
     
     private bool _isReconnecting;
     public bool IsReconnecting
@@ -118,6 +118,18 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
+                var dialogToClose = _currentModalDialog;
+                
+                if (dialogToClose != null)
+                {
+                    try
+                    {
+                        _currentModalDialog = null;
+                        dialogToClose.Close();
+                    }
+                    catch (Exception) { /**/ }
+                }
+
                 IsReconnecting = true;
             });
         };
@@ -224,11 +236,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageSender)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageDisplay)));
         }
-        
-        private string _draft = "";
-        private bool _isPinned = false;
-        public long PinOrder { get; set; }
 
+        public DateTime? PinnedAt { get; set; }
+        private bool _isPinned;
         public bool IsPinned
         {
             get => _isPinned;
@@ -244,6 +254,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
         public string PinMenuText => IsPinned ? "Unpin chat" : "Pin chat";
 
+        private string _draft = "";
         public string Draft
         {
             get => _draft;
@@ -293,20 +304,15 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         
         var currentlySelectedChat = ChatList.SelectedItem as ChatItem;
 
-        var pinnedChats = Chats
-            .Where(chat => chat.IsPinned)
-            .OrderByDescending(chat => chat.PinOrder)  
-            .ToList();
-
-        var unpinnedChats = Chats
-            .Where(chat => !chat.IsPinned)
+        var sortedChats = Chats
+            .OrderByDescending(chat => chat.IsPinned)
+            .ThenByDescending(chat => chat.PinnedAt)
+            .ThenByDescending(chat => chat.LastMessageTime)
             .ToList();
 
         FilteredChats.Clear();
 
-        foreach (var chat in pinnedChats)
-            FilteredChats.Add(chat);
-        foreach (var chat in unpinnedChats)
+        foreach (var chat in sortedChats)
             FilteredChats.Add(chat);
 
         _isUpdatingFilteredChats = false;
@@ -380,12 +386,14 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         var pinnedChats = Chats
             .Where(chat => chat.IsPinned &&
                            (string.IsNullOrEmpty(text) || chat.Name.ToLower().Contains(text)))
-            .OrderByDescending(chat => chat.PinOrder)
+            .OrderByDescending(chat => chat.PinnedAt)
+            .ThenByDescending(chat => chat.LastMessageTime)
             .ToList();
 
         var unpinnedChats = Chats
             .Where(chat => !chat.IsPinned &&
                            (string.IsNullOrEmpty(text) || chat.Name.ToLower().Contains(text)))
+            .OrderByDescending(chat => chat.LastMessageTime)
             .ToList();
 
         foreach (var chat in pinnedChats)
@@ -493,26 +501,101 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         SearchTextBox.Focus();
     }
 
-    private void TogglePinChat_Click(object sender, RoutedEventArgs e)
+    private async void TogglePinChat_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not ChatItem chat)
             return;
         
-        chat.IsPinned = !chat.IsPinned;
+        var newPinStatus = !chat.IsPinned;
 
-        if (chat.IsPinned)
-            chat.PinOrder = ++_pinSequence;  
-        else
-            chat.PinOrder = 0;
+        var response = await _client.UpdateChatPinStatus(chat.ChatId, newPinStatus);
 
-        SortChats();
+        if (response != null && response.Status == Status.Success)
+        {
+            var pinPayload = response.Payload.Deserialize<UpdatePinStatusRequestPayload>();
 
-        if (!string.IsNullOrEmpty(SearchTextBox.Text))
-            ApplyFilter(SearchTextBox.Text);
-        
+            if (pinPayload != null)
+            {
+                chat.IsPinned = pinPayload.IsChatPinned;
+                chat.PinnedAt = pinPayload.IsChatPinned ? DateTime.UtcNow : null;
+            
+                SortChats();
+
+                if (!string.IsNullOrEmpty(SearchTextBox.Text))
+                    ApplyFilter(SearchTextBox.Text);
+            }
+        }
     }
-    
-    
+
+    private async void LeaveChat_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menu || menu.DataContext is not ChatItem chat)
+            return;
+
+        var confirmation =
+            await ShowConfirmationDialog("Are you sure you want to delete chat?", "Confirm Action");
+
+        if (!confirmation) 
+        {
+            return; 
+        }
+
+        var response = await _client.LeaveChat(chat.ChatId);
+
+        if (response != null && response.Status == Status.Success)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                Chats.Remove(chat);
+                FilteredChats.Remove(chat);
+
+                if (_currentChat == chat)
+                {
+                    ClearChatView();
+                    _currentChat = null;
+                }
+            });
+        }
+        else
+        {
+            await ShowConfirmationDialog("Failed to perform the operation. Please try again later.", "Error");
+        }
+    }
+
+    private async Task<bool> ShowConfirmationDialog(string message, string title)
+    {
+        var owner = this.GetVisualRoot() as Window;
+        if (owner == null)
+            return false;
+
+        var content = new ConfirmationDialog(); 
+        content.Message = message; 
+
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 400,
+            Height = 150,
+            CanResize = false,
+            SystemDecorations = SystemDecorations.None,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Topmost = false,
+            Content = content
+        };
+        
+        _currentModalDialog = dialog;
+
+        var result = await dialog.ShowDialog<bool>(owner);
+
+        if (_currentModalDialog == dialog)
+        {
+            _currentModalDialog = null; 
+        }
+
+        return result;
+    }
+
     private void MessagesPanel_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
         Dispatcher.UIThread.Post(() =>
@@ -1560,6 +1643,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     
     private void LogOutButton_Click(object? sender, RoutedEventArgs e)
     {
+        _client.ClearInfo();
         var main = this.GetVisualRoot() as MainWindow;
         if (main != null)
         {
@@ -1582,7 +1666,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             Username = chat.Username,
             IsGroup = chat.IsGroup,
             Members = new ObservableCollection<User>(),
-            Messages = new ObservableCollection<Message>() 
+            Messages = new ObservableCollection<Message>(),
+            IsPinned = chat.IsChatPinned,
+            PinnedAt = chat.PinnedAt
         };
         
         foreach (var member in chat.Members)
@@ -1595,7 +1681,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             });
         }
         
-        chatItem.NotifyLastMessageChanged(chat.LastMessage, chat.LastMessageTime.ToLocalTime());
+        string? senderName = chat.IsGroup ? chat.LastMessageUsername : null;
+        chatItem.NotifyLastMessageChanged(chat.LastMessage, chat.LastMessageTime.ToLocalTime(), senderName);
     
         return chatItem;
     }
@@ -1747,6 +1834,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     chat.IsGroup = chatPayload.IsGroup;
                     chat.ChatId = chatPayload.ChatId;
                     chat.Members = new ObservableCollection<User>();
+                    chat.IsPinned = false; 
+                    chat.PinnedAt = null;
 
                     foreach (var member in chatPayload.Members)
                     {
@@ -1784,13 +1873,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     }
 
                     Chats.Add(chat);
-
-                    if (!_isApplyingFilter)
-                    {
-                        FilteredChats.Add(chat);
-                    }
-
                     chat.NotifyLastMessageChanged("[No messages]",chatPayload.CreatedAt.ToLocalTime());
+                    SortChats();
                 }
 
                 break;
@@ -1822,7 +1906,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                     chat.Messages.Add(newMessage);
                     ComputeGroupingFlags(chat.Messages);
-                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime, chat.IsGroup ? newMessage.Sender : null);
+                    string? senderName = chat.IsGroup ? newMessage.Sender : null;
+                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime, senderName);
+                    SortChats();
 
                     if (_currentChat == chat)
                     {
@@ -1861,7 +1947,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                         if (chat.Messages.LastOrDefault() == msg)
                         {
-                            chat.NotifyLastMessageChanged(msg.DisplayText, msg.SentTime);
+                            string? senderName = chat.IsGroup ? msg.Sender : null;
+                            chat.NotifyLastMessageChanged("[Message deleted]", msg.SentTime, senderName);
                         }
                     }
                 }
@@ -1899,11 +1986,55 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                         if (chat.Messages.LastOrDefault() == messageToEdit)
                         {
-                            chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime, chat.IsGroup ? messageToEdit.Sender : null);
+                            string? senderName = chat.IsGroup ? messageToEdit.Sender : null;
+                            chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime, senderName);
                         }
                     }
                 }
                 
+                break;
+            }
+            case CommandType.LeaveChat:
+            {
+                var deletePayload = response.Payload.Deserialize<LeaveChatResponsePayload>();
+
+                if (deletePayload != null) 
+                {
+                    var chat = Chats.FirstOrDefault(c => c.ChatId == deletePayload.ChatId);
+
+                    if (chat != null)
+                    {
+                        if (chat.IsGroup)
+                        {
+                            if (!deletePayload.ChatDeleted)
+                            {
+                                var memberToRemove = chat.Members.FirstOrDefault(m => m.Id == deletePayload.UserId);
+                                if (memberToRemove != null)
+                                {
+                                    chat.Members.Remove(memberToRemove);
+                                    chat.Username = $"{deletePayload.UsersId.Count} members";
+                                }
+
+                                if (_currentChat == chat)
+                                {
+                                    GroupMembersList.ItemsSource = null;
+                                    GroupMembersList.ItemsSource = chat.Members;
+                                    ChatUsernameTextBlock.Text = chat.Username;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Chats.Remove(chat);
+                            FilteredChats.Remove(chat);
+                            if (_currentChat == chat)
+                            {
+                                ClearChatView();
+                            }
+                        }
+                    }
+                }
+
                 break;
             }
         }

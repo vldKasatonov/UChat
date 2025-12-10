@@ -5,14 +5,15 @@ public enum CommandType
     Login,
     Register,
     SendMessage,
-    DeleteForMe,
     DeleteForAll,
     Reconnect,
     EditMessage,
     CreateChat,
     SearchUser,
     GetChats,
-    GetHistory
+    GetHistory,
+    UpdatePinStatus,
+    LeaveChat
 }
 
 public enum Status

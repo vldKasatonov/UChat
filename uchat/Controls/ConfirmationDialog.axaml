@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="uchat.ConfirmationDialog"
+             Width="400" Height="150">
+    <Border BorderBrush="MediumPurple" BorderThickness="3" Padding="20" Background="{DynamicResource DialogBackgroundColorBrush}">
+        <StackPanel Spacing="30" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock x:Name="MessageText" 
+                       Text="{Binding Message}" 
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DialogTextColorBrush}"
+                       HorizontalAlignment="Center" 
+                       FontSize="20"
+                       Margin="0,10,0,0"/>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="40">
+                <Border BorderBrush="Brown" BorderThickness="3" CornerRadius="15"
+                        Width="105" Height="45" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Padding="2">
+                    <Button x:Name="ConfirmButton" 
+                            Content="Delete"
+                            Width="100" Height="40" Background="Transparent" 
+                            FontSize="20"  Foreground="Brown" FontWeight="SemiBold"
+                            Classes="submitBtn"/>
+                </Border>
+                
+                <Button x:Name="CancelButton" 
+                        Content="Cancel" 
+                        Width="105" Height="45" FontSize="20"
+                        Background="MediumPurple"
+                        Foreground="White"
+                        Classes="submitBtn"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>
