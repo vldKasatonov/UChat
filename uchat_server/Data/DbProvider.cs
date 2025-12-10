@@ -247,16 +247,22 @@ public class DbProvider
         var userChatsQuery = from cm in dbContext.ChatMembers
                              where cm.UserId == userId
                              join chat in dbContext.Chats on cm.ChatId equals chat.Id
-                             select chat.Id;
+                             select new
+                             {
+                                 ChatId = chat.Id,
+                                 chat.IsGroup, chat.Name, chat.CreatedAt,
+                                 //IsChatPinned = cm.IsChatPinned, PinnedAt = cm.PinnedAt
+                             };
 
-        var userChatIds = await userChatsQuery.ToListAsync();
+        var userChatData = await userChatsQuery.ToListAsync();
+        var userChatIds = userChatData.Select(x => x.ChatId).ToList();
 
         if (!userChatIds.Any())
         {
             return new List<Chats>();
         }
 
-        var chatData = await dbContext.Chats
+        var chatDetailsQuery = dbContext.Chats
             .Where(c => userChatIds.Contains(c.Id))
             .Select(c => new 
             {
@@ -266,8 +272,9 @@ public class DbProvider
                     .OrderByDescending(m => m.SentAt)
                     .Select(m => new { m.Id, m.SentAt, m.SenderId, m.IsDeleted })
                     .FirstOrDefault()
-            })
-            .ToListAsync();
+            });
+        
+        var chatData = await chatDetailsQuery.ToListAsync();
 
         var lastMessageIds = chatData
             .Where(x => x.LastMessage != null && !x.LastMessage.IsDeleted)
@@ -295,6 +302,8 @@ public class DbProvider
 
         var membersByChatId = allMembers.GroupBy(x => x.ChatId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.Member).ToList());
+        
+        var chatMetadata = userChatData.ToDictionary(x => x.ChatId);
 
         var chatsList = new List<Chats>();
 
@@ -306,6 +315,11 @@ public class DbProvider
             if (!membersByChatId.TryGetValue(item.Chat.Id, out List<ChatMemberResponse>? chatMembers))
             {
                 chatMembers = new List<ChatMemberResponse>();
+            }
+
+            if (!chatMetadata.TryGetValue(item.Chat.Id, out var metadata))
+            {
+                continue;
             }
             
             if (item.Chat.IsGroup)
@@ -341,7 +355,9 @@ public class DbProvider
                 IsGroup = item.Chat.IsGroup,
                 Members = chatMembers,
                 LastMessage = lastMessageContent,
-                LastMessageTime = lastMessageTime
+                LastMessageTime = lastMessageTime,
+                //IsChatPinned = metadata.IsChatPinned,
+                //PinnedAt = metadata.PinnedAt
             });
         }
 
@@ -473,5 +489,24 @@ public class DbProvider
             IsEdited = message.IsEdited,
             IsDeleted = message.IsDeleted
         };
+    }
+    
+    public async Task<bool> UpdateChatPinStatusAsync(int userId, int chatId, bool isPinned)
+    {
+        await using var dbContext = CreateDbContext();
+
+        var chat = await dbContext.ChatMembers
+            .FirstOrDefaultAsync(cm => cm.UserId == userId && cm.ChatId == chatId);
+
+        if (chat == null)
+        {
+            return false;
+        }
+
+        //chatMember.IsChatPinned = isPinned;
+        //chatMember.PinnedAt = isPinned ? DateTime.UtcNow : null;
+        await dbContext.SaveChangesAsync();
+
+        return true;
     }
 }

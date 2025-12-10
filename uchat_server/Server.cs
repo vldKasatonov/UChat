@@ -185,6 +185,9 @@ public class Server
                 case CommandType.EditMessage:
                     var editReqPayload = request.Payload.Deserialize<EditMessageRequestPayload>();
                     return await HandleEditMessage(editReqPayload);
+                case CommandType.UpdatePinStatus:
+                    var pinReqPayload = request.Payload.Deserialize<UpdatePinStatusRequestPayload>();
+                    return await HandleUpdatePinStatus(pinReqPayload);
             }
         }
         catch (Exception)
@@ -785,6 +788,54 @@ public class Server
             {
                 Status = Status.Error,
                 Type = CommandType.EditMessage
+            };
+        }
+    }
+
+    private async Task<Response> HandleUpdatePinStatus(UpdatePinStatusRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.UpdatePinStatus
+            };
+        }
+
+        try
+        {
+            bool success = await _dbProvider.UpdateChatPinStatusAsync(
+                requestPayload.UserId, requestPayload.ChatId, requestPayload.IsChatPinned);
+
+            if (success)
+            {
+                return new Response
+                {
+                    Status = Status.Success,
+                    Type = CommandType.UpdatePinStatus,
+                    Payload = JsonSerializer.SerializeToNode(requestPayload)?.AsObject()
+                };
+            }
+
+            var errorPayload = new ErrorPayload { Message = "Chat not found." };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.UpdatePinStatus,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            var errorPayload = new ErrorPayload { Message = "Server error updating pin status." };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.UpdatePinStatus,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
             };
         }
     }
