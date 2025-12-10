@@ -5,8 +5,8 @@
 
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
-            <Color x:Key="MainBackground">#F1EFF5</Color>
-            <Color x:Key="LeftSideBarBackground">#F1EFF5</Color>
+            <Color x:Key="MainBackground">#EBE2FC</Color>
+            <Color x:Key="LeftSideBarBackground">#EBE2FC</Color>
             <Color x:Key="ChatListBackground">#45335D</Color>
             <Color x:Key="ProfileBackground">#705595</Color>
             <Color x:Key="SelectedChatBackground">#705595</Color>
@@ -14,7 +14,8 @@
             <Color x:Key="CaretColor">Black</Color>
             <Color x:Key="TextBoxBorder">#B0B0B0</Color>
             <Color x:Key="TextBoxBorderHover">#7A7A7A</Color>
-            <Color x:Key="TextBoxBorderFocus">#5B3DA6</Color>
+            <Color x:Key="TextBoxBorderFocus">#705595</Color>
+            <Color x:Key="TypeMessageBoxBackground">#45335D</Color>
             <Color x:Key="DialogBackgroundColor">#FFFFFFFF</Color>
             <Color x:Key="DialogTextColor">#FF000000</Color>
         </ResourceDictionary>
@@ -29,7 +30,8 @@
             <Color x:Key="CaretColor">White</Color>
             <Color x:Key="TextBoxBorder">#555555</Color>
             <Color x:Key="TextBoxBorderHover">#888888</Color>
-            <Color x:Key="TextBoxBorderFocus">#A88BFF</Color>
+            <Color x:Key="TextBoxBorderFocus">#4A386B</Color>
+            <Color x:Key="TypeMessageBoxBackground">#34274C</Color>
             <Color x:Key="DialogBackgroundColor">#FF2B2B2B</Color>
             <Color x:Key="DialogTextColor">#FFFFFFFF</Color>
         </ResourceDictionary>

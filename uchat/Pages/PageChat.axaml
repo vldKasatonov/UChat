@@ -327,7 +327,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="MessageTextBox" FontSize="18" Watermark="Type a message..." Padding="10,5,60,5" Classes="staticBg" Background="White"
+                <TextBox x:Name="MessageTextBox" FontSize="18" Watermark="Type a message..." Padding="10,5,60,5" Classes="staticBg" Background="{DynamicResource TypeMessageBoxBackground}"
                          TextWrapping="Wrap" Text="{Binding ChatList.SelectedItem.Draft, Mode=TwoWay}" AcceptsReturn="False"
                          VerticalContentAlignment="Center" MinHeight="50" MaxHeight="120" TextChanged="MessageTextBox_OnTextChanged" KeyDown="MessageTextBox_SendWithEnter"/>
                 <Image Source="avares://uchat/Resources/images/send.png"
@@ -362,8 +362,10 @@
                                     Click="ClearSearchUserBoxButton_Click"/>
                             <Button Grid.Column="1" x:Name="SearchButton" FontSize="18" Margin="5,0,0,0" Foreground="White" Classes="nohover"
                                     HorizontalAlignment="Right" BorderThickness="0" Click="SearchButton_Click">
-                                <Image Source="avares://uchat/Resources/images/search.png"
-                                       Width="30" Height="30" />
+                                <Grid>
+                                    <Image x:Name="SearchDark" Source="avares://uchat/Resources/images/SearchLight.png" Height="40" Width="40"/>
+                                    <Image x:Name="SearchLight" Source="avares://uchat/Resources/images/SearchDark.png" Height="40" Width="40"/>
+                                </Grid>
                             </Button>
                         </Grid>
                     </Grid>
@@ -414,8 +416,10 @@
                                     Click="ClearGroupSearchBoxButton_Click"/>
                             <Button Grid.Column="1" x:Name="GroupSearchButton" FontSize="18" Margin="5,0,0,0" Foreground="White"
                                     HorizontalAlignment="Right" Classes="nohover" BorderThickness="0" Click="GroupSearchButton_Click">
-                                <Image Source="avares://uchat/Resources/images/search.png"
-                                       Width="30" Height="30" />
+                                <Grid>
+                                    <Image x:Name="GroupSearchLight" Source="avares://uchat/Resources/images/SearchDark.png" Height="40" Width="40"/>
+                                    <Image x:Name="GroupSearchDark" Source="avares://uchat/Resources/images/SearchLight.png" Height="40" Width="40"/>
+                                </Grid>
                             </Button>
                         </Grid>
                     </Grid>

@@ -92,6 +92,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         UpdateSingleChatThemeIcon();
         UpdateGroupChatThemeIcon();
         UpdateModeThemeIcon();
+        UpdateSearchThemeIcon();
+        UpdateGroupSearchThemeIcon();
     }
     
     public PageChat(Client client) : this()
@@ -1448,10 +1450,22 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         GroupChatDark.IsVisible = _isLight;
     }
     
+    private void UpdateSearchThemeIcon()
+    {
+        SearchLight.IsVisible = !_isLight;
+        SearchDark.IsVisible = _isLight;
+    }
+    
     private void UpdateModeThemeIcon()
     {
         ModeLight.IsVisible = !_isLight;
         ModeDark.IsVisible = _isLight;
+    } 
+    
+    private void UpdateGroupSearchThemeIcon()
+    {
+        GroupSearchLight.IsVisible = !_isLight;
+        GroupSearchDark.IsVisible = _isLight;
     }
 
     private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
@@ -1462,6 +1476,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         UpdateSingleChatThemeIcon();
         UpdateGroupChatThemeIcon();
         UpdateModeThemeIcon();
+        UpdateSearchThemeIcon();
+        UpdateGroupSearchThemeIcon();
     }
 
     //message grouping
