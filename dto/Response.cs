@@ -157,6 +157,12 @@ public class Chats
     
     [JsonPropertyName("last_message_time")]
     public DateTime LastMessageTime { get; set; }
+    
+    [JsonPropertyName("is_chat_pinned")]
+    public bool IsChatPinned { get; set; }
+    
+    [JsonPropertyName("pinned_at")]
+    public DateTime? PinnedAt { get; set; }
 }
 
 public class GetUserChatsResponsePayload
