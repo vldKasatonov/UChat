@@ -71,9 +71,9 @@
                                      Padding="10,0,30,0"/>
                             <Button x:Name="NicknameClearButton" Content="✖" Width="20" Height="20" 
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
-                                    Background="Transparent" BorderThickness="0" Foreground="#9183B0" 
-                                    FontSize="13" IsVisible="False" Cursor="Hand" ZIndex="1" 
-                                    Classes="nohover"/>
+                                    Background="Transparent" BorderThickness="0" Foreground="#995988" 
+                                    FontSize="16" IsVisible="False" Cursor="Hand" ZIndex="1" 
+                                    Classes="nohover" FontFamily="Segoe UI Symbol" FontWeight="ExtraBold"/>
                          </Grid>   
                         <TextBlock x:Name="NicknameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
@@ -84,8 +84,9 @@
                                 <Button x:Name="UsernameClearButton" Content="✖" Width="20" Height="20" 
                                         HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
                                         Background="Transparent" BorderThickness="0" 
-                                        Foreground="#9183B0" FontSize="13" IsVisible="False"
-                                        Cursor="Hand" ZIndex="1" Classes="nohover"/>
+                                        Foreground="#995988" FontSize="16" IsVisible="False"
+                                        Cursor="Hand" ZIndex="1" Classes="nohover" FontFamily="Segoe UI Symbol"
+                                        FontWeight="ExtraBold"/>
                             </Grid>
                         <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
@@ -95,8 +96,9 @@
                                          Padding="10,0,30,0" VerticalContentAlignment="Center"/>
                                 <Button x:Name="PasswordClearButton" Content="✖" Width="20" Height="20" 
                                         HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
-                                        Background="Transparent" BorderThickness="0" Foreground="#9183B0" 
-                                        FontSize="13" IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover"/>
+                                        Background="Transparent" BorderThickness="0" Foreground="#995988" 
+                                        FontSize="16" IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover" FontFamily="Segoe UI Symbol"
+                                        FontWeight="ExtraBold"/>
                                 <Button x:Name="PasswordToggleButton" Width="25" Height="25" HorizontalAlignment="Left" VerticalAlignment="Center" 
                                         Margin="{Binding ElementName=PasswordTextBox, Path=Bounds.Width, Converter={StaticResource PasswordToggleMarginConverter}}"
                                         IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover">
@@ -114,8 +116,9 @@
                                          Padding="10,0,30,0" VerticalContentAlignment="Center"/>
                                 <Button x:Name="ConfirmPasswordClearButton" Content="✖" Width="20" Height="20" 
                                         HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
-                                        Background="Transparent" BorderThickness="0" Foreground="#9183B0" 
-                                        FontSize="13" IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover"/>
+                                        Background="Transparent" BorderThickness="0" Foreground="#995988" 
+                                        FontSize="16" IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover" FontFamily="Segoe UI Symbol"
+                                        FontWeight="ExtraBold"/>
                                 <Button x:Name="ConfirmPasswordToggleButton" Width="25" Height="25" HorizontalAlignment="Left" VerticalAlignment="Center" 
                                         Margin="{Binding ElementName=PasswordTextBox, Path=Bounds.Width, Converter={StaticResource PasswordToggleMarginConverter}}"
                                         IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover">

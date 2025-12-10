@@ -775,6 +775,13 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (ToHandleFormat(username) == CurrentUserUsername)
         {
+            SearchResultBorder.IsVisible = false;
+            SearchErrorText.Text = "You cannot start a chat with yourself";
+            SearchErrorText.IsVisible = true;
+            if (!SearchUserBox.Classes.Contains("error"))
+            {
+                SearchUserBox.Classes.Add("error");
+            }
             return;
         }
         
@@ -1071,6 +1078,13 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         
         if (ToHandleFormat(username) == CurrentUserUsername) 
         {
+            GroupSearchResultBorder.IsVisible = false;
+            GroupSearchErrorText.Text = "You'll be added to the group chat upon creation";
+            GroupSearchErrorText.IsVisible = true;
+            if (!GroupSearchBox.Classes.Contains("error"))
+            {
+                GroupSearchBox.Classes.Add("error");
+            }
             return;
         }
 
