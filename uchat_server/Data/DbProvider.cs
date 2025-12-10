@@ -88,7 +88,7 @@ public class DbProvider
 
         if (dbUsers.Count != payload.Members.Count)
         {
-            throw new InvalidOperationException("One or more chat members were not found.");
+            throw new InvalidOperationException("One or more users are unavailable or deleted.");
         }
 
         var chatMembers = new List<ChatMember>();
@@ -133,7 +133,7 @@ public class DbProvider
 
         if (userIds.Count < 2)
         {
-            throw new InvalidOperationException("One or both users not found in the system.");
+            throw new InvalidOperationException("Failed to resolve both users for chat creation.");
         }
     
         int id1 = userIds[0];
@@ -264,15 +264,15 @@ public class DbProvider
                 LastMessage = dbContext.Messages
                     .Where(m => m.ChatId == c.Id)
                     .OrderByDescending(m => m.SentAt)
-                    .Select(m => new { m.Id, m.SentAt, m.SenderId })
+                    .Select(m => new { m.Id, m.SentAt, m.SenderId, m.IsDeleted })
                     .FirstOrDefault()
             })
             .ToListAsync();
 
-        var lastMessageIds =
-            chatData.Where(x => x.LastMessage != null)
-                        .Select(x => x.LastMessage!.Id)
-                        .ToList();
+        var lastMessageIds = chatData
+            .Where(x => x.LastMessage != null && !x.LastMessage.IsDeleted)
+            .Select(x => x.LastMessage!.Id)
+            .ToList();
 
         var lastMessagesContent = await dbContext.TextMessages
             .Where(tm => lastMessageIds.Contains(tm.MessageId))
@@ -329,7 +329,7 @@ public class DbProvider
             if (item.LastMessage != null && item.LastMessage.Id > 0)
             {
                 lastMessagesContent.TryGetValue(item.LastMessage.Id, out string? content);
-                lastMessageContent = content ?? "[Deleted]";
+                lastMessageContent = content ?? "[Message deleted]";
                 lastMessageTime = item.LastMessage.SentAt.ToLocalTime();
             }
 
@@ -416,7 +416,7 @@ public class DbProvider
         return messages;
     }
 
-    public async Task<DeleteMessageResponsePayload?> DeleteMessageAsync(int messageId, int userId)
+    public async Task<TextMessageResponsePayload?> DeleteMessageAsync(int messageId, int userId)
     {
         await using (var dbContext = CreateDbContext())
         {
@@ -431,11 +431,15 @@ public class DbProvider
             message.IsDeleted = true;
             await dbContext.SaveChangesAsync();
 
-            return new DeleteMessageResponsePayload
+            return new TextMessageResponsePayload
             {
+                ChatId = message.ChatId,
                 MessageId = message.Id,
-                UserId = message.SenderId,
-                ChatId = message.ChatId
+                SenderId = message.SenderId,
+                Content = "[Message deleted]",
+                SentAt = message.SentAt,
+                IsEdited = message.IsEdited,
+                IsDeleted = message.IsDeleted
             };
         }
     }

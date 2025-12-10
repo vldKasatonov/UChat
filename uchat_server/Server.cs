@@ -764,7 +764,8 @@ public class Server
 
         try
         {
-            var deleteMessageResult = await _dbProvider.DeleteMessageAsync(requestPayload.MessageId, requestPayload.UserId);
+            var deleteMessageResult =
+                await _dbProvider.DeleteMessageAsync(requestPayload.MessageId, requestPayload.UserId);
 
             if (deleteMessageResult == null)
             {
@@ -780,6 +781,9 @@ public class Server
                     Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
                 };
             }
+
+            deleteMessageResult.SenderNickname =
+                await _dbProvider.GetUserNicknameByIdAsync(deleteMessageResult.SenderId);
             
             var response = new Response
             {
