@@ -40,7 +40,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             
-            <Button Grid.Row="0" Classes="nohover" HorizontalAlignment="Center" Margin="3,15,0,0" Cursor="Hand">
+            <Button Grid.Row="0" Classes="nohover" HorizontalAlignment="Center" Margin="3,15,0,0" Cursor="Hand" Click="LogOutButton_Click">
                 <Grid>
                     <Image x:Name="ExitLight" Source="avares://uchat/Resources/images/ExitLight.png" Height="40" Width="40"/>
                     <Image x:Name="ExitDark" Source="avares://uchat/Resources/images/ExitDark.png" Height="40" Width="40"/>
@@ -136,7 +136,7 @@
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastMessageTime, Converter={StaticResource SentTimeConverter}}" FontSize="12" 
                                                            Foreground="LightGray" HorizontalAlignment="Right"  VerticalAlignment="Center"/>
                                     
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding LastMessage}" FontSize="14" Margin="0,0,0,0"
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding LastMessageDisplay}" FontSize="14"
                                                Foreground="rgba(255,255,255,0.7)" TextTrimming="CharacterEllipsis"/>
                                 
                                     <Image Grid.Row="1" Grid.Column="1" Source="{Binding IsPinned, Converter={StaticResource PinnedToIconConverter}}"
@@ -205,7 +205,7 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             
@@ -481,11 +481,11 @@
     </Grid>
         <Border Background="#80000000" IsVisible="{Binding IsReconnecting}" 
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
-            <Border Width="400" Height="150" BorderBrush="MediumPurple" BorderThickness="3" Padding="20" Background="White">
+            <Border Width="400" Height="150" BorderBrush="MediumPurple" BorderThickness="3" Padding="20" Background="{DynamicResource DialogBackgroundColorBrush}">
                 <StackPanel Spacing="30" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="{Binding NeedToShutdown,
                                Converter={StaticResource ShutdownTextConverter}}"
-                               HorizontalAlignment="Center" FontSize="20"/>
+                               HorizontalAlignment="Center" FontSize="20" Foreground="{DynamicResource DialogTextColorBrush}"/>
                 </StackPanel>
             </Border>
         </Border>
