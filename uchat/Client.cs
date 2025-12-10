@@ -417,4 +417,23 @@ public class Client
 
         return response;
     }
+
+    public async Task<Response?> UpdateChatPinStatus(int chatId, bool isPinned)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+
+        var requestPayload = new UpdatePinStatusRequestPayload
+        {
+            ChatId = chatId,
+            IsChatPinned = isPinned
+        };
+
+        var request = CreateRequest(CommandType.UpdatePinStatus, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
+    }
 }

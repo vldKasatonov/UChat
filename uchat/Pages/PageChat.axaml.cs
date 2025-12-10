@@ -23,7 +23,6 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private ChatItem? _selectedChatBeforeSearch;
     private bool _isUpdatingFilteredChats;
     private ChatItem? _currentChat;
-    private static long _pinSequence;
     private bool _isLight;
     private bool _isMembersPanelOpen;
     private bool _showToggleMembersButton;
@@ -195,11 +194,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessage)));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageTime)));
         }
-        
-        private string _draft = "";
-        private bool _isPinned = false;
-        public long PinOrder { get; set; }
 
+        public DateTime? PinnedAt { get; set; }
+        private bool _isPinned;
         public bool IsPinned
         {
             get => _isPinned;
@@ -215,6 +212,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         }
         public string PinMenuText => IsPinned ? "Unpin chat" : "Pin chat";
 
+        private string _draft = "";
         public string Draft
         {
             get => _draft;
@@ -264,20 +262,15 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         
         var currentlySelectedChat = ChatList.SelectedItem as ChatItem;
 
-        var pinnedChats = Chats
-            .Where(chat => chat.IsPinned)
-            .OrderByDescending(chat => chat.PinOrder)  
-            .ToList();
-
-        var unpinnedChats = Chats
-            .Where(chat => !chat.IsPinned)
+        var sortedChats = Chats
+            .OrderByDescending(chat => chat.IsPinned)
+            .ThenByDescending(chat => chat.PinnedAt)
+            .ThenByDescending(chat => chat.LastMessageTime)
             .ToList();
 
         FilteredChats.Clear();
 
-        foreach (var chat in pinnedChats)
-            FilteredChats.Add(chat);
-        foreach (var chat in unpinnedChats)
+        foreach (var chat in sortedChats)
             FilteredChats.Add(chat);
 
         _isUpdatingFilteredChats = false;
@@ -351,12 +344,14 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         var pinnedChats = Chats
             .Where(chat => chat.IsPinned &&
                            (string.IsNullOrEmpty(text) || chat.Name.ToLower().Contains(text)))
-            .OrderByDescending(chat => chat.PinOrder)
+            .OrderByDescending(chat => chat.PinnedAt)
+            .ThenByDescending(chat => chat.LastMessageTime)
             .ToList();
 
         var unpinnedChats = Chats
             .Where(chat => !chat.IsPinned &&
                            (string.IsNullOrEmpty(text) || chat.Name.ToLower().Contains(text)))
+            .OrderByDescending(chat => chat.LastMessageTime)
             .ToList();
 
         foreach (var chat in pinnedChats)
@@ -464,23 +459,30 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         SearchTextBox.Focus();
     }
 
-    private void TogglePinChat_Click(object sender, RoutedEventArgs e)
+    private async void TogglePinChat_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not ChatItem chat)
             return;
         
-        chat.IsPinned = !chat.IsPinned;
+        var newPinStatus = !chat.IsPinned;
 
-        if (chat.IsPinned)
-            chat.PinOrder = ++_pinSequence;  
-        else
-            chat.PinOrder = 0;
+        var response = await _client.UpdateChatPinStatus(chat.ChatId, newPinStatus);
 
-        SortChats();
+        if (response != null && response.Status == Status.Success)
+        {
+            var pinPayload = response.Payload.Deserialize<UpdatePinStatusRequestPayload>();
 
-        if (!string.IsNullOrEmpty(SearchTextBox.Text))
-            ApplyFilter(SearchTextBox.Text);
-        
+            if (pinPayload != null)
+            {
+                chat.IsPinned = pinPayload.IsChatPinned;
+                chat.PinnedAt = pinPayload.IsChatPinned ? DateTime.UtcNow : null;
+            
+                SortChats();
+
+                if (!string.IsNullOrEmpty(SearchTextBox.Text))
+                    ApplyFilter(SearchTextBox.Text);
+            }
+        }
     }
     
     
@@ -1514,7 +1516,9 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             Username = chat.Username,
             IsGroup = chat.IsGroup,
             Members = new ObservableCollection<User>(),
-            Messages = new ObservableCollection<Message>() 
+            Messages = new ObservableCollection<Message>(),
+            IsPinned = chat.IsChatPinned,
+            PinnedAt = chat.PinnedAt
         };
         
         foreach (var member in chat.Members)
@@ -1679,6 +1683,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     chat.IsGroup = chatPayload.IsGroup;
                     chat.ChatId = chatPayload.ChatId;
                     chat.Members = new ObservableCollection<User>();
+                    chat.IsPinned = false; 
+                    chat.PinnedAt = null;
 
                     foreach (var member in chatPayload.Members)
                     {
@@ -1716,13 +1722,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     }
 
                     Chats.Add(chat);
-
-                    if (!_isApplyingFilter)
-                    {
-                        FilteredChats.Add(chat);
-                    }
-
                     chat.NotifyLastMessageChanged("[No messages]",chatPayload.CreatedAt.ToLocalTime());
+                    SortChats();
                 }
 
                 break;
@@ -1755,6 +1756,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     chat.Messages.Add(newMessage);
                     ComputeGroupingFlags(chat.Messages);
                     chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime);
+                    SortChats();
 
                     if (_currentChat == chat)
                     {
