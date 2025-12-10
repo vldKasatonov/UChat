@@ -33,18 +33,6 @@ namespace uchat_server.Migrations
                     b.Property<byte[]>("Avatar")
                         .HasColumnType("bytea");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<bool>("IsChatPinned")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_chat_pinned");
-
                     b.Property<bool>("IsGroup")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -53,10 +41,6 @@ namespace uchat_server.Migrations
                     b.Property<string>("Name")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("PinnedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("pinned_at");
 
                     b.HasKey("Id");
 
