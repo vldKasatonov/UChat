@@ -356,7 +356,7 @@ public class Client
         return await ExecuteRequest(request);
     }
     
-    public async Task<Response?> GetChatHistory(int chatId, int firstLoadedMessageId, int limit = 50)
+    public async Task<Response?> GetChatHistory(int chatId, int firstLoadedMessageId, int limit = 150)
     {
         if (_clientId is null)
         {
@@ -372,6 +372,26 @@ public class Client
         };
 
         var request = CreateRequest(CommandType.GetHistory, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
+    }
+
+    public async Task<Response?> DeleteMessage(int messageId, int chatId)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+        
+        var requestPayload = new DeleteMessageRequestPayload
+        {
+            ChatId = chatId,
+            UserId = (int)_clientId,
+            MessageId = messageId
+        };
+
+        var request = CreateRequest(CommandType.DeleteForAll, requestPayload);
         var response = await ExecuteRequest(request);
 
         return response;
@@ -397,28 +417,4 @@ public class Client
 
         return response;
     }
-
-    /*public async Task<bool> DeleteMessageForMeAsync(string chatId, string messageId)
-    {
-        var payload = new { ChatId = chatId, MessageId = messageId };
-        var request = CreateRequest(CommandType.DeleteForMe, payload);
-        var response = await ExecuteRequest(request);
-        return response?.Status == Status.Success;
-    }
-
-    public async Task<bool> DeleteMessageForAllAsync(string chatId, string messageId)
-    {
-        var payload = new { ChatId = chatId, MessageId = messageId };
-        var request = CreateRequest(CommandType.DeleteForAll, payload);
-        var response = await ExecuteRequest(request);
-        return response?.Status == Status.Success;
-    } 
-    
-    public async Task<bool> EditMessageAsync(string chatId, string messageId, string newText)
-    {
-        var payload = new { ChatId = chatId, MessageId = messageId, NewText = newText };
-        var request = CreateRequest(CommandType.EditMessage, payload);
-        var response = await ExecuteRequest(request);
-        return response?.Status == Status.Success;
-    } */
 }

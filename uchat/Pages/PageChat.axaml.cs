@@ -1365,8 +1365,28 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (ChatList.SelectedItem is not ChatItem chat)
             return;
+        
+        var messageToDelete = msg;
+        
+        var response = await _client.DeleteMessage(messageToDelete.Id, chat.ChatId);
 
-        msg.IsDeleted = true; 
+        if (response != null && response.Status == Status.Success)
+        {
+            messageToDelete.IsDeleted = true;
+            
+            int index = chat.Messages.IndexOf(messageToDelete);
+            if (index >= 0)
+            {
+                ComputeFlagsAtIndex(chat.Messages, index);
+                if (index > 0) ComputeFlagsAtIndex(chat.Messages, index - 1);
+                if (index < chat.Messages.Count - 1) ComputeFlagsAtIndex(chat.Messages, index + 1);
+            }
+
+            if (chat.Messages.LastOrDefault() == messageToDelete)
+            {
+                chat.NotifyLastMessageChanged("[Message deleted]", messageToDelete.SentTime);
+            }
+        }
     }
 
     private void MessageTextBox_SendWithEnter(object? sender, KeyEventArgs e)
@@ -1737,6 +1757,42 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     if (_currentChat == chat)
                     {
                         SelectedChatMessages.Add(newMessage);
+                    }
+                }
+
+                break;
+            }
+            case CommandType.DeleteForAll:
+            {
+                var deletePayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+                
+                if (deletePayload is null) 
+                {
+                    break;
+                }
+                
+                var chat = Chats.FirstOrDefault(c => c.ChatId == deletePayload.ChatId);
+                
+                if (chat != null)
+                {
+                    var msg = chat.Messages.FirstOrDefault(m => m.Id == deletePayload.MessageId);
+                    
+                    if (msg != null)
+                    {
+                        msg.IsDeleted = true; 
+
+                        int index = chat.Messages.IndexOf(msg);
+                        if (index >= 0)
+                        {
+                            ComputeFlagsAtIndex(chat.Messages, index);
+                            if (index > 0) ComputeFlagsAtIndex(chat.Messages, index - 1);
+                            if (index < chat.Messages.Count - 1) ComputeFlagsAtIndex(chat.Messages, index + 1);
+                        }
+
+                        if (chat.Messages.LastOrDefault() == msg)
+                        {
+                            chat.NotifyLastMessageChanged(msg.DisplayText, msg.SentTime);
+                        }
                     }
                 }
 
