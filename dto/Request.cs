@@ -105,12 +105,12 @@ public class ChatHistoryRequestPayload
 
 public class DeleteMessageRequestPayload
 {
-    [JsonPropertyName("Id")]
-    public int MessageId { get; set; }
-
-    [JsonPropertyName("user_id")]
-    public int UserId { get; set; }
-
     [JsonPropertyName("chat_id")]
     public int ChatId { get; set; }
+    
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+    
+    [JsonPropertyName("message_id")]
+    public int MessageId { get; set; }
 }
