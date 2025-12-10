@@ -266,7 +266,7 @@
                                                     <ContextMenu>
                                                         <MenuItem Header="Copy" Click="CopyMessage_Click"/>
                                                         <MenuItem Header="Edit" Click="EditMessage_Click" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}" IsVisible="{Binding IsMine}"/>
-                                                        <MenuItem Header="Delete" Click="DeleteMessageForAll_Click"/>
+                                                        <MenuItem Header="Delete" Click="DeleteMessageForAll_Click" IsVisible="{Binding IsMine}"/>
                                                     </ContextMenu>
                                                 </Border.ContextMenu>
                                             </Border>

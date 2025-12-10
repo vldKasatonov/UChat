@@ -190,7 +190,16 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 }
             }
         }
-        public string LastMessageDisplay => IsGroup ? $"{LastMessageSender}: {LastMessage}" : LastMessage;
+        public string LastMessageDisplay
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(LastMessageSender) || LastMessage == "[No messages]")
+                    return LastMessage;
+
+                return IsGroup ? $"{LastMessageSender}: {LastMessage}" : LastMessage;
+            }
+        }
         private DateTime _lastMessageTime;
         public DateTime LastMessageTime
         {
