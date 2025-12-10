@@ -3,8 +3,9 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 using Avalonia;
+using Avalonia.Interactivity;
+using Avalonia.Styling;
 using dto;
-using System.Reactive.Linq;
 
 namespace uchat;
 
@@ -19,10 +20,15 @@ public partial class PageLogin : UserControl
     private Image? _visiblePasswordImage;
     private Image? _invisiblePasswordImage;
     private bool _isPasswordVisible = false;
+    private bool _isLight;
 
     public PageLogin()
     {
         InitializeComponent();
+        ModeLight = this.FindControl<Image>("ModeLight");
+        ModeDark = this.FindControl<Image>("ModeDark");
+        _isLight = Application.Current?.ActualThemeVariant != ThemeVariant.Dark;
+        UpdateModeThemeIcon();
     }
     
     public PageLogin(Client client) : this()
@@ -259,5 +265,17 @@ public partial class PageLogin : UserControl
             okButton.Click += (_, _) => dialog.Close();
 
         await dialog.ShowDialog(owner);
+    }
+    private void UpdateModeThemeIcon()
+    {
+        ModeLight.IsVisible = !_isLight;
+        ModeDark.IsVisible = _isLight;
+    } 
+    
+    private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
+    {
+        _isLight = !_isLight;
+        App.SetTheme(_isLight ? "Light" : "Dark");
+        UpdateModeThemeIcon();
     }
 }

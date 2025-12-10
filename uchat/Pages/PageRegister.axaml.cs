@@ -5,7 +5,8 @@ using Avalonia.VisualTree;
 using Avalonia;
 using System.Text.RegularExpressions;
 using dto;
-using System.Reactive.Linq;
+using Avalonia.Interactivity;
+using Avalonia.Styling;
 
 namespace uchat;
 
@@ -28,10 +29,15 @@ public partial class PageRegister : UserControl
     private Image? _invisibleConfirmPasswordImage;
     private bool _isPasswordVisible = false;
     private bool _isConfirmPasswordVisible = false;
+    private bool _isLight;
 
     public PageRegister()
     {
         InitializeComponent();
+        ModeLight = this.FindControl<Image>("ModeLight");
+        ModeDark = this.FindControl<Image>("ModeDark");
+        _isLight = Application.Current?.ActualThemeVariant != ThemeVariant.Dark;
+        UpdateModeThemeIcon();
     }
     
     public PageRegister(Client client) : this()
@@ -419,6 +425,19 @@ public partial class PageRegister : UserControl
         {
             main.Navigate(new PageLogin(_client));
         }
+    }
+    
+    private void UpdateModeThemeIcon()
+    {
+        ModeLight.IsVisible = !_isLight;
+        ModeDark.IsVisible = _isLight;
+    } 
+    
+    private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
+    {
+        _isLight = !_isLight;
+        App.SetTheme(_isLight ? "Light" : "Dark");
+        UpdateModeThemeIcon();
     }
     
 }

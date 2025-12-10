@@ -10,7 +10,7 @@
         <local:PasswordToggleMarginConverter x:Key="PasswordToggleMarginConverter"/>
     </UserControl.Resources>
     
-    <Border Background="#F1EFF5">
+    <Border Background="{DynamicResource MainBackground1Brush}">
         <Grid ColumnDefinitions="Auto,*">
 
             <Grid Grid.Column="0" Width="255">
@@ -19,62 +19,66 @@
 
                     <Grid RowDefinitions="150,100,100,*">
 
-                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto"
-                              HorizontalAlignment="Right"
-                              Margin="0,20,0,0">
-                            <Image Grid.Column="0" x:Name="LoginBubble"
-                                   Source="avares://uchat/Resources/images/Bubble.png" Width="150" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                            <Button x:Name="LoginButtonLeft" Grid.Column="0" Classes="nohover"
-                                    Content="SIGN IN"  Foreground="#A64F82" Background="Transparent" FontSize="20" 
-                                    FontWeight="Bold" BorderThickness="0" Margin="0,0,25,0" 
-                                    VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" HorizontalAlignment="Right" Cursor="Hand" Margin="0,20,0,0">
+                                <Border Width="200" Height="80" Background="{DynamicResource MainBackground1Brush}" Margin="0,0,-40,0" CornerRadius="40"
+                                        HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock Text="SIGN IN" Foreground="#A64F82" FontSize="23" FontWeight="Bold" Margin="0,0,20,0"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
                         </Grid>
 
-                        <Grid Grid.Row="2"
-                              HorizontalAlignment="Right"
-                              Margin="0,20,0,0">
-                            <Button x:Name="SignUpButtonLeft" Classes="nohover" Content="SIGN UP" HorizontalAlignment="Right" Background="Transparent"
-                                    FontSize="20" VerticalAlignment="Center" FontWeight="Bold" BorderThickness="0" Margin="0,0,25,0"
-                                    Click="SignUpButtonTop_Click"/>
+                        <Grid Grid.Row="2" HorizontalAlignment="Right" Margin="0,20,0,0" Cursor="Hand">
+                            <Border Width="130" Height="40" Background="Transparent"  CornerRadius="40"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center" PointerPressed="SignUpButtonTop_Click">
+                                <TextBlock Text="SIGN UP" Foreground="White" FontSize="23" FontWeight="Bold" Margin="0,0,5,0"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
                         </Grid>
 
                     </Grid>
                 </Grid>
+
+                <Button Classes="nohover" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,15" Cursor="Hand" Click="SwitchTheme_Click">
+                    <Grid>
+                        <Image x:Name="ModeLight" Source="avares://uchat/Resources/images/light_mode.png" Height="40" Width="40"/>
+                        <Image x:Name="ModeDark" Source="avares://uchat/Resources/images/dark_mode.png" Height="40" Width="40"/>
+                    </Grid>
+                </Button>
             </Grid>
 
             <Grid Grid.Column="1" Margin="70,0,70,0">
                 <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Center" Orientation="Vertical"
                             Spacing="15">
 
-                    <TextBlock Text="Welcome!" HorizontalAlignment="Center"
-                               FontSize="22" FontWeight="DemiBold" Foreground="rgba(0,0,0,0.8)"/>
-                    <TextBlock Text="Please login to your account." HorizontalAlignment="Center"
-                               FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,0"/>
+                    <TextBlock Text="Welcome!" HorizontalAlignment="Center" Foreground="{DynamicResource MainTextBrush}"
+                               FontSize="22" FontWeight="DemiBold"/>
+                    <TextBlock Text="Please login to your account." HorizontalAlignment="Center" Foreground="{DynamicResource MainTextBrush}"
+                               FontSize="17" Margin="0,0,0,0"/>
 
                     <StackPanel Orientation="Vertical">
 
-                        <TextBlock Text="Username" Foreground="Black" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBlock Text="Username" Foreground="{DynamicResource MainTextBrush}" FontSize="17" Margin="10,0,0,5"/>
                         <Grid>
                             <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"
                                      Padding="10,0,30,0"/>
                             <Button x:Name="UsernameClearButton" Content="✖" Width="20" Height="20" HorizontalAlignment="Right"
                                     VerticalAlignment="Center" Margin="0,0,10,5" Background="Transparent"
                                     BorderThickness="0" Foreground="#9183B0" FontSize="13" IsVisible="False" Cursor="Hand" ZIndex="1"
-                                    Classes="nohover"/>
+                                    Classes="nohover" Focusable="False"/>
                         </Grid>
                         <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
 
-                        <TextBlock Text="Password" Foreground="Black" FontSize="17" Margin="10,0,0,5"/>
+                        <TextBlock Text="Password" Foreground="{DynamicResource MainTextBrush}" FontSize="17" Margin="10,0,0,5"/>
                         <Grid>
                             <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="•" FontSize="30" Margin="0,0,0,5"
                                      Padding="10,0,30,0"/>
                             <Button x:Name="PasswordClearButton" Content="✖" Width="20" Height="20" HorizontalAlignment="Right"
                                     VerticalAlignment="Center" Margin="0,0,10,5" Background="Transparent"
                                     BorderThickness="0" Foreground="#9183B0" FontSize="13" IsVisible="False" Cursor="Hand"
-                                    ZIndex="1" Classes="nohover"/>
+                                    ZIndex="1" Classes="nohover" Focusable="False"/>
                             <Button x:Name="PasswordToggleButton" Width="25" Height="25" HorizontalAlignment="Left" VerticalAlignment="Center" 
                                     Margin="{Binding ElementName=PasswordTextBox, Path=Bounds.Width, Converter={StaticResource PasswordToggleMarginConverter}}"
-                                    IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover">
+                                    IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover" Focusable="False">
                                 <Grid>
                                     <Image x:Name="VisiblePassword" Source="avares://uchat/Resources/images/eye.png" IsVisible="False" />
                                     <Image x:Name="InvisiblePassword" Source="avares://uchat/Resources/images/no_eye.png" IsVisible="True"/>
@@ -92,9 +96,9 @@
                     </StackPanel>
 
                     <TextBlock HorizontalAlignment="Center" FontWeight="Medium" FontSize="17">
-                        <Run Text="Don't have an account?" Foreground="rgba(0,0,0,0.8)"/>
+                        <Run Text="Don't have an account?" Foreground="{DynamicResource MainTextBrush}"/>
                         <InlineUIContainer BaselineAlignment="Bottom">
-                            <TextBlock Text=" Register" Foreground="#9155B0" Cursor="Hand" PointerPressed="SignUpText_PointerPressed"/>
+                            <TextBlock Text=" Register" Foreground="#995988" Cursor="Hand" PointerPressed="SignUpText_PointerPressed"/>
                         </InlineUIContainer>
                     </TextBlock>
 
