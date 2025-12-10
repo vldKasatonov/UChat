@@ -6,28 +6,44 @@
              x:Class="uchat.PageRegister">
 
     <Border Background="#F1EFF5">
-        <Grid ColumnDefinitions="Auto,*">
-            <Grid Grid.Column="0" Width="255">
-                <Grid Grid.Column="0">
-                    <Image Source="avares://uchat/Resources/images/bg.jpg" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    <Grid RowDefinitions="Auto,*,Auto">
-                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="15,20" HorizontalAlignment="Stretch">
-                            <TextBlock Grid.Column="0" Text="UChat"
-                                       FontSize="16" FontWeight="Bold" Foreground="rgba(255,255,255,0.9)"
-                                       VerticalAlignment="Center"/>
-                            <StackPanel Grid.Column="1" Spacing="3" HorizontalAlignment="Right" Orientation="Horizontal">
-                                <Button Content="Sign Up" Foreground="White" FontSize="12"
-                                         Width="80" Height="40" HorizontalContentAlignment="Center"
-                                         VerticalContentAlignment="Center" CornerRadius="20" Background="Transparent" BorderBrush="White"/>
-                                <Button Content="Sign In" Foreground="White" FontSize="12" Click="SignInButtonTop_Click"
-                                        Width="80" Height="40" HorizontalContentAlignment="Center"
-                                        VerticalContentAlignment="Center" CornerRadius="20" Background="Transparent"
-                                        />  
-                            </StackPanel>
-                        </Grid>
+    <Grid ColumnDefinitions="Auto,*">
+        
+        <Grid Grid.Column="0" Width="255">
+            <Grid>
+                <Image Source="avares://uchat/Resources/images/bg.jpg"
+                       Stretch="UniformToFill"
+                       HorizontalAlignment="Stretch"
+                       VerticalAlignment="Stretch"/>
+
+                <Grid RowDefinitions="150,100,100,*">
+
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto"
+                          HorizontalAlignment="Right" 
+                          Margin="0,20,0,0">
+                
+                        <Button x:Name="LoginButtonLeft" Grid.Column="0" Classes="nohover" Content="SIGN IN"  Foreground="White"
+                                Background="Transparent" FontSize="20" FontWeight="Bold" BorderThickness="0" Margin="0, 0,25,0"
+                                HorizontalAlignment="Right" VerticalAlignment="Center" Click="SignInButtonTop_Click"/>
                     </Grid>
+
+                    <Grid Grid.Row="2" 
+                          HorizontalAlignment="Right" 
+                          Margin="0,20,0,0">
+                        <Image Grid.Column="0" x:Name="SignUpBubble"
+                               Source="avares://uchat/Resources/images/Bubble.png"
+                               Width="150"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"/>
+                        
+                        <Button x:Name="SignUpButtonLeft" Content="SIGN UP" Classes="nohover"
+                                HorizontalAlignment="Right" Background="Transparent" FontSize="20"
+                                FontWeight="Bold" Foreground="#A64F82" Margin="0, 0,25,0" BorderThickness="0"/>
+                    </Grid>
+
                 </Grid>
             </Grid>
+        </Grid>
+
 
             <Grid Grid.Column="1" Margin="70 0 70 0">
                 <Grid.RowDefinitions>
@@ -44,7 +60,7 @@
                                FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Vertical">
                         
-                            <TextBlock Text="Nickname" FontSize="16" Margin="10,0,0,5"/>
+                            <TextBlock Text="Nickname" Foreground="Black" FontSize="16" Margin="10,0,0,5"/>
                         <Grid>
                             <TextBox x:Name="NicknameTextBox" Watermark="Enter nickname" FontSize="20" Margin="0,0,0,5"
                                      Padding="10,0,30,0"/>
@@ -56,7 +72,7 @@
                          </Grid>   
                         <TextBlock x:Name="NicknameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Username" FontSize="16" Margin="10,0,0,5"/>
+                        <TextBlock Text="Username" Foreground="Black" FontSize="16" Margin="10,0,0,5"/>
                             <Grid>
                                 <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"
                                          Padding="10,0,30,0"/>
@@ -68,7 +84,7 @@
                             </Grid>
                         <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Password" FontSize="16" Margin="10,0,0,5"/>
+                        <TextBlock Text="Password" Foreground="Black" FontSize="16" Margin="10,0,0,5"/>
                             <Grid>
                                 <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="•" FontSize="30" Margin="0,0,0,5"
                                          Padding="10,0,30,0" VerticalContentAlignment="Center"/>
@@ -79,7 +95,7 @@
                             </Grid>
                         <TextBlock x:Name="PasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Confirm password" FontSize="16" Margin="10,0,0,5"/>
+                        <TextBlock Text="Confirm password" Foreground="Black" FontSize="16" Margin="10,0,0,5"/>
                             <Grid>
                                 <TextBox x:Name="ConfirmPasswordTextBox" Watermark="Confirm password" PasswordChar="•" FontSize="30" Margin="0,0,0,5"
                                          Padding="10,0,30,0" VerticalContentAlignment="Center"/>
@@ -105,7 +121,7 @@
                         </Grid>
                     </StackPanel>
                 </StackPanel>
-            </Grid>
-        </Grid>
+            </Grid> 
+    </Grid>
     </Border>
 </UserControl>
