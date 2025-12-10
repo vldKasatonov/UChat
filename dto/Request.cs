@@ -128,3 +128,24 @@ public class EditMessageRequestPayload
     [JsonPropertyName("new_content")]
     public string NewContent { get; set; } = string.Empty;
 }
+
+public class UpdatePinStatusRequestPayload
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+
+    [JsonPropertyName("is_chat_pinned")]
+    public bool IsChatPinned { get; set; }
+}
+
+public class LeaveChatRequestPayload
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+}

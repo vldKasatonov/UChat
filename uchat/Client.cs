@@ -3,8 +3,6 @@ using System.Text;
 using System.Text.Json;
 using System.Net.Sockets;
 using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
-using System.Security.Authentication;
 
 namespace uchat;
 
@@ -44,6 +42,13 @@ public class Client
         return _clientNickname ?? "";
     }
 
+    public void ClearInfo()
+    {
+        _clientId = null;
+        _clientUsername = null;
+        _clientNickname = null;
+    }
+
     public async Task ConnectToServer()
     {
         while (!_connected)
@@ -69,7 +74,7 @@ public class Client
             }
             catch (Exception)
             {
-                await Task.Delay(5000); //pause before next try
+                await Task.Delay(5000);
             }
         }
     }
@@ -91,7 +96,7 @@ public class Client
                 
                 if (jsonResponse is null)
                 {
-                    HandleDisconnection();
+                    await HandleDisconnection();
                     break;
                 }
                 
@@ -112,11 +117,11 @@ public class Client
         }
         catch (Exception)
         {
-            HandleDisconnection();
+            await HandleDisconnection();
         }
     }
 
-    private async void HandleDisconnection()
+    private async Task HandleDisconnection()
     {
         if (_reconnecting)
         {
@@ -154,7 +159,7 @@ public class Client
     {
         if (!_connected)
         {
-            HandleDisconnection();
+            await HandleDisconnection();
         }
 
         if (_writer is null)
@@ -415,6 +420,45 @@ public class Client
         var request = CreateRequest(CommandType.EditMessage, requestPayload);
         var response = await ExecuteRequest(request);
 
+        return response;
+    }
+
+    public async Task<Response?> UpdateChatPinStatus(int chatId, bool isPinned)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+
+        var requestPayload = new UpdatePinStatusRequestPayload
+        {
+            ChatId = chatId,
+            UserId = (int)_clientId,
+            IsChatPinned = isPinned
+        };
+
+        var request = CreateRequest(CommandType.UpdatePinStatus, requestPayload);
+        var response = await ExecuteRequest(request);
+
+        return response;
+    }
+    
+    public async Task<Response?> LeaveChat(int chatId)
+    {
+        if (_clientId is null)
+        {
+            return null;
+        }
+    
+        var requestPayload = new LeaveChatRequestPayload
+        {
+            UserId = (int)_clientId,
+            ChatId = chatId
+        };
+    
+        var request = CreateRequest(CommandType.LeaveChat, requestPayload);
+        var response = await ExecuteRequest(request);
+    
         return response;
     }
 }

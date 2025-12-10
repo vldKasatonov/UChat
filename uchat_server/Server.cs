@@ -185,6 +185,12 @@ public class Server
                 case CommandType.EditMessage:
                     var editReqPayload = request.Payload.Deserialize<EditMessageRequestPayload>();
                     return await HandleEditMessage(editReqPayload);
+                case CommandType.UpdatePinStatus:
+                    var pinReqPayload = request.Payload.Deserialize<UpdatePinStatusRequestPayload>();
+                    return await HandleUpdatePinStatus(pinReqPayload);
+                case CommandType.LeaveChat:
+                    var leaveReqPayload = request.Payload.Deserialize<LeaveChatRequestPayload>();
+                    return await HandleLeaveChat(leaveReqPayload);
             }
         }
         catch (Exception)
@@ -785,6 +791,116 @@ public class Server
             {
                 Status = Status.Error,
                 Type = CommandType.EditMessage
+            };
+        }
+    }
+
+    private async Task<Response> HandleUpdatePinStatus(UpdatePinStatusRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.UpdatePinStatus
+            };
+        }
+
+        try
+        {
+            bool success = await _dbProvider.UpdateChatPinStatusAsync(
+                requestPayload.UserId, requestPayload.ChatId, requestPayload.IsChatPinned);
+
+            if (success)
+            {
+                return new Response
+                {
+                    Status = Status.Success,
+                    Type = CommandType.UpdatePinStatus,
+                    Payload = JsonSerializer.SerializeToNode(requestPayload)?.AsObject()
+                };
+            }
+
+            var errorPayload = new ErrorPayload { Message = "Chat not found." };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.UpdatePinStatus,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            var errorPayload = new ErrorPayload { Message = "Server error updating pin status." };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.UpdatePinStatus,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+    }
+    
+    private async Task<Response> HandleLeaveChat(LeaveChatRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.LeaveChat
+            };
+        }
+
+        try
+        {
+            var deleteResult =
+                await _dbProvider.DeleteChatAsync(requestPayload.UserId, requestPayload.ChatId);
+
+            if (deleteResult != null)
+            {
+                var broadcastResponse = new Response
+                {
+                    Status = Status.Success,
+                    Type = CommandType.LeaveChat,
+                    Payload = JsonSerializer.SerializeToNode(deleteResult)?.AsObject()
+                };
+
+                if (deleteResult.IsGroup && !deleteResult.ChatDeleted) 
+                {
+                    await BroadcastMessage(deleteResult.UserId, deleteResult.UsersId, broadcastResponse);
+                }
+                else if (deleteResult.ChatDeleted)
+                {
+                    if (!deleteResult.IsGroup && deleteResult.UsersId.Any())
+                    {
+                        await BroadcastMessage(deleteResult.UserId, deleteResult.UsersId, broadcastResponse);
+                    }
+                }
+
+                return broadcastResponse;
+            }
+
+            var errorPayload = new ErrorPayload
+            {
+                Message = "Chat not found or user is not a member."
+            };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.LeaveChat,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.LeaveChat
             };
         }
     }
