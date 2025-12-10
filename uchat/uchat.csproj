@@ -30,4 +30,8 @@
       </Compile>
     </ItemGroup>
 
+    <ItemGroup>
+      <AvaloniaResource Include="Resources\icons\Virma.png" />
+    </ItemGroup>
+
 </Project>

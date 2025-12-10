@@ -4,7 +4,8 @@
         Title="UChat"
         Width="750" Height="650"
         MinHeight="630" MinWidth="660"
-        MaxHeight="1000" MaxWidth="1100">
+        MaxHeight="1000" MaxWidth="1100"
+        Icon="/Resources/icons/Virma.png">
 
     <ContentControl x:Name="PageHost"/>
 </Window>
