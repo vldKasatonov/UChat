@@ -20,6 +20,14 @@ public partial class PageRegister : UserControl
     private TextBox? _usernameTextBox;
     private TextBox? _passwordTextBox;
     private TextBox? _confirmPasswordTextBox;
+    private Button? _passwordToggleButton;
+    private Image? _visiblePasswordImage;
+    private Image? _invisiblePasswordImage;
+    private Button? _confirmPasswordToggleButton;
+    private Image? _visibleConfirmPasswordImage;
+    private Image? _invisibleConfirmPasswordImage;
+    private bool _isPasswordVisible = false;
+    private bool _isConfirmPasswordVisible = false;
 
     public PageRegister()
     {
@@ -81,6 +89,13 @@ public partial class PageRegister : UserControl
         _passwordClearButton = this.FindControl<Button>("PasswordClearButton");
         _confirmPasswordClearButton = this.FindControl<Button>("ConfirmPasswordClearButton");
         
+        _passwordToggleButton = this.FindControl<Button>("PasswordToggleButton");
+        _visiblePasswordImage = _passwordToggleButton?.FindControl<Image>("VisiblePassword");
+        _invisiblePasswordImage = _passwordToggleButton?.FindControl<Image>("InvisiblePassword");
+        _confirmPasswordToggleButton = this.FindControl<Button>("ConfirmPasswordToggleButton");
+        _visibleConfirmPasswordImage = _confirmPasswordToggleButton?.FindControl<Image>("VisibleConfirmPassword");
+        _invisibleConfirmPasswordImage = _confirmPasswordToggleButton?.FindControl<Image>("InvisibleConfirmPassword");
+        
         if (_nicknameTextBox != null && _nicknameClearButton != null)
         {
             _nicknameClearButton.Click += (s, e) =>
@@ -111,7 +126,7 @@ public partial class PageRegister : UserControl
                 });
         }
         
-        if (_passwordTextBox != null && _passwordClearButton != null)
+        if (_passwordTextBox != null && _passwordClearButton != null && _passwordToggleButton != null)
         {
             _passwordClearButton.Click += (s, e) =>
             {
@@ -124,9 +139,31 @@ public partial class PageRegister : UserControl
                 {
                     _passwordClearButton.IsVisible = !string.IsNullOrEmpty(text);
                 });
+            
+                _passwordToggleButton.Click += (_, _) =>
+                {
+                    if (_isPasswordVisible)
+                    {
+                        _passwordTextBox.PasswordChar = '•';
+                        _passwordTextBox.FontSize = 30;
+                        _visiblePasswordImage!.IsVisible = false;
+                        _invisiblePasswordImage!.IsVisible = true;
+                    }
+                    else
+                    {
+                        _passwordTextBox.PasswordChar = '\0';
+                        _passwordTextBox.FontSize = 20;
+                        _visiblePasswordImage!.IsVisible = true;
+                        _invisiblePasswordImage!.IsVisible = false;
+                    }
+                    _isPasswordVisible = !_isPasswordVisible;
+                };
+                
+                _passwordTextBox.GetObservable(TextBox.TextProperty)
+                    .Subscribe(text => _passwordToggleButton.IsVisible = !string.IsNullOrEmpty(text));
         }
         
-        if (_confirmPasswordTextBox != null && _confirmPasswordClearButton != null)
+        if (_confirmPasswordTextBox != null && _confirmPasswordClearButton != null && _confirmPasswordToggleButton != null)
         {
             _confirmPasswordClearButton.Click += (s, e) =>
             {
@@ -139,6 +176,28 @@ public partial class PageRegister : UserControl
                 {
                     _confirmPasswordClearButton.IsVisible = !string.IsNullOrEmpty(text);
                 });
+            
+            _confirmPasswordToggleButton.Click += (_, _) =>
+            {
+                if (_isConfirmPasswordVisible)
+                {
+                    _confirmPasswordTextBox.PasswordChar = '•';
+                    _confirmPasswordTextBox.FontSize = 30;
+                    _visibleConfirmPasswordImage!.IsVisible = false;
+                    _invisibleConfirmPasswordImage!.IsVisible = true;
+                }
+                else
+                {
+                    _confirmPasswordTextBox.PasswordChar = '\0';
+                    _confirmPasswordTextBox.FontSize = 20;
+                    _visibleConfirmPasswordImage!.IsVisible = true;
+                    _invisibleConfirmPasswordImage!.IsVisible = false;
+                }
+                _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+            };
+                
+            _confirmPasswordTextBox.GetObservable(TextBox.TextProperty)
+                .Subscribe(text => _confirmPasswordToggleButton.IsVisible = !string.IsNullOrEmpty(text));
         }
     }
     
