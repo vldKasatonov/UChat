@@ -324,7 +324,7 @@ public class DbProvider
             }
 
             string lastMessageContent = "[No messages]";
-            DateTime lastMessageTime = DateTime.MinValue;
+            DateTime lastMessageTime = item.Chat.CreatedAt;
             
             if (item.LastMessage != null && item.LastMessage.Id > 0)
             {

@@ -1721,6 +1721,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     {
                         FilteredChats.Add(chat);
                     }
+
+                    chat.NotifyLastMessageChanged("[No messages]",chatPayload.CreatedAt.ToLocalTime());
                 }
 
                 break;
