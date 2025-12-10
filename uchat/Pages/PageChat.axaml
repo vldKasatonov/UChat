@@ -31,7 +31,10 @@
             </Grid.RowDefinitions>
             
             <Button Grid.Row="0" Classes="nohover" HorizontalAlignment="Center" Margin="3,15,0,0" Cursor="Hand">
-                <Image Source="avares://uchat/Resources/images/ExitLight.png" Width="35" Height="35"/>
+                <Grid>
+                    <Image x:Name="ExitLight" Source="avares://uchat/Resources/images/ExitLight.png" Height="40" Width="40"/>
+                    <Image x:Name="ExitDark" Source="avares://uchat/Resources/images/ExitDark.png" Height="40" Width="40"/>
+                </Grid>
             </Button>
             
             <Button Grid.Row="2" Classes="nohover" HorizontalAlignment="Center" Cursor="Hand" Click="OpenSingleChat_Click">
