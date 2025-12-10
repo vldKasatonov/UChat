@@ -28,6 +28,10 @@
         <DependentUpon>DialogContent.axaml</DependentUpon>
         <SubType>Code</SubType>
       </Compile>
+      <Compile Update="Controls\ConfirmationDialog.axaml.cs">
+        <DependentUpon>ConfirmationDialog.axaml</DependentUpon>
+        <SubType>Code</SubType>
+      </Compile>
     </ItemGroup>
 
 </Project>

@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using dto;
 
 namespace uchat;
@@ -27,6 +28,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     private bool _isMembersPanelOpen;
     private bool _showToggleMembersButton;
     private Message? _editingMessage;
+    private Window? _currentModalDialog;
     
     private bool _isReconnecting;
     public bool IsReconnecting
@@ -114,6 +116,18 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
+                var dialogToClose = _currentModalDialog;
+                
+                if (dialogToClose != null)
+                {
+                    try
+                    {
+                        _currentModalDialog = null;
+                        dialogToClose.Close();
+                    }
+                    catch (Exception) { /**/ }
+                }
+
                 IsReconnecting = true;
             });
         };
@@ -484,8 +498,76 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
         }
     }
-    
-    
+
+    private async void LeaveChat_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem menu || menu.DataContext is not ChatItem chat)
+            return;
+
+        var confirmation =
+            await ShowConfirmationDialog("Are you sure you want to delete chat?", "Confirm Action");
+
+        if (!confirmation) 
+        {
+            return; 
+        }
+
+        var response = await _client.LeaveChat(chat.ChatId);
+
+        if (response != null && response.Status == Status.Success)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                Chats.Remove(chat);
+                FilteredChats.Remove(chat);
+
+                if (_currentChat == chat)
+                {
+                    ClearChatView();
+                    _currentChat = null;
+                }
+            });
+        }
+        else
+        {
+            await ShowConfirmationDialog("Failed to perform the operation. Please try again later.", "Error");
+        }
+    }
+
+    private async Task<bool> ShowConfirmationDialog(string message, string title)
+    {
+        var owner = this.GetVisualRoot() as Window;
+        if (owner == null)
+            return false;
+
+        var content = new ConfirmationDialog(); 
+        content.Message = message; 
+
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 400,
+            Height = 150,
+            CanResize = false,
+            SystemDecorations = SystemDecorations.None,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Topmost = false,
+            Content = content
+        };
+        
+        _currentModalDialog = dialog;
+
+        var result = await dialog.ShowDialog<bool>(owner);
+
+        if (_currentModalDialog == dialog)
+        {
+            _currentModalDialog = null; 
+        }
+
+        return result;
+    }
+
     private void MessagesPanel_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
         Dispatcher.UIThread.Post(() =>
@@ -1838,6 +1920,49 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     }
                 }
                 
+                break;
+            }
+            case CommandType.LeaveChat:
+            {
+                var deletePayload = response.Payload.Deserialize<LeaveChatResponsePayload>();
+
+                if (deletePayload != null) 
+                {
+                    var chat = Chats.FirstOrDefault(c => c.ChatId == deletePayload.ChatId);
+
+                    if (chat != null)
+                    {
+                        if (chat.IsGroup)
+                        {
+                            if (!deletePayload.ChatDeleted)
+                            {
+                                var memberToRemove = chat.Members.FirstOrDefault(m => m.Id == deletePayload.UserId);
+                                if (memberToRemove != null)
+                                {
+                                    chat.Members.Remove(memberToRemove);
+                                    chat.Username = $"{deletePayload.UsersId.Count} members";
+                                }
+
+                                if (_currentChat == chat)
+                                {
+                                    GroupMembersList.ItemsSource = null;
+                                    GroupMembersList.ItemsSource = chat.Members;
+                                    ChatUsernameTextBlock.Text = chat.Username;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Chats.Remove(chat);
+                            FilteredChats.Remove(chat);
+                            if (_currentChat == chat)
+                            {
+                                ClearChatView();
+                            }
+                        }
+                    }
+                }
+
                 break;
             }
         }
