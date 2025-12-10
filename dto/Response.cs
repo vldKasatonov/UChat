@@ -179,3 +179,27 @@ public class ChatHistoryResponsePayload
     [JsonPropertyName("has_more")]
     public bool HasMore { get; set; }
 }
+
+public class LeaveChatResponsePayload
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+    
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+    
+    [JsonPropertyName("username")]
+    public string Username { get; set; } = string.Empty;
+
+    [JsonPropertyName("nickname")]
+    public string Nickname { get; set; } = string.Empty;
+
+    [JsonPropertyName("is_group")]
+    public bool IsGroup { get; set; }
+    
+    [JsonPropertyName("users_id")]
+    public List<int> UsersId { get; set; } = new();
+
+    [JsonPropertyName("chat_deleted")]
+    public bool ChatDeleted { get; set; }
+}

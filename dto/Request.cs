@@ -140,3 +140,12 @@ public class UpdatePinStatusRequestPayload
     [JsonPropertyName("is_chat_pinned")]
     public bool IsChatPinned { get; set; }
 }
+
+public class LeaveChatRequestPayload
+{
+    [JsonPropertyName("chat_id")]
+    public int ChatId { get; set; }
+
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+}
