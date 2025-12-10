@@ -509,4 +509,77 @@ public class DbProvider
 
         return true;
     }
+    
+    public async Task<LeaveChatResponsePayload?> DeleteChatAsync(int userId, int chatId)
+    {
+        await using var dbContext = CreateDbContext();
+
+        var chatMember = await dbContext.ChatMembers
+            .Include(cm => cm.Chat)
+            .Include(cm => cm.User)
+            .FirstOrDefaultAsync(cm => cm.UserId == userId && cm.ChatId == chatId);
+
+        if (chatMember == null)
+        {
+            return null;
+        }
+
+        var chat = chatMember.Chat;
+        var deletedUsername = chatMember.User.Username;
+        var deletedNickname = chatMember.User.Nickname;
+        var isGroup = chat.IsGroup;
+
+        dbContext.ChatMembers.Remove(chatMember);
+        await dbContext.SaveChangesAsync();
+
+        var remainingMemberIds = await dbContext.ChatMembers
+            .Where(cm => cm.ChatId == chatId)
+            .Select(cm => cm.UserId)
+            .ToListAsync();
+        
+        var remainingMembersCount = remainingMemberIds.Count;
+        bool chatWasDeleted = false;
+
+        if (!chat.IsGroup && remainingMembersCount <= 1)
+        {
+            var messages = await dbContext.Messages.Where(m => m.ChatId == chatId).ToListAsync();
+            dbContext.Messages.RemoveRange(messages);
+
+            var allMembers = await dbContext.ChatMembers.Where(cm => cm.ChatId == chatId).ToListAsync();
+            dbContext.ChatMembers.RemoveRange(allMembers);
+
+            dbContext.Chats.Remove(chat);
+
+            await dbContext.SaveChangesAsync();
+    
+            chatWasDeleted = true;
+
+            if (remainingMemberIds.Count != 1)
+            {
+                remainingMemberIds = new List<int>();
+            }
+        }
+        else if (remainingMembersCount == 0)
+        {
+            var messages = await dbContext.Messages.Where(m => m.ChatId == chatId).ToListAsync();
+            dbContext.Messages.RemoveRange(messages);
+    
+            dbContext.Chats.Remove(chat);
+            await dbContext.SaveChangesAsync();
+    
+            chatWasDeleted = true;
+            remainingMemberIds = new List<int>();
+        }
+
+        return new LeaveChatResponsePayload
+        {
+            ChatId = chatId,
+            UserId = userId,
+            Username = deletedUsername,
+            Nickname = deletedNickname,
+            IsGroup = isGroup,
+            UsersId = remainingMemberIds,
+            ChatDeleted = chatWasDeleted
+        };
+    }
 }
