@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using dto;
 
 namespace uchat;
@@ -177,6 +178,21 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 }
             }
         }
+        private string _lastMessageSender = "";
+        public string LastMessageSender
+        {
+            get => _lastMessageSender;
+            private set
+            {
+                if (_lastMessageSender != value)
+                {
+                    _lastMessageSender = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageSender)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageDisplay)));
+                }
+            }
+        }
+        public string LastMessageDisplay => IsGroup ? $"{LastMessageSender}: {LastMessage}" : LastMessage;
         private DateTime _lastMessageTime;
         public DateTime LastMessageTime
         {
@@ -190,12 +206,14 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 }
             }
         }
-        public void NotifyLastMessageChanged(string messageText, DateTime sentTime)
+        public void NotifyLastMessageChanged(string messageText, DateTime sentTime, string? senderName = null)
         {
             LastMessage = messageText;
+            LastMessageSender = senderName ?? "";
             LastMessageTime = sentTime;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessage)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageTime)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageSender)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastMessageDisplay)));
         }
         
         private string _draft = "";
@@ -608,7 +626,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                 if (contact.Messages.LastOrDefault() == editedMessage)
                 {
-                    contact.NotifyLastMessageChanged(editedMessage.DisplayText, editedMessage.SentTime);
+                    string? senderName = contact.IsGroup ? editedMessage.Sender : null;
+                    contact.NotifyLastMessageChanged(editedMessage.DisplayText, editedMessage.SentTime, senderName);
                 }
             } 
 
@@ -658,7 +677,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 
                 contact.Draft = "";
                 MessageTextBox.Text = "";
-                contact.NotifyLastMessageChanged(msgToDisplay.Text, msgToDisplay.SentTime);
+                string? senderName = contact.IsGroup ? msgToDisplay.Sender : null;
+                contact.NotifyLastMessageChanged(msgToDisplay.Text, msgToDisplay.SentTime, senderName);
                 ComputeGroupingFlags(contact.Messages);
             }
         }
@@ -1367,8 +1387,28 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         if (ChatList.SelectedItem is not ChatItem chat)
             return;
+        
+        var messageToDelete = msg;
+        
+        var response = await _client.DeleteMessage(messageToDelete.Id, chat.ChatId);
 
-        msg.IsDeleted = true; 
+        if (response != null && response.Status == Status.Success)
+        {
+            messageToDelete.IsDeleted = true;
+            
+            int index = chat.Messages.IndexOf(messageToDelete);
+            if (index >= 0)
+            {
+                ComputeFlagsAtIndex(chat.Messages, index);
+                if (index > 0) ComputeFlagsAtIndex(chat.Messages, index - 1);
+                if (index < chat.Messages.Count - 1) ComputeFlagsAtIndex(chat.Messages, index + 1);
+            }
+
+            if (chat.Messages.LastOrDefault() == messageToDelete)
+            {
+                chat.NotifyLastMessageChanged("[Message deleted]", messageToDelete.SentTime);
+            }
+        }
     }
 
     private void MessageTextBox_SendWithEnter(object? sender, KeyEventArgs e)
@@ -1494,6 +1534,15 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             current.MessageMarginLeft = current.IsGroup && !current.IsMine ? 46.5 : 6.5;
         }
     }
+    
+    private void LogOutButton_Click(object? sender, RoutedEventArgs e)
+    {
+        var main = this.GetVisualRoot() as MainWindow;
+        if (main != null)
+        {
+            main.Navigate(new PageLogin(_client));
+        }
+    } 
 
     private static string ToHandleFormat(string username)
     {
@@ -1717,6 +1766,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                     {
                         FilteredChats.Add(chat);
                     }
+
+                    chat.NotifyLastMessageChanged("[No messages]",chatPayload.CreatedAt.ToLocalTime());
                 }
 
                 break;
@@ -1748,11 +1799,47 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                     chat.Messages.Add(newMessage);
                     ComputeGroupingFlags(chat.Messages);
-                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime);
+                    chat.NotifyLastMessageChanged(newMessage.Text, newMessage.SentTime, chat.IsGroup ? newMessage.Sender : null);
 
                     if (_currentChat == chat)
                     {
                         SelectedChatMessages.Add(newMessage);
+                    }
+                }
+
+                break;
+            }
+            case CommandType.DeleteForAll:
+            {
+                var deletePayload = response.Payload.Deserialize<TextMessageResponsePayload>();
+                
+                if (deletePayload is null) 
+                {
+                    break;
+                }
+                
+                var chat = Chats.FirstOrDefault(c => c.ChatId == deletePayload.ChatId);
+                
+                if (chat != null)
+                {
+                    var msg = chat.Messages.FirstOrDefault(m => m.Id == deletePayload.MessageId);
+                    
+                    if (msg != null)
+                    {
+                        msg.IsDeleted = true; 
+
+                        int index = chat.Messages.IndexOf(msg);
+                        if (index >= 0)
+                        {
+                            ComputeFlagsAtIndex(chat.Messages, index);
+                            if (index > 0) ComputeFlagsAtIndex(chat.Messages, index - 1);
+                            if (index < chat.Messages.Count - 1) ComputeFlagsAtIndex(chat.Messages, index + 1);
+                        }
+
+                        if (chat.Messages.LastOrDefault() == msg)
+                        {
+                            chat.NotifyLastMessageChanged(msg.DisplayText, msg.SentTime);
+                        }
                     }
                 }
 
@@ -1789,7 +1876,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
                         if (chat.Messages.LastOrDefault() == messageToEdit)
                         {
-                            chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime);
+                            chat.NotifyLastMessageChanged(messageToEdit.DisplayText, messageToEdit.SentTime, chat.IsGroup ? messageToEdit.Sender : null);
                         }
                     }
                 }

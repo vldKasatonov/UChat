@@ -12,8 +12,8 @@ using uchat_server.Data;
 namespace uchat_server.Migrations
 {
     [DbContext(typeof(UchatDbContext))]
-    [Migration("20251209220448_AddCreatedAtAndPinnedChatFields")]
-    partial class AddCreatedAtAndPinnedChatFields
+    [Migration("20251210125650_AddCreatedAtChatFields")]
+    partial class AddCreatedAtChatFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -42,12 +42,6 @@ namespace uchat_server.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<bool>("IsChatPinned")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_chat_pinned");
-
                     b.Property<bool>("IsGroup")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -56,10 +50,6 @@ namespace uchat_server.Migrations
                     b.Property<string>("Name")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("PinnedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("pinned_at");
 
                     b.HasKey("Id");
 

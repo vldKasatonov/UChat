@@ -77,8 +77,8 @@ public class CreateChatResponsePayload
     [JsonPropertyName("members")]
     public List<ChatMemberResponse> Members { get; set; } = new();
     
-    // [JsonPropertyName("created_at")]
-    // public DateTime CreatedAt { get; set; }
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; set; }
 }
 
 public class ChatMemberResponse

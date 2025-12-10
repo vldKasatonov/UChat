@@ -9,4 +9,7 @@ public class ChatMember
     public User User { get; set; } = null!;
 
     public bool HasPrivileges { get; set; } = false;
+    
+    public bool IsChatPinned { get; set; } = false;
+    public DateTime? PinnedAt { get; set; } = null;
 }

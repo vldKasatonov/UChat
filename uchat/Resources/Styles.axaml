@@ -6,7 +6,7 @@
 		<Setter Property="VerticalContentAlignment" Value="Center"/>
 		<Setter Property="Height" Value="50"/>
 		<Setter Property="BorderThickness" Value="2"/>
-		<Setter Property="BorderBrush" Value="{DynamicResource TextBoxBorderBrush}"/>
+		<Setter Property="BorderBrush" Value="{DynamicResource prColor}"/>
 		<Setter Property="CornerRadius" Value="12"/>
 		<Setter Property="Foreground" Value="rgba(0,0,0,0.3)"/>
 		<Setter Property="FontWeight" Value="Medium"/>
@@ -37,7 +37,7 @@
 		<Style Selector="^:pointerover">
 			<Style Selector="^ /template/ Border#PART_BorderElement">
 				<Setter Property="Background" Value="Transparent"/>
-				<Setter Property="BorderBrush" Value="{DynamicResource TextBoxBorderHoverBrush}" />
+				<Setter Property="BorderBrush" Value="{DynamicResource prColor}" />
 			</Style>
 			<Style Selector="^ /template/ TextBlock#PART_Watermark">
 				<Setter Property="Foreground" Value="rgba(0,0,0,0.6)"/>
@@ -47,7 +47,7 @@
 			<Setter Property="Foreground" Value="{DynamicResource prColor}"/>
 			<Style Selector="^ /template/ Border#PART_BorderElement">
 				<Setter Property="Background" Value="Transparent"/>
-				<Setter Property="BorderBrush" Value="{DynamicResource TextBoxBorderFocusBrush}"/>
+				<Setter Property="BorderBrush" Value="{DynamicResource prColor}"/>
 			</Style>
 		</Style>
 	</Style> 
@@ -79,7 +79,7 @@
 	<Style Selector="TextBox:not(:empty)">
 		<Setter Property="Foreground" Value="{DynamicResource prColor}"/>
 		<Style Selector="^ /template/ Border#PART_BorderElement">
-			<Setter Property="BorderBrush" Value="{DynamicResource TextBoxBorderFocusBrush}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource prColor}"/>
 		</Style>
 	</Style>
 	

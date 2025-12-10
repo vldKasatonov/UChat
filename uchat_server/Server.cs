@@ -106,7 +106,6 @@ public class Server
                     userId = response.Type switch
                     {
                         CommandType.Login => response.Payload.Deserialize<LoginResponsePayload>()?.UserId,
-                        CommandType.Register => response.Payload.Deserialize<RegisterResponsePayload>()?.UserId,
                         CommandType.Reconnect => response.Payload.Deserialize<ReconnectResponsePayload>()?.UserId,
                         _ => null
                     };
@@ -114,7 +113,6 @@ public class Server
                     username = response.Type switch
                     {
                         CommandType.Login => response.Payload.Deserialize<LoginResponsePayload>()?.Username,
-                        CommandType.Register => response.Payload.Deserialize<RegisterResponsePayload>()?.Username,
                         CommandType.Reconnect => response.Payload.Deserialize<ReconnectResponsePayload>()?.Username,
                         _ => null
                     };
@@ -125,18 +123,6 @@ public class Server
                         _userIds.TryAdd(username, (int)userId);
                         Console.WriteLine($"User '{username}' with ID {userId} is active.");
                     }
-                }
-                
-                Console.WriteLine("Usernames and IDs:");
-                foreach (var kvp in _userIds)
-                {
-                    Console.WriteLine($"Username: {kvp.Key}, UserId: {kvp.Value}");
-                }
-
-                Console.WriteLine("UserIds and TcpClients:");
-                foreach (var kvp in _clients)
-                {
-                    Console.WriteLine($"UserId: {kvp.Key}, SSLStream RemoteEndPoint: {kvp.Value}");
                 }
 
                 Console.WriteLine($"Received from '{username}' with ID {userId} :\n{jsonRequest}");
@@ -193,6 +179,9 @@ public class Server
                 case CommandType.GetHistory:
                     var historyReqPayload = request.Payload.Deserialize<ChatHistoryRequestPayload>();
                     return await HandleGetChatHistory(historyReqPayload);
+                case CommandType.DeleteForAll:
+                    var deleteForAllPayload = request.Payload.Deserialize<DeleteMessageRequestPayload>();
+                    return await HandleDeleteForAll(deleteForAllPayload);
                 case CommandType.EditMessage:
                     var editReqPayload = request.Payload.Deserialize<EditMessageRequestPayload>();
                     return await HandleEditMessage(editReqPayload);
@@ -301,34 +290,6 @@ public class Server
                 Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
             });
         }
-
-        // if (loginReqPayload is { Username: "1", Password: "password" })
-        // {
-        //     var errorPayload = new ErrorPayload
-        //     {
-        //         Message = "Invalid username or password."
-        //     };
-
-        //     return Task.FromResult(new Response
-        //     {
-        //         Status = Status.Error,
-        //         Type = CommandType.Login,
-        //         Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
-        //     });
-        // }
-
-        // var responsePayload = new LoginResponsePayload
-        // {
-        //     UserId = 1,
-        //     Username = loginReqPayload.Username
-        // };
-        
-        // return Task.FromResult(new Response
-        // {
-        //     Status = Status.Success,
-        //     Type = CommandType.Login,
-        //     Payload = JsonSerializer.SerializeToNode(responsePayload)?.AsObject()
-        // });
     }
 
     private async Task<Response> HandleReconnect(ReconnectRequestPayload? requestPayload)
@@ -430,7 +391,8 @@ public class Server
                 ChatId = newChat.Id,
                 IsGroup = newChat.IsGroup,
                 Name = newChat.Name,
-                Members = members
+                Members = members,
+                CreatedAt = newChat.CreatedAt
             };
 
             var response = new Response
@@ -678,6 +640,82 @@ public class Server
             {
                 Status = Status.Error,
                 Type = CommandType.GetHistory
+            };
+        }
+    }
+
+    private async Task<Response> HandleDeleteForAll(DeleteMessageRequestPayload? requestPayload)
+    {
+        if (requestPayload is null)
+        {
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.DeleteForAll
+            };
+        }
+
+        try
+        {
+            var deleteMessageResult =
+                await _dbProvider.DeleteMessageAsync(requestPayload.MessageId, requestPayload.UserId);
+
+            if (deleteMessageResult == null)
+            {
+                var errorPayload = new ErrorPayload
+                {
+                    Message = "Message not found or user not authorized to delete this message."
+                };
+
+                return new Response
+                {
+                    Status = Status.Error,
+                    Type = CommandType.DeleteForAll,
+                    Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+                };
+            }
+
+            deleteMessageResult.SenderNickname =
+                await _dbProvider.GetUserNicknameByIdAsync(deleteMessageResult.SenderId);
+            
+            var response = new Response
+            {
+                Status = Status.Success,
+                Type = CommandType.DeleteForAll,
+                Payload = JsonSerializer.SerializeToNode(deleteMessageResult)?.AsObject() 
+            };
+
+            var memberIds = await _dbProvider.GetChatMemberIdsAsync(deleteMessageResult.ChatId);            
+            await BroadcastMessage(requestPayload.UserId, memberIds, response);
+
+            return response;
+        }
+        catch (InvalidOperationException e)
+        {
+            var errorPayload = new ErrorPayload
+            {
+                Message = e.Message
+            };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.DeleteForAll, 
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+            };
+        }
+        catch (Exception)
+        {
+            var errorPayload = new ErrorPayload
+            {
+                Message = "An unexpected server error occurred."
+            };
+
+            return new Response
+            {
+                Status = Status.Error,
+                Type = CommandType.DeleteForAll,
+                Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
             };
         }
     }
