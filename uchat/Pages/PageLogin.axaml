@@ -59,8 +59,8 @@
                                      Padding="10,0,30,0"/>
                             <Button x:Name="UsernameClearButton" Content="✖" Width="20" Height="20" HorizontalAlignment="Right"
                                     VerticalAlignment="Center" Margin="0,0,10,5" Background="Transparent"
-                                    BorderThickness="0" Foreground="#9183B0" FontSize="13" IsVisible="False" Cursor="Hand" ZIndex="1"
-                                    Classes="nohover"/>
+                                    BorderThickness="0" Foreground="#995988" FontSize="16" IsVisible="False" Cursor="Hand" ZIndex="1"
+                                    Classes="nohover" FontWeight="ExtraBold" FontFamily="Segoe UI Symbol"/>
                         </Grid>
                         <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,10"/>
 
@@ -70,8 +70,8 @@
                                      Padding="10,0,30,0"/>
                             <Button x:Name="PasswordClearButton" Content="✖" Width="20" Height="20" HorizontalAlignment="Right"
                                     VerticalAlignment="Center" Margin="0,0,10,5" Background="Transparent"
-                                    BorderThickness="0" Foreground="#9183B0" FontSize="13" IsVisible="False" Cursor="Hand"
-                                    ZIndex="1" Classes="nohover"/>
+                                    BorderThickness="0"  Foreground="#995988" FontSize="16" IsVisible="False" Cursor="Hand"
+                                    ZIndex="1" Classes="nohover" FontWeight="ExtraBold" FontFamily="Segoe UI Symbol"/>
                             <Button x:Name="PasswordToggleButton" Width="25" Height="25" HorizontalAlignment="Left" VerticalAlignment="Center" 
                                     Margin="{Binding ElementName=PasswordTextBox, Path=Bounds.Width, Converter={StaticResource PasswordToggleMarginConverter}}"
                                     IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover">

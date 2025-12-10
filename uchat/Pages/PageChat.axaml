@@ -86,11 +86,11 @@
                         <TextBox x:Name="SearchTextBox" FontSize="16" Watermark="Search in chats..." Classes="staticBg" 
                                Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged" Padding="10,0,30,0" 
                                GotFocus="SearchTextBox_GotFocus" LostFocus="SearchTextBox_LostFocus"/>
-                        <Button x:Name="ClearSearchButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                        <Button x:Name="ClearSearchButton" Content="✖" FontSize="16" Width="20" Height="20" 
                                 HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
                                 IsVisible="False" Background="Transparent" Click="ClearSearchButton_Click"
-                                FontWeight="Bold" Cursor="Hand" Classes = "nohover"
-                                PointerPressed="ClearSearchButton_OnPointerPressed"/>
+                                Cursor="Hand" Classes = "nohover" FontWeight="ExtraBold" FontFamily="Segoe UI Symbol"
+                                PointerPressed="ClearSearchButton_OnPointerPressed" Foreground="#995988"/>
                     </Grid>
             </Border>
             
@@ -356,10 +356,11 @@
                             <TextBox Grid.Column="0" x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18" Classes="staticBg" Padding="10,0,30,0"
                                      HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="SearchUserBox_OnTextChanged"
                                      GotFocus="SearchUserBox_GotFocus" LostFocus="SearchUserBox_LostFocus"/>
-                            <Button Grid.Column="0" x:Name="ClearSearchUserBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                            <Button Grid.Column="0" x:Name="ClearSearchUserBoxButton" Content="✖" FontSize="16" Width="20" Height="20" 
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
-                                    IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
-                                    Click="ClearSearchUserBoxButton_Click"/>
+                                    IsVisible="False" Background="Transparent" Cursor="Hand" Classes="nohover"
+                                    Click="ClearSearchUserBoxButton_Click" FontWeight="ExtraBold" FontFamily="Segoe UI Symbol"
+                                    Foreground="#995988"/>
                             <Button Grid.Column="1" x:Name="SearchButton" FontSize="18" Margin="5,0,0,0" Foreground="White" Classes="nohover"
                                     HorizontalAlignment="Right" BorderThickness="0" Click="SearchButton_Click">
                                 <Grid>
@@ -410,10 +411,10 @@
                                      HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" Classes="staticBg"
                                      TextChanged="GroupSearchBox_OnTextChanged" GotFocus="GroupSearchBox_GotFocus" 
                                      LostFocus="GroupSearchBox_LostFocus"/>
-                            <Button Grid.Column="0" x:Name="ClearGroupSearchBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                            <Button Grid.Column="0" x:Name="ClearGroupSearchBoxButton" Content="✖" FontSize="16" Width="20" Height="20" 
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
-                                    IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
-                                    Click="ClearGroupSearchBoxButton_Click"/>
+                                    IsVisible="False" Background="Transparent" FontWeight="ExtraBold" Cursor="Hand" Classes="nohover"
+                                    Click="ClearGroupSearchBoxButton_Click" FontFamily="Segoe UI Symbol" Foreground="#995988"/>
                             <Button Grid.Column="1" x:Name="GroupSearchButton" FontSize="18" Margin="5,0,0,0" Foreground="White"
                                     HorizontalAlignment="Right" Classes="nohover" BorderThickness="0" Click="GroupSearchButton_Click">
                                 <Grid>
@@ -469,11 +470,11 @@
                   <Grid Grid.Row ="5">
                     <TextBox x:Name="GroupNameBox" Watermark="Enter chat name" FontSize="18" Padding="10,0,30,0" Classes="staticBg"
                              HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="GroupNameBox_OnTextChanged"/>
-                    <Button x:Name="ClearGroupNameBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                    <Button x:Name="ClearGroupNameBoxButton" Content="✖" FontSize="16" Width="20" Height="20" 
                             HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
-                            IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
+                            IsVisible="False" Background="Transparent" FontWeight="ExtraBold" Cursor="Hand" Classes="nohover"
                             Click="ClearGroupNameBoxButton_Click" GotFocus="GroupNameBox_GotFocus" 
-                            LostFocus="GroupNameBox_LostFocus"/>
+                            LostFocus="GroupNameBox_LostFocus" FontFamily="Segoe UI Symbol" Foreground="#995988"/>
                     </Grid>
                     <TextBlock Grid.Row="6" x:Name="GroupNameErrorText" Text="Name cannot be empty" FontSize="14" Foreground="Red" Margin="10,2,0,0" IsVisible="False"/>
                     
