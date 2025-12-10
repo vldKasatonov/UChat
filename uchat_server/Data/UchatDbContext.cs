@@ -82,6 +82,14 @@ public class UchatDbContext : DbContext
             entity.Property(cm => cm.HasPrivileges)
                 .HasDefaultValue(false);
 
+            entity.Property(c => c.IsChatPinned)
+                .HasColumnName("is_chat_pinned")
+                .HasDefaultValue(false);
+            
+            entity.Property(c => c.PinnedAt)
+                .HasColumnName("pinned_at")
+                .HasDefaultValueSql(null);
+            
             entity.HasOne(cm => cm.Chat)
                 .WithMany(c => c.Members)
                 .HasForeignKey(cm => cm.ChatId);
