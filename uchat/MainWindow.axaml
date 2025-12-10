@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="uchat.MainWindow"
-        Title="UChat"
+        Title="Uchat"
         Width="750" Height="650"
         MinHeight="630" MinWidth="660"
         MaxHeight="1000" MaxWidth="1100"

@@ -10,7 +10,7 @@
         <local:PasswordToggleMarginConverter x:Key="PasswordToggleMarginConverter"/>
     </UserControl.Resources>
 
-    <Border Background="#F1EFF5">
+    <Border Background="{DynamicResource MainBackground1Brush}">
     <Grid ColumnDefinitions="Auto,*">
         
         <Grid Grid.Column="0" Width="255">
@@ -22,31 +22,30 @@
 
                 <Grid RowDefinitions="150,100,100,*">
 
-                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto"
-                          HorizontalAlignment="Right" 
-                          Margin="0,20,0,0">
-                
-                        <Button x:Name="LoginButtonLeft" Grid.Column="0" Classes="nohover" Content="SIGN IN"  Foreground="White"
-                                Background="Transparent" FontSize="20" FontWeight="Bold" BorderThickness="0" Margin="0, 0,25,0"
-                                HorizontalAlignment="Right" VerticalAlignment="Center" Click="SignInButtonTop_Click"/>
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" HorizontalAlignment="Right" Cursor="Hand" Margin="0,20,0,0">
+                        <Border Width="130" Height="40" Background="Transparent" CornerRadius="40"
+                                HorizontalAlignment="Right" VerticalAlignment="Center" PointerPressed="SignInButtonTop_Click">
+                            <TextBlock Text="SIGN IN" Foreground="White" FontSize="23" FontWeight="Bold" Margin="0,0,5,0"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
                     </Grid>
 
-                    <Grid Grid.Row="2" 
-                          HorizontalAlignment="Right" 
-                          Margin="0,20,0,0">
-                        <Image Grid.Column="0" x:Name="SignUpBubble"
-                               Source="avares://uchat/Resources/images/Bubble.png"
-                               Width="150"
-                               HorizontalAlignment="Right"
-                               VerticalAlignment="Center"/>
-                        
-                        <Button x:Name="SignUpButtonLeft" Content="SIGN UP" Classes="nohover"
-                                HorizontalAlignment="Right" Background="Transparent" FontSize="20"
-                                FontWeight="Bold" Foreground="#A64F82" Margin="0, 0,25,0" BorderThickness="0"/>
+                    <Grid Grid.Row="2" HorizontalAlignment="Right" Margin="0,20,0,0" Cursor="Hand">
+                        <Border Width="200" Height="80" Background="{DynamicResource MainBackground1Brush}" Margin="0,0,-40,0" CornerRadius="40"
+                                HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <TextBlock Text="SIGN UP" Foreground="#A64F82" FontSize="23" FontWeight="Bold" Margin="0,0,20,0"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
                     </Grid>
 
                 </Grid>
             </Grid>
+            <Button Classes="nohover" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,15" Cursor="Hand" Click="SwitchTheme_Click">
+                <Grid>
+                    <Image x:Name="ModeLight" Source="avares://uchat/Resources/images/light_mode.png" Height="40" Width="40"/>
+                    <Image x:Name="ModeDark" Source="avares://uchat/Resources/images/dark_mode.png" Height="40" Width="40"/>
+                </Grid>
+            </Button>
         </Grid>
 
 
@@ -59,25 +58,25 @@
                 <StackPanel Grid.Row="1"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center" Orientation="Vertical"
                             Spacing="1" >
-                        <TextBlock Text="Welcome!" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                               Margin="0,10,0,0" FontSize="22" FontWeight="DemiBold" Foreground="rgba(0,0,0,0.8)"/>
+                        <TextBlock Text="Welcome!" HorizontalAlignment="Center" VerticalAlignment="Bottom" Foreground="{DynamicResource MainTextBrush}"
+                               Margin="0,10,0,0" FontSize="22" FontWeight="DemiBold"/>
                         <TextBlock Text="Please create your account." HorizontalAlignment="Center"
-                               FontSize="17" Foreground="rgba(0,0,0,0.8)" Margin="0,0,0,10"/>
+                               FontSize="17" Foreground="{DynamicResource MainTextBrush}" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Vertical">
                         
-                            <TextBlock Text="Nickname" Foreground="Black" FontSize="16" Margin="10,0,0,5"/>
+                            <TextBlock Text="Nickname" Foreground="{DynamicResource MainTextBrush}" FontSize="16" Margin="10,0,0,5"/>
                         <Grid>
                             <TextBox x:Name="NicknameTextBox" Watermark="Enter nickname" FontSize="20" Margin="0,0,0,5"
                                      Padding="10,0,30,0"/>
                             <Button x:Name="NicknameClearButton" Content="✖" Width="20" Height="20" 
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
                                     Background="Transparent" BorderThickness="0" Foreground="#995988" 
-                                    FontSize="16" IsVisible="False" Cursor="Hand" ZIndex="1" 
+                                    FontSize="16" IsVisible="False" Cursor="Hand" ZIndex="1" Focusable="False"
                                     Classes="nohover" FontFamily="Segoe UI Symbol" FontWeight="ExtraBold"/>
                          </Grid>   
                         <TextBlock x:Name="NicknameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Username" Foreground="Black" FontSize="16" Margin="10,0,0,5"/>
+                        <TextBlock Text="Username" Foreground="{DynamicResource MainTextBrush}" FontSize="16" Margin="10,0,0,5"/>
                             <Grid>
                                 <TextBox x:Name="UsernameTextBox" Watermark="Enter username" FontSize="20" Margin="0,0,0,5"
                                          Padding="10,0,30,0"/>
@@ -86,11 +85,11 @@
                                         Background="Transparent" BorderThickness="0" 
                                         Foreground="#995988" FontSize="16" IsVisible="False"
                                         Cursor="Hand" ZIndex="1" Classes="nohover" FontFamily="Segoe UI Symbol"
-                                        FontWeight="ExtraBold"/>
+                                        FontWeight="ExtraBold" Focusable="False"/>
                             </Grid>
                         <TextBlock x:Name="UsernameErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Password" Foreground="Black" FontSize="16" Margin="10,0,0,5"/>
+                        <TextBlock Text="Password" Foreground="{DynamicResource MainTextBrush}" FontSize="16" Margin="10,0,0,5"/>
                             <Grid>
                                 <TextBox x:Name="PasswordTextBox" Watermark="Enter password" PasswordChar="•" FontSize="30" Margin="0,0,0,5"
                                          Padding="10,0,30,0" VerticalContentAlignment="Center"/>
@@ -98,10 +97,10 @@
                                         HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
                                         Background="Transparent" BorderThickness="0" Foreground="#995988" 
                                         FontSize="16" IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover" FontFamily="Segoe UI Symbol"
-                                        FontWeight="ExtraBold"/>
+                                        FontWeight="ExtraBold" Focusable="False"/>
                                 <Button x:Name="PasswordToggleButton" Width="25" Height="25" HorizontalAlignment="Left" VerticalAlignment="Center" 
                                         Margin="{Binding ElementName=PasswordTextBox, Path=Bounds.Width, Converter={StaticResource PasswordToggleMarginConverter}}"
-                                        IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover">
+                                        IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover" Focusable="False">
                                     <Grid>
                                         <Image x:Name="VisiblePassword" Source="avares://uchat/Resources/images/eye.png" IsVisible="False" />
                                         <Image x:Name="InvisiblePassword" Source="avares://uchat/Resources/images/no_eye.png" IsVisible="True"/>
@@ -110,7 +109,7 @@
                             </Grid>
                         <TextBlock x:Name="PasswordErrorText" Foreground="Red" FontSize="14" Height="20" Margin="10,0,0,5"/>
                         
-                        <TextBlock Text="Confirm password" Foreground="Black" FontSize="16" Margin="10,0,0,5"/>
+                        <TextBlock Text="Confirm password" Foreground="{DynamicResource MainTextBrush}" FontSize="16" Margin="10,0,0,5"/>
                             <Grid>
                                 <TextBox x:Name="ConfirmPasswordTextBox" Watermark="Confirm password" PasswordChar="•" FontSize="30" Margin="0,0,0,5"
                                          Padding="10,0,30,0" VerticalContentAlignment="Center"/>
@@ -118,10 +117,10 @@
                                         HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,5" 
                                         Background="Transparent" BorderThickness="0" Foreground="#995988" 
                                         FontSize="16" IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover" FontFamily="Segoe UI Symbol"
-                                        FontWeight="ExtraBold"/>
+                                        FontWeight="ExtraBold" Focusable="False"/>
                                 <Button x:Name="ConfirmPasswordToggleButton" Width="25" Height="25" HorizontalAlignment="Left" VerticalAlignment="Center" 
                                         Margin="{Binding ElementName=PasswordTextBox, Path=Bounds.Width, Converter={StaticResource PasswordToggleMarginConverter}}"
-                                        IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover">
+                                        IsVisible="False" Cursor="Hand" ZIndex="1" Classes="nohover" Focusable="False">
                                     <Grid>
                                         <Image x:Name="VisibleConfirmPassword" Source="avares://uchat/Resources/images/eye.png" IsVisible="False"/>
                                         <Image x:Name="InvisibleConfirmPassword" Source="avares://uchat/Resources/images/no_eye.png" IsVisible="True"/>
@@ -137,7 +136,7 @@
                                 FontWeight="Bold" Width="250" HorizontalAlignment="Center" VerticalAlignment="Top"/>
                         <TextBlock Grid.Row="1" x:Name="RegisterErrorText" Foreground="Red" Margin="0,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
                         <TextBlock Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,0,0,0" FontWeight="Medium" FontSize="16" >
-                            <Run Text="Already have an account?" Foreground="rgba(0,0,0,0.8)"/>
+                            <Run Text="Already have an account?" Foreground="{DynamicResource MainTextBrush}"/>
                             <InlineUIContainer BaselineAlignment="Bottom">
                                 <TextBlock Text=" Sing In" Foreground="{StaticResource prColor}" Cursor="Hand" PointerPressed="SignInText_PointerPressed"/>
                             </InlineUIContainer>
