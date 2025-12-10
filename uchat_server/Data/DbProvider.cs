@@ -251,7 +251,7 @@ public class DbProvider
                              {
                                  ChatId = chat.Id,
                                  chat.IsGroup, chat.Name, chat.CreatedAt,
-                                 //IsChatPinned = cm.IsChatPinned, PinnedAt = cm.PinnedAt
+                                 IsChatPinned = cm.IsChatPinned, PinnedAt = cm.PinnedAt
                              };
 
         var userChatData = await userChatsQuery.ToListAsync();
@@ -275,6 +275,16 @@ public class DbProvider
             });
         
         var chatData = await chatDetailsQuery.ToListAsync();
+        
+        var senderIds = chatData
+            .Where(x => x.LastMessage != null)
+            .Select(x => x.LastMessage!.SenderId)
+            .Distinct()
+            .ToList();
+
+        var senderNicknames = await dbContext.Users
+            .Where(u => senderIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Nickname);
 
         var lastMessageIds = chatData
             .Where(x => x.LastMessage != null && !x.LastMessage.IsDeleted)
@@ -311,6 +321,7 @@ public class DbProvider
         {
             string displayName;
             string displayUsername;
+            string lastMessageSenderNickname = "";
             
             if (!membersByChatId.TryGetValue(item.Chat.Id, out List<ChatMemberResponse>? chatMembers))
             {
@@ -345,6 +356,11 @@ public class DbProvider
                 lastMessagesContent.TryGetValue(item.LastMessage.Id, out string? content);
                 lastMessageContent = content ?? "[Message deleted]";
                 lastMessageTime = item.LastMessage.SentAt.ToLocalTime();
+                
+                if (senderNicknames.TryGetValue(item.LastMessage.SenderId, out string? nickname))
+                {
+                    lastMessageSenderNickname = item.LastMessage.SenderId == userId ? "Me" : nickname;
+                }
             }
 
             chatsList.Add(new Chats
@@ -356,8 +372,9 @@ public class DbProvider
                 Members = chatMembers,
                 LastMessage = lastMessageContent,
                 LastMessageTime = lastMessageTime,
-                //IsChatPinned = metadata.IsChatPinned,
-                //PinnedAt = metadata.PinnedAt
+                LastMessageUsername = lastMessageSenderNickname,
+                IsChatPinned = metadata.IsChatPinned,
+                PinnedAt = metadata.PinnedAt
             });
         }
 
@@ -495,16 +512,17 @@ public class DbProvider
     {
         await using var dbContext = CreateDbContext();
 
-        var chat = await dbContext.ChatMembers
+        var chatMember = await dbContext.ChatMembers
             .FirstOrDefaultAsync(cm => cm.UserId == userId && cm.ChatId == chatId);
 
-        if (chat == null)
+        if (chatMember == null)
         {
             return false;
         }
 
-        //chatMember.IsChatPinned = isPinned;
-        //chatMember.PinnedAt = isPinned ? DateTime.UtcNow : null;
+        chatMember.IsChatPinned = isPinned;
+        chatMember.PinnedAt = isPinned ? DateTime.UtcNow : null;
+
         await dbContext.SaveChangesAsync();
 
         return true;
