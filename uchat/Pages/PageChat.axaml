@@ -300,7 +300,7 @@
                     </ItemsControl>
                 </ScrollViewer>
                 
-                <Border x:Name="GroupMembersPanel" Background="#453359" Padding="8" IsVisible="False" ZIndex="1" 
+                <Border x:Name="GroupMembersPanel" Background="{DynamicResource ChatListBackground}" Padding="8" IsVisible="False" ZIndex="1" 
                         VerticalAlignment="Top" Width="300" HorizontalAlignment="Right" MaxHeight="300">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
@@ -467,7 +467,7 @@
                         </ListBox>
 
                   <Grid Grid.Row ="5">
-                    <TextBox x:Name="GroupNameBox" Watermark="Enter chat name" FontSize="18" Padding="10,0,30,0" Classes="staticBg"
+                    <TextBox x:Name="GroupNameBox" MaxLength="30" Watermark="Enter chat name" FontSize="18" Padding="10,0,30,0" Classes="staticBg"
                              HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="GroupNameBox_OnTextChanged"/>
                     <Button x:Name="ClearGroupNameBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
                             HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 

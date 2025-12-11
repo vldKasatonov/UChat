@@ -7,17 +7,23 @@
         <ResourceDictionary x:Key="Light">
             <Color x:Key="MainBackground">#EBE2FC</Color>
             <Color x:Key="LeftSideBarBackground">#EBE2FC</Color>
-            <Color x:Key="ChatListBackground">#45335D</Color>
+            <Color x:Key="ChatListBackground">#62448A</Color>
             <Color x:Key="ProfileBackground">#705595</Color>
             <Color x:Key="SelectedChatBackground">#705595</Color>
             <Color x:Key="NamesTextColour">Black</Color>
             <Color x:Key="CaretColor">Black</Color>
-            <Color x:Key="TextBoxBorder">#B0B0B0</Color>
+            <Color x:Key="TextBoxBorder">#995988</Color>
             <Color x:Key="TextBoxBorderHover">#7A7A7A</Color>
             <Color x:Key="TextBoxBorderFocus">#705595</Color>
-            <Color x:Key="TypeMessageBoxBackground">#45335D</Color>
+            <Color x:Key="TypeMessageBoxBackground">#62448A</Color>
             <Color x:Key="DialogBackgroundColor">#FFFFFFFF</Color>
             <Color x:Key="DialogTextColor">#FF000000</Color>
+            <Color x:Key="MainBackground1">#EBE2FC</Color>
+            <Color x:Key="MainTextColor">#000000</Color>
+            <Color x:Key="ButtonForeground">#A64F82</Color>
+            <Color x:Key="TextBoxBackground">#4D995988</Color>
+            <Color x:Key="TextBoxForeground">#995988</Color>
+            <Color x:Key="TextBoxBorderEmpty">#4D000000</Color>
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
@@ -28,12 +34,18 @@
             <Color x:Key="SelectedChatBackground">#4A386B</Color>
             <Color x:Key="NamesTextColour">White</Color>
             <Color x:Key="CaretColor">White</Color>
-            <Color x:Key="TextBoxBorder">#555555</Color>
-            <Color x:Key="TextBoxBorderHover">#888888</Color>
-            <Color x:Key="TextBoxBorderFocus">#4A386B</Color>
+            <Color x:Key="TextBoxBorder">#995988</Color>
+            <Color x:Key="TextBoxBorderHover">#B3FFFFFF</Color>
+            <Color x:Key="TextBoxBorderFocus">#B3FFFFFF</Color>
             <Color x:Key="TypeMessageBoxBackground">#34274C</Color>
-            <Color x:Key="DialogBackgroundColor">#FF2B2B2B</Color>
+            <Color x:Key="DialogBackgroundColor">#B31C1729</Color>
             <Color x:Key="DialogTextColor">#FFFFFFFF</Color>
+            <Color x:Key="MainBackground1">#1C1729</Color>
+            <Color x:Key="MainTextColor">#FFFFFF</Color>
+            <Color x:Key="ButtonForeground">#FF77B0</Color>
+            <Color x:Key="TextBoxBackground">#B3995888</Color>
+            <Color x:Key="TextBoxForeground">#B3FFFFFF</Color>
+            <Color x:Key="TextBoxBorderEmpty">#B3FFFFFF</Color>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
     
@@ -49,5 +61,11 @@
     <SolidColorBrush x:Key="TextBoxBorderFocusBrush" Color="{DynamicResource TextBoxBorderFocus}"/>
     <SolidColorBrush x:Key="DialogBackgroundColorBrush" Color="{DynamicResource DialogBackgroundColor}"/>
     <SolidColorBrush x:Key="DialogTextColorBrush" Color="{DynamicResource DialogTextColor}"/>
-
+    <SolidColorBrush x:Key="MainBackground1Brush" Color="{DynamicResource MainBackground1}"/>
+    <SolidColorBrush x:Key="MainTextBrush" Color="{DynamicResource MainTextColor}"/>
+    <SolidColorBrush x:Key="ButtonForegroundBrush" Color="{DynamicResource ButtonForeground}"/>
+    <SolidColorBrush x:Key="TextBoxBackgroundBrush" Color="{DynamicResource TextBoxBackground}"/>
+    <SolidColorBrush x:Key="TextBoxForegroundBrush" Color="{DynamicResource TextBoxForeground}"/>
+    <SolidColorBrush x:Key="TextBoxBorderEmptyBrush" Color="{DynamicResource TextBoxForeground}"/>
+    
 </ResourceDictionary>
