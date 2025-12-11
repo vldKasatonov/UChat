@@ -80,6 +80,12 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+            <Button Grid.Row="0" Classes="nohover" HorizontalAlignment="Right" Margin="0,0,10,0" Cursor="Hand" Click="ChangePfp_Click">
+                <Grid>
+                    <Image x:Name="ChangePfpLight" Source="avares://uchat/Resources/images/ChangePfpLight.png" Height="22" Width="22"/>
+                    <Image x:Name="ChangePfpDark" Source="avares://uchat/Resources/images/ChangePfpDark.png" Height="22" Width="22"/>
+                </Grid>
+            </Button>
 
             <Border Grid.Row="1" Padding="10">
                     <Grid HorizontalAlignment="Stretch">
@@ -334,12 +340,12 @@
                 <TextBox x:Name="MessageTextBox" FontSize="18" Watermark="Type a message..." Padding="10,5,60,5" Classes="staticBg" Background="{DynamicResource TypeMessageBoxBackground}"
                          TextWrapping="Wrap" Text="{Binding ChatList.SelectedItem.Draft, Mode=TwoWay}" AcceptsReturn="False"
                          VerticalContentAlignment="Center" MinHeight="50" MaxHeight="120" TextChanged="MessageTextBox_OnTextChanged" KeyDown="MessageTextBox_SendWithEnter"/>
-                <Image Source="avares://uchat/Resources/images/send.png"
-                       Width="35" Height="35"
-                       HorizontalAlignment="Right"
-                       VerticalAlignment="Center"
-                       Margin="0,0,10,0"
-                       PointerPressed="SendMessage_Click"/>
+                <Grid>
+                    <Image x:Name="SendLight" Source="avares://uchat/Resources/images/SendLight.png" Height="35" Width="35" 
+                           HorizontalAlignment="Right" Margin="0,0,10,0" PointerPressed="SendMessage_Click"/>
+                    <Image x:Name="SendDark" Source="avares://uchat/Resources/images/SendDark.png" Height="35" Width="35" 
+                            HorizontalAlignment="Right" Margin="0,0,10,0" PointerPressed="SendMessage_Click"/>
+                </Grid>
             </Grid>
             
             <Border x:Name="SingleChatOverlay" Background="{DynamicResource MainBackgroundBrush}" Grid.Row="1" Grid.RowSpan="2" IsVisible="False">
@@ -486,6 +492,43 @@
                             HorizontalAlignment="Center" FontSize="18" FontWeight="Bold" Click="CreateGroupChat_Click"/>
                 </Grid>
             </Border>
+            
+            <Border x:Name="ChangePfpOverlay" Background="{DynamicResource MainBackgroundBrush}" Grid.Row="1" Grid.RowSpan="2" IsVisible="False">
+                <Grid Margin="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition MinHeight="100"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0"  Background="{DynamicResource ProfileBackground}"
+                            CornerRadius="10" Padding="20" Width="250" Margin="0,10,0,10" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="5">
+                            <Image Source="avares://uchat/Resources/images/ava.png" Width="80" Height="80" 
+                                   Stretch="UniformToFill" ClipToBounds="True" Margin="0,0,0,5"/>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" >
+                                <TextBlock Text="{Binding CurrentUserName}" FontSize="17" TextAlignment="Center"
+                                           FontWeight="Bold" Foreground="White"/>
+                                <TextBlock Text="{Binding CurrentUserUsername}"  TextAlignment="Center"
+                                           FontSize="14" Foreground="rgba(255,255,255,0.6)"/>
+                            </StackPanel>
+                        </StackPanel>
+                        
+                    </Border>
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,10">
+                        <TextBlock Text="аватарочки тут" TextAlignment="Center"
+                                   Foreground="White" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="30" Margin="0,0,0,50">
+                        <Button  Content="Cancel" x:Name="CancelChangesButton" Background="{DynamicResource ChatListBackground}"
+                                 Classes="submitBtn" Width="150" 
+                                 HorizontalAlignment="Center" FontSize="18" FontWeight="Bold"/>
+                        <Button Content="Apply" x:Name="ApplyChangesButton"
+                                Classes="submitBtn" Width="150" 
+                                HorizontalAlignment="Center" FontSize="18" FontWeight="Bold"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
         <Border Background="#80000000" IsVisible="{Binding IsReconnecting}" 
@@ -499,4 +542,5 @@
             </Border>
         </Border>
     </Grid>
+    
 </UserControl>

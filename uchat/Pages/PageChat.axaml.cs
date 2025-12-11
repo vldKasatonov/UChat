@@ -94,6 +94,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         UpdateModeThemeIcon();
         UpdateSearchThemeIcon();
         UpdateGroupSearchThemeIcon();
+        UpdateSendMessageThemeIcon();
+        UpdateChangePfpThemeIcon();
     }
     
     public PageChat(Client client) : this()
@@ -663,6 +665,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         {
             SingleChatOverlay.IsVisible = false;
             GroupChatOverlay.IsVisible = false;
+            ChangePfpOverlay.IsVisible = false;
             MessageInputPanel.IsVisible = true;
             MessagesPanel.IsVisible = true;
             
@@ -820,6 +823,14 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         GroupNameBox.Text = "";
     }
     
+    private void ChangePfp_Click(object? sender, RoutedEventArgs e)
+    {
+        ResetChatView();
+        ChatHeader.Text = "Please choose your new profile picture";
+        ChangePfpOverlay.IsVisible = true;
+        ResetUserSearch();
+    }
+    
     private void ResetUserSearch()
     {
         SearchUserBox.Text = "";
@@ -839,6 +850,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         ChatUsernameTextBlock.IsVisible = false;
         SingleChatOverlay.IsVisible = false;
         GroupChatOverlay.IsVisible = false;
+        ChangePfpOverlay.IsVisible = false;
         ShowToggleMembersButton = false;
     }
     
@@ -1579,6 +1591,18 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         GroupSearchLight.IsVisible = !_isLight;
         GroupSearchDark.IsVisible = _isLight;
     }
+    
+    private void UpdateSendMessageThemeIcon()
+    {
+        SendLight.IsVisible = !_isLight;
+        SendDark.IsVisible = _isLight;
+    }
+    
+    private void UpdateChangePfpThemeIcon()
+    {
+        ChangePfpLight.IsVisible = !_isLight;
+        ChangePfpDark.IsVisible = _isLight;
+    }
 
     private void SwitchTheme_Click(object? sender, RoutedEventArgs e)
     {
@@ -1590,6 +1614,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         UpdateModeThemeIcon();
         UpdateSearchThemeIcon();
         UpdateGroupSearchThemeIcon();
+        UpdateSendMessageThemeIcon();
+        UpdateChangePfpThemeIcon();
     }
 
     //message grouping
@@ -2045,4 +2071,5 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
         }
     }
+
 }
