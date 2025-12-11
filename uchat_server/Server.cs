@@ -268,6 +268,21 @@ public class Server
                 .GetAwaiter()
                 .GetResult();
 
+            if (_clients.ContainsKey(loggedUser.Id))
+            {
+                var errorPayload = new ErrorPayload
+                {
+                    Message = "You are already signed in."
+                };
+
+                return Task.FromResult(new Response
+                {
+                    Status = Status.Error,
+                    Type = CommandType.Login,
+                    Payload = JsonSerializer.SerializeToNode(errorPayload)?.AsObject()
+                });
+            }
+            
             var responsePayload = new LoginResponsePayload
             {
                 UserId = loggedUser.Id,
