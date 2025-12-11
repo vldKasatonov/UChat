@@ -72,7 +72,7 @@
         <Grid Grid.Column="1" Background="{DynamicResource ChatListBackgroundBrush}" RowDefinitions="60,Auto,*">
             <Border Grid.Row="0" Background="{DynamicResource ProfileBackgroundBrush}" Padding="10">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                    <Ellipse Width="45" Height="45" Fill="Gray"/>
+                    <Image Width="45" Height="45" Source="avares://uchat/Resources/images/ava.png"/>
                     <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
                         <TextBlock Text="{Binding CurrentUserName}" FontSize="17" FontWeight="Bold" Foreground="White"/>
                         <TextBlock Text="{Binding CurrentUserUsername}" 
@@ -86,11 +86,11 @@
                         <TextBox x:Name="SearchTextBox" FontSize="16" Watermark="Search in chats..." Classes="staticBg" 
                                Background="#9183B0" Foreground="White" TextChanged = "SearchTextBox_OnTextChanged" Padding="10,0,30,0" 
                                GotFocus="SearchTextBox_GotFocus" LostFocus="SearchTextBox_LostFocus"/>
-                        <Button x:Name="ClearSearchButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                        <Button x:Name="ClearSearchButton" Content="✖" FontSize="16" Width="20" Height="20" 
                                 HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
                                 IsVisible="False" Background="Transparent" Click="ClearSearchButton_Click"
-                                FontWeight="Bold" Cursor="Hand" Classes = "nohover"
-                                PointerPressed="ClearSearchButton_OnPointerPressed"/>
+                                Cursor="Hand" Classes = "nohover" FontWeight="ExtraBold" FontFamily="Segoe UI Symbol"
+                                PointerPressed="ClearSearchButton_OnPointerPressed" Foreground="#995988"/>
                     </Grid>
             </Border>
             
@@ -114,10 +114,13 @@
                                 <ContextMenu>
                                     <MenuItem Header="{Binding IsPinned, Converter={StaticResource PinMenuTextConverter}}" 
                                               Click="TogglePinChat_Click"/>
+                                    <MenuItem Header="Delete/Leave chat" Click="LeaveChat_Click"/>
                                 </ContextMenu>
                             </Grid.ContextMenu>
-                            
-                            <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center"/>
+                            <Grid Grid.Column="0" VerticalAlignment="Center">
+                                <Image x:Name="GroupAva" Source="avares://uchat/Resources/images/group_ava.png" Height="40" Width="40" IsVisible="{Binding IsGroupVisible}"/>
+                                <Image x:Name="SingleAva" Source="avares://uchat/Resources/images/ava.png" Height="40" Width="40" IsVisible="{Binding IsSingleVisible}"/>
+                            </Grid>
                             
                             <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="5,0">
                                 <Grid>
@@ -158,8 +161,10 @@
 
             <Border Grid.Row="0" Background="{DynamicResource ChatListBackgroundBrush}" Padding="10, 0">
                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                    <Ellipse Grid.Column="0" x:Name="ChatAvatar" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center" 
-                                            IsVisible="False"/>
+                    <Grid Grid.Column="0" VerticalAlignment="Center" x:Name="ChatAvatar">
+                        <Image Source="avares://uchat/Resources/images/group_ava.png" Height="40" Width="40" IsVisible="{Binding IsGroupVisible}"/>
+                        <Image Source="avares://uchat/Resources/images/ava.png" Height="40" Width="40" IsVisible="{Binding IsSingleVisible}"/>
+                    </Grid>
                     <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
                         <TextBlock x:Name="ChatHeader" FontSize="20" FontWeight="Bold" Foreground="White" />
                         <TextBlock x:Name="ChatUsernameTextBlock" FontSize="15" IsVisible="False" Foreground="White" />
@@ -184,18 +189,17 @@
                                             Margin="{Binding IsMine, Converter={StaticResource BoolToMarginConverter}}"
                                             VerticalAlignment="Bottom">
                                     <Border Width="{Binding AvatarPlaceholderWidth}" Margin="0,0,5,0">
-                                        <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom" >
-                                            <Ellipse.Fill>
-                                                <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
-                                            </Ellipse.Fill>
-                                            <Ellipse.IsVisible>
-                                                <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
-                                                    <Binding Path="IsMine"/>
-                                                    <Binding Path="IsGroup"/>
-                                                    <Binding Path="ShowAvatar"/>
-                                                </MultiBinding>
-                                            </Ellipse.IsVisible>
-                                        </Ellipse>
+                                        <Border Width="35" Height="35" CornerRadius="999" ClipToBounds="True" Margin="0,0,5,0" VerticalAlignment="Bottom" IsVisible="{Binding ShowAvatar}">
+                                            <Image Source="avares://uchat/Resources/images/ava.png" Stretch="UniformToFill">
+                                                <Image.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
+                                                        <Binding Path="IsMine"/>
+                                                        <Binding Path="IsGroup"/>
+                                                        <Binding Path="ShowAvatar"/>
+                                                    </MultiBinding>
+                                                </Image.IsVisible>
+                                            </Image>
+                                        </Border>
                                     </Border> 
                                     
                                     <StackPanel>
@@ -264,9 +268,9 @@
 
                                                 <Border.ContextMenu>
                                                     <ContextMenu>
-                                                        <MenuItem Header="Copy" Click="CopyMessage_Click"/>
+                                                        <MenuItem Header="Copy" Click="CopyMessage_Click" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}"/>
                                                         <MenuItem Header="Edit" Click="EditMessage_Click" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}" IsVisible="{Binding IsMine}"/>
-                                                        <MenuItem Header="Delete" Click="DeleteMessageForAll_Click"/>
+                                                        <MenuItem Header="Delete" Click="DeleteMessageForAll_Click" IsVisible="{Binding IsMine}" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}"/>
                                                     </ContextMenu>
                                                 </Border.ContextMenu>
                                             </Border>
@@ -309,7 +313,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid ColumnDefinitions="40,*" Margin="4">
-                                            <Ellipse Grid.Column="0" Width="35" Height="35" Fill="Gray" VerticalAlignment="Center" />
+                                            <Image Grid.Column="0" Width="35" Height="35" Source="avares://uchat/Resources/images/ava.png" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="10,0">
                                                 <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="White" Margin="0,0,0,3" />
                                                 <TextBlock Text="{Binding Username}" FontSize="14" Foreground="White"/>
@@ -356,10 +360,11 @@
                             <TextBox Grid.Column="0" x:Name="SearchUserBox" Watermark="Search for user..." FontSize="18" Classes="staticBg" Padding="10,0,30,0"
                                      HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="SearchUserBox_OnTextChanged"
                                      GotFocus="SearchUserBox_GotFocus" LostFocus="SearchUserBox_LostFocus"/>
-                            <Button Grid.Column="0" x:Name="ClearSearchUserBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                            <Button Grid.Column="0" x:Name="ClearSearchUserBoxButton" Content="✖" FontSize="16" Width="20" Height="20" 
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
-                                    IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
-                                    Click="ClearSearchUserBoxButton_Click"/>
+                                    IsVisible="False" Background="Transparent" Cursor="Hand" Classes="nohover"
+                                    Click="ClearSearchUserBoxButton_Click" FontWeight="ExtraBold" FontFamily="Segoe UI Symbol"
+                                    Foreground="#995988"/>
                             <Button Grid.Column="1" x:Name="SearchButton" FontSize="18" Margin="5,0,0,0" Foreground="White" Classes="nohover"
                                     HorizontalAlignment="Right" BorderThickness="0" Click="SearchButton_Click">
                                 <Grid>
@@ -374,7 +379,7 @@
                     
                     <Border Grid.Row="2" x:Name="SearchResultBorder" Background="{DynamicResource ChatListBackgroundBrush}" CornerRadius="10" Padding="10" Margin="0,10,0,0" IsVisible="False">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                            <Ellipse Width="45" Height="45" Fill="Gray"/>
+                            <Image Width="45" Height="45" Source="avares://uchat/Resources/images/ava.png"/>
                             <StackPanel Orientation="Vertical" VerticalAlignment="Center" Spacing="5">
                                 <TextBlock x:Name="ResultUserName" Text="" FontSize="17" FontWeight="Bold" Foreground="White"/>
                                 <TextBlock x:Name="ResultUserUsername" Text="" FontSize="14" Foreground="rgba(255,255,255,0.6)"/>
@@ -410,10 +415,10 @@
                                      HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" Classes="staticBg"
                                      TextChanged="GroupSearchBox_OnTextChanged" GotFocus="GroupSearchBox_GotFocus" 
                                      LostFocus="GroupSearchBox_LostFocus"/>
-                            <Button Grid.Column="0" x:Name="ClearGroupSearchBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                            <Button Grid.Column="0" x:Name="ClearGroupSearchBoxButton" Content="✖" FontSize="16" Width="20" Height="20" 
                                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
-                                    IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
-                                    Click="ClearGroupSearchBoxButton_Click"/>
+                                    IsVisible="False" Background="Transparent" FontWeight="ExtraBold" Cursor="Hand" Classes="nohover"
+                                    Click="ClearGroupSearchBoxButton_Click" FontFamily="Segoe UI Symbol" Foreground="#995988"/>
                             <Button Grid.Column="1" x:Name="GroupSearchButton" FontSize="18" Margin="5,0,0,0" Foreground="White"
                                     HorizontalAlignment="Right" Classes="nohover" BorderThickness="0" Click="GroupSearchButton_Click">
                                 <Grid>
@@ -430,7 +435,7 @@
                             Background="{DynamicResource ChatListBackgroundBrush}" CornerRadius="10" Padding="10" Margin="0,10,0,0"
                             VerticalAlignment="Top" IsVisible="False">
                         <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                            <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" Margin="0,0,10,0"/>
+                            <Image Grid.Column="0" Width="40" Height="40" Source="avares://uchat/Resources/images/ava.png" Margin="0,0,10,0"/>
                             <Grid Grid.Column="1">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="18"/>
@@ -450,7 +455,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                        <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" Margin="0,0,10,0"/>
+                                        <Image Grid.Column="0" Width="40" Height="40" Source="avares://uchat/Resources/images/ava.png" Margin="0,0,10,0"/>
                                         <Grid Grid.Column="1">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="18"/>
@@ -469,11 +474,11 @@
                   <Grid Grid.Row ="5">
                     <TextBox x:Name="GroupNameBox" MaxLength="30" Watermark="Enter chat name" FontSize="18" Padding="10,0,30,0" Classes="staticBg"
                              HorizontalAlignment="Stretch" Background="#9183B0" Foreground="White" TextChanged="GroupNameBox_OnTextChanged"/>
-                    <Button x:Name="ClearGroupNameBoxButton" Content="✖" FontSize="13" Width="20" Height="20" 
+                    <Button x:Name="ClearGroupNameBoxButton" Content="✖" FontSize="16" Width="20" Height="20" 
                             HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" 
-                            IsVisible="False" Background="Transparent" FontWeight="Bold" Cursor="Hand" Classes="nohover"
+                            IsVisible="False" Background="Transparent" FontWeight="ExtraBold" Cursor="Hand" Classes="nohover"
                             Click="ClearGroupNameBoxButton_Click" GotFocus="GroupNameBox_GotFocus" 
-                            LostFocus="GroupNameBox_LostFocus"/>
+                            LostFocus="GroupNameBox_LostFocus" FontFamily="Segoe UI Symbol" Foreground="#995988"/>
                     </Grid>
                     <TextBlock Grid.Row="6" x:Name="GroupNameErrorText" Text="Name cannot be empty" FontSize="14" Foreground="Red" Margin="10,2,0,0" IsVisible="False"/>
                     
