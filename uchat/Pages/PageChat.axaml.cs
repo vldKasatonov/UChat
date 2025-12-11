@@ -1466,19 +1466,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             }
         }
     }
-    
-    private async void CopyMessage_Click(object? sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem menu && menu.DataContext is Message msg)
-        {
-            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-            if (clipboard != null)
-            {
-                await clipboard.SetTextAsync(msg.Text);
-            }
-        }
-    }
-    
+
     private void EditMessage_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menu || menu.DataContext is not Message msg)
