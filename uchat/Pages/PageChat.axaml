@@ -72,7 +72,7 @@
         <Grid Grid.Column="1" Background="{DynamicResource ChatListBackgroundBrush}" RowDefinitions="60,Auto,*">
             <Border Grid.Row="0" Background="{DynamicResource ProfileBackgroundBrush}" Padding="10">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                    <Ellipse Width="45" Height="45" Fill="Gray"/>
+                    <Image Width="45" Height="45" Source="avares://uchat/Resources/images/ava.png"/>
                     <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
                         <TextBlock Text="{Binding CurrentUserName}" FontSize="17" FontWeight="Bold" Foreground="White"/>
                         <TextBlock Text="{Binding CurrentUserUsername}" 
@@ -117,8 +117,10 @@
                                     <MenuItem Header="Delete/Leave chat" Click="LeaveChat_Click"/>
                                 </ContextMenu>
                             </Grid.ContextMenu>
-                            
-                            <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center"/>
+                            <Grid Grid.Column="0" VerticalAlignment="Center">
+                                <Image x:Name="GroupAva" Source="avares://uchat/Resources/images/group_ava.png" Height="40" Width="40" IsVisible="{Binding IsGroupVisible}"/>
+                                <Image x:Name="SingleAva" Source="avares://uchat/Resources/images/ava.png" Height="40" Width="40" IsVisible="{Binding IsSingleVisible}"/>
+                            </Grid>
                             
                             <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="5,0">
                                 <Grid>
@@ -159,8 +161,10 @@
 
             <Border Grid.Row="0" Background="{DynamicResource ChatListBackgroundBrush}" Padding="10, 0">
                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                    <Ellipse Grid.Column="0" x:Name="ChatAvatar" Width="40" Height="40" Fill="Gray" VerticalAlignment="Center" 
-                                            IsVisible="False"/>
+                    <Grid Grid.Column="0" VerticalAlignment="Center" x:Name="ChatAvatar">
+                        <Image Source="avares://uchat/Resources/images/group_ava.png" Height="40" Width="40" IsVisible="{Binding IsGroupVisible}"/>
+                        <Image Source="avares://uchat/Resources/images/ava.png" Height="40" Width="40" IsVisible="{Binding IsSingleVisible}"/>
+                    </Grid>
                     <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="10,0,0,0">
                         <TextBlock x:Name="ChatHeader" FontSize="20" FontWeight="Bold" Foreground="White" />
                         <TextBlock x:Name="ChatUsernameTextBlock" FontSize="15" IsVisible="False" Foreground="White" />
@@ -185,18 +189,17 @@
                                             Margin="{Binding IsMine, Converter={StaticResource BoolToMarginConverter}}"
                                             VerticalAlignment="Bottom">
                                     <Border Width="{Binding AvatarPlaceholderWidth}" Margin="0,0,5,0">
-                                        <Ellipse Width="35" Height="35" Margin="0,0,5,0" VerticalAlignment="Bottom" >
-                                            <Ellipse.Fill>
-                                                <Binding Path="Sender" Converter="{StaticResource SenderToColorConverter}" />
-                                            </Ellipse.Fill>
-                                            <Ellipse.IsVisible>
-                                                <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
-                                                    <Binding Path="IsMine"/>
-                                                    <Binding Path="IsGroup"/>
-                                                    <Binding Path="ShowAvatar"/>
-                                                </MultiBinding>
-                                            </Ellipse.IsVisible>
-                                        </Ellipse>
+                                        <Border Width="35" Height="35" CornerRadius="999" ClipToBounds="True" Margin="0,0,5,0" VerticalAlignment="Bottom" IsVisible="{Binding ShowAvatar}">
+                                            <Image Source="avares://uchat/Resources/images/ava.png" Stretch="UniformToFill">
+                                                <Image.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource GroupAvatarVisibilityConverter}">
+                                                        <Binding Path="IsMine"/>
+                                                        <Binding Path="IsGroup"/>
+                                                        <Binding Path="ShowAvatar"/>
+                                                    </MultiBinding>
+                                                </Image.IsVisible>
+                                            </Image>
+                                        </Border>
                                     </Border> 
                                     
                                     <StackPanel>
@@ -310,7 +313,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid ColumnDefinitions="40,*" Margin="4">
-                                            <Ellipse Grid.Column="0" Width="35" Height="35" Fill="Gray" VerticalAlignment="Center" />
+                                            <Image Grid.Column="0" Width="35" Height="35" Source="avares://uchat/Resources/images/ava.png" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" Margin="10,0">
                                                 <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="White" Margin="0,0,0,3" />
                                                 <TextBlock Text="{Binding Username}" FontSize="14" Foreground="White"/>
@@ -376,7 +379,7 @@
                     
                     <Border Grid.Row="2" x:Name="SearchResultBorder" Background="{DynamicResource ChatListBackgroundBrush}" CornerRadius="10" Padding="10" Margin="0,10,0,0" IsVisible="False">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
-                            <Ellipse Width="45" Height="45" Fill="Gray"/>
+                            <Image Width="45" Height="45" Source="avares://uchat/Resources/images/ava.png"/>
                             <StackPanel Orientation="Vertical" VerticalAlignment="Center" Spacing="5">
                                 <TextBlock x:Name="ResultUserName" Text="" FontSize="17" FontWeight="Bold" Foreground="White"/>
                                 <TextBlock x:Name="ResultUserUsername" Text="" FontSize="14" Foreground="rgba(255,255,255,0.6)"/>
@@ -432,7 +435,7 @@
                             Background="{DynamicResource ChatListBackgroundBrush}" CornerRadius="10" Padding="10" Margin="0,10,0,0"
                             VerticalAlignment="Top" IsVisible="False">
                         <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                            <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" Margin="0,0,10,0"/>
+                            <Image Grid.Column="0" Width="40" Height="40" Source="avares://uchat/Resources/images/ava.png" Margin="0,0,10,0"/>
                             <Grid Grid.Column="1">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="18"/>
@@ -452,7 +455,7 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                        <Ellipse Grid.Column="0" Width="40" Height="40" Fill="Gray" Margin="0,0,10,0"/>
+                                        <Image Grid.Column="0" Width="40" Height="40" Source="avares://uchat/Resources/images/ava.png" Margin="0,0,10,0"/>
                                         <Grid Grid.Column="1">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="18"/>
