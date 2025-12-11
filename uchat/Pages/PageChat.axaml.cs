@@ -176,6 +176,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         public ObservableCollection<Message> Messages { get; set; } = new();
         public string Username { get; set; } = "";
         public bool IsGroup { get; set; } = false;
+        public bool IsGroupVisible => IsGroup;
+        public bool IsSingleVisible => !IsGroup;
         public ObservableCollection<User> Members { get; set; } = new();
         private string _lastMessage = "";
         public string LastMessage
@@ -328,9 +330,12 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
     {
         ChatHeader.Text = contact.Name;
         ChatAvatar.IsVisible = true;
+        contact.IsGroup = contact.IsGroup;
+        ChatAvatar.DataContext = contact;
         ChatUsernameTextBlock.Text = contact.Username;
         ChatUsernameTextBlock.IsVisible = true;
         ShowToggleMembersButton = contact.IsGroup;
+
         if (contact.IsGroup)
         {
             GroupMembersList.ItemsSource = contact.Members;
