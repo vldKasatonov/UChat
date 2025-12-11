@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using System.ComponentModel;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using dto;
@@ -161,11 +162,26 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
         AttachGroupTextChangedHandlers();
     }
     
-    public class User
+    public class User: INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
         public int Id { get; set; }
         public string Name { get; set; } = "";
         public string Username { get; set; } = "";
+
+        private bool _isOnline;
+        public bool IsOnline
+        {
+            get => _isOnline;
+            set
+            {
+                if (_isOnline != value)
+                {
+                    _isOnline = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsOnline)));
+                }
+            }
+        }
     }
 
     public class ChatItem : INotifyPropertyChanged
@@ -351,6 +367,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             _isMembersPanelOpen = false;
         }
         
+        UpdateStatusView(contact);
+        
         ComputeGroupingFlags(contact.Messages);
         
         SelectedChatMessages.Clear();
@@ -362,6 +380,41 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
 
         MessageTextBox.Text = contact.Draft;
         MessageInputPanel.IsVisible = true;
+    }
+    
+    private void UpdateStatusView(ChatItem contact)
+    {
+        if (contact.IsGroup)
+        {
+            StatusCircle.IsVisible = false;
+            UserStatus.IsVisible = false;
+        }
+        else
+        {
+            var otherMember = contact.Members.FirstOrDefault(m => m.Id != _client.GetUserId());
+            
+            if (otherMember != null) 
+            {
+                StatusCircle.IsVisible = true;
+                UserStatus.IsVisible = true;
+                
+                if (otherMember.IsOnline) 
+                {
+                    UserStatus.Text = "online";
+                    StatusCircle.Fill = new SolidColorBrush(Colors.Green);
+                }
+                else
+                {
+                    UserStatus.Text = "offline";
+                    StatusCircle.Fill = new SolidColorBrush(Colors.Gray);
+                }
+            }
+            else
+            {
+                StatusCircle.IsVisible = false;
+                UserStatus.IsVisible = false;
+            }
+        }
     }
 
     private void ClearChatView()
@@ -1683,7 +1736,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
             {
                 Id = member.UserId,
                 Name = member.Nickname,
-                Username = ToHandleFormat(member.Username)
+                Username = ToHandleFormat(member.Username),
+                IsOnline = member.IsOnline
             });
         }
         
@@ -1712,7 +1766,7 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                 {
                     foreach (var chat in chatListPayload.Chats)
                     {
-                        var newChatItem = ChatsToChatItem(chat); 
+                        var newChatItem = ChatsToChatItem(chat);
                     
                         Chats.Add(newChatItem);
                         FilteredChats.Add(newChatItem); 
@@ -1849,7 +1903,8 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                         {
                             Id = member.UserId,
                             Name = member.Nickname,
-                            Username = ToHandleFormat(member.Username)
+                            Username = ToHandleFormat(member.Username),
+                            IsOnline = member.IsOnline
                         });
                     }
 
@@ -2039,6 +2094,38 @@ public partial class PageChat : UserControl, INotifyPropertyChanged
                             }
                         }
                     }
+                }
+
+                break;
+            }
+            case CommandType.UpdateUserStatus:
+            {
+                var statusPayload = response.Payload.Deserialize<UpdateUserStatusResponsePayload>();
+
+                if (statusPayload is null) 
+                {
+                    break;
+                }
+
+                var updatedUserId = statusPayload.UserId;
+                var newStatus = statusPayload.IsOnline;
+
+                var affectedChats = Chats
+                    .Where(c => c.Members.Any(m => m.Id == updatedUserId)).ToList();
+
+                foreach (var chat in affectedChats)
+                {
+                    var member = chat.Members.FirstOrDefault(m => m.Id == updatedUserId);
+        
+                    if (member != null)
+                    {
+                        member.IsOnline = newStatus;
+                    }
+                }
+
+                if (_currentChat != null)
+                {
+                    UpdateStatusView(_currentChat);
                 }
 
                 break;

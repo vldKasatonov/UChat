@@ -13,7 +13,8 @@ public enum CommandType
     GetChats,
     GetHistory,
     UpdatePinStatus,
-    LeaveChat
+    LeaveChat,
+    UpdateUserStatus
 }
 
 public enum Status

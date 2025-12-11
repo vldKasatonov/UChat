@@ -32,6 +32,11 @@ public class Client
         _port = port;
     }
 
+    public int GetUserId()
+    {
+        return _clientId ?? 0;
+    }
+    
     public string GetUsername()
     {
         return _clientUsername ?? "";

@@ -82,7 +82,8 @@ public class DbProvider
             {
                 u.Id,
                 u.Username,
-                u.Nickname
+                u.Nickname,
+                u.IsOnline
             })
             .ToDictionaryAsync(u => u.Username, u => u);
 
@@ -110,7 +111,8 @@ public class DbProvider
                     UserId = dbUser.Id,
                     Username = dbUser.Username,
                     Nickname = dbUser.Nickname,
-                    HasPrivileges = memberRequest.HasPrivileges
+                    HasPrivileges = memberRequest.HasPrivileges,
+                    IsOnline = dbUser.IsOnline
                 });
             }
         }
@@ -305,7 +307,8 @@ public class DbProvider
                     UserId = u.Id,
                     Nickname = u.Nickname,
                     Username = u.Username,
-                    HasPrivileges = cm.HasPrivileges
+                    HasPrivileges = cm.HasPrivileges,
+                    IsOnline = u.IsOnline
                 }
             })
             .ToListAsync();
@@ -599,5 +602,18 @@ public class DbProvider
             UsersId = remainingMemberIds,
             ChatDeleted = chatWasDeleted
         };
+    }
+
+    public async Task UpdateStatusAsync(int userId, bool isOnline)
+    {
+        await using var dbContext = CreateDbContext();
+        
+        var userToUpdate = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (userToUpdate != null)
+        {
+            userToUpdate.IsOnline = isOnline;
+            await dbContext.SaveChangesAsync();
+        }
     }
 }

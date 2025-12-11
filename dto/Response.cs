@@ -94,6 +94,9 @@ public class ChatMemberResponse
 
     [JsonPropertyName("has_privileges")]
     public bool HasPrivileges { get; set; }
+    
+    [JsonPropertyName("is_online")]
+    public bool IsOnline { get; set; }
 }
 
 public class TextMessageResponsePayload
@@ -205,4 +208,13 @@ public class LeaveChatResponsePayload
 
     [JsonPropertyName("chat_deleted")]
     public bool ChatDeleted { get; set; }
+}
+
+public class UpdateUserStatusResponsePayload
+{
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }
+    
+    [JsonPropertyName("is_online")]
+    public bool IsOnline { get; set; }
 }

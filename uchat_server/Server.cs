@@ -121,6 +121,8 @@ public class Server
                     {
                         _clients.TryAdd((int)userId, sslStream);
                         _userIds.TryAdd(username, (int)userId);
+                        await _dbProvider.UpdateStatusAsync((int)userId, true);
+                        await BroadcastStatus((int)userId, true);
                         Console.WriteLine($"User '{username}' with ID {userId} is active.");
                     }
                 }
@@ -143,6 +145,8 @@ public class Server
             {
                 _clients.TryRemove((int)userId, out _);
                 _userIds.TryRemove(username, out _);
+                await _dbProvider.UpdateStatusAsync((int)userId, false);
+                await BroadcastStatus((int)userId, false);
             }
             
             client.Close();
@@ -970,6 +974,39 @@ public class Server
                 {
                     Console.WriteLine($"Error sending broadcast to ID {memberId}: {ex.Message}");
                 }
+            }
+        }
+    }
+
+    private async Task BroadcastStatus(int userId, bool isOnline)
+    {
+        var payload = new UpdateUserStatusResponsePayload
+        {
+            UserId = userId,
+            IsOnline = isOnline
+        };
+
+        var response = new Response
+        {
+            Status = Status.Success,
+            Type = CommandType.UpdateUserStatus,
+            Payload = JsonSerializer.SerializeToNode(payload)?.AsObject()
+        };
+        
+        string jsonResponse = JsonSerializer.Serialize(response);
+
+        var activeStreams = _clients.Values.ToList();
+
+        foreach (var sslStream in activeStreams)
+        {
+            try
+            {
+                var writer = new StreamWriter(sslStream) { AutoFlush = true };
+                await writer.WriteLineAsync(jsonResponse);
+            }
+            catch (Exception)
+            {
+                //
             }
         }
     }
