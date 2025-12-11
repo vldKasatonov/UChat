@@ -268,9 +268,9 @@
 
                                                 <Border.ContextMenu>
                                                     <ContextMenu>
-                                                        <MenuItem Header="Copy" Click="CopyMessage_Click"/>
+                                                        <MenuItem Header="Copy" Click="CopyMessage_Click" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}"/>
                                                         <MenuItem Header="Edit" Click="EditMessage_Click" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}" IsVisible="{Binding IsMine}"/>
-                                                        <MenuItem Header="Delete" Click="DeleteMessageForAll_Click" IsVisible="{Binding IsMine}"/>
+                                                        <MenuItem Header="Delete" Click="DeleteMessageForAll_Click" IsVisible="{Binding IsMine}" IsEnabled="{Binding IsDeleted, Converter={StaticResource InverseBoolConverter}}"/>
                                                     </ContextMenu>
                                                 </Border.ContextMenu>
                                             </Border>
